@@ -107,6 +107,27 @@ window.addEventListener('scroll', () => {
   });
 });
 
+// ==================== Theme Toggle ====================
+const themeToggle = document.getElementById('themeToggle');
+const savedTheme = localStorage.getItem('theme');
+
+if (savedTheme === 'dark') {
+  document.body.classList.add('dark-mode');
+  updateThemeIcon(true);
+}
+
+function updateThemeIcon(isDark) {
+  const icon = themeToggle.querySelector('i');
+  icon.setAttribute('data-lucide', isDark ? 'sun' : 'moon');
+  lucide.createIcons();
+}
+
+themeToggle.addEventListener('click', () => {
+  const isDark = document.body.classList.toggle('dark-mode');
+  localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  updateThemeIcon(isDark);
+});
+
 // ==================== Initialize on Load ====================
 document.addEventListener('DOMContentLoaded', () => {
   updateProgressBar();

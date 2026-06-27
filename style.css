@@ -1,15 +1,15 @@
 /* ==================== CSS Variables ==================== */
 :root {
-  /* 深色模式（默认） */
-  --bg-primary: #0a0a0f;
-  --bg-secondary: #12121a;
-  --bg-tertiary: #1a1a24;
+  /* 浅色模式（默认） */
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f1f5f9;
   --accent-primary: #6366f1;
   --accent-secondary: #22d3ee;
   --accent-tertiary: #f472b6;
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
   --gradient: linear-gradient(135deg, #6366f1, #22d3ee, #f472b6);
   --gradient-short: linear-gradient(135deg, #6366f1, #22d3ee);
   --font-heading: 'Space Grotesk', sans-serif;
@@ -17,117 +17,41 @@
   --font-mono: 'JetBrains Mono', monospace;
 }
 
-/* 浅色模式 */
-@media (prefers-color-scheme: light) {
-  :root {
-    --bg-primary: #f8fafc;
-    --bg-secondary: #ffffff;
-    --bg-tertiary: #f1f5f9;
-    --text-primary: #0f172a;
-    --text-secondary: #475569;
-    --text-muted: #94a3b8;
-  }
+/* 深色模式 */
+.dark-mode {
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #12121a;
+  --bg-tertiary: #1a1a24;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+}
 
-  /* 浅色模式 orb 光斑调淡 */
-  .orb {
-    opacity: 0.25;
-  }
+/* 深色模式特有样式 */
+.dark-mode .orb {
+  opacity: 0.5;
+}
 
-  .progress-bar {
-    background: var(--bg-tertiary);
-  }
+.dark-mode .navbar.scrolled {
+  background: rgba(10, 10, 15, 0.85);
+}
 
-  .navbar.scrolled {
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(20px);
-  }
+.dark-mode .progress-bar {
+  background: var(--bg-secondary);
+}
 
-  .nav-links a {
-    color: var(--text-secondary);
-  }
+/* 浅色模式特有样式（默认已在上面） */
+.orb {
+  opacity: 0.25;
+}
 
-  .nav-links a:hover {
-    color: var(--text-primary);
-  }
+.navbar.scrolled {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+}
 
-  .nav-divider {
-    background: var(--bg-tertiary);
-  }
-
-  .quick-access a {
-    background: var(--bg-tertiary);
-    color: var(--text-secondary);
-  }
-
-  .quick-access a:hover {
-    background: var(--accent-primary);
-    color: white;
-  }
-
-  .float-btn {
-    background: var(--bg-secondary);
-    border-color: var(--bg-tertiary);
-    color: var(--text-secondary);
-  }
-
-  .tag {
-    background: var(--bg-secondary);
-    border-color: var(--bg-tertiary);
-    color: var(--text-secondary);
-  }
-
-  .tag:hover {
-    border-color: var(--accent-primary);
-    color: var(--text-primary);
-  }
-
-  .project-card {
-    background: var(--bg-secondary);
-  }
-
-  .hobby-card {
-    background: var(--bg-secondary);
-  }
-
-  .skill-card {
-    background: var(--bg-secondary);
-  }
-
-  .site-card {
-    background: var(--bg-secondary);
-  }
-
-  .site-card:hover {
-    background: var(--bg-tertiary);
-  }
-
-  .contact-email {
-    background: var(--bg-secondary);
-    border-color: var(--bg-tertiary);
-  }
-
-  .contact-email:hover {
-    background: var(--bg-tertiary);
-  }
-
-  .social-link {
-    background: var(--bg-secondary);
-    border-color: var(--bg-tertiary);
-  }
-
-  .upload-btn {
-    color: white;
-  }
-
-  .clear-btn {
-    background: var(--bg-tertiary);
-    color: var(--text-secondary);
-    border-color: var(--bg-tertiary);
-  }
-
-  .footer {
-    border-top-color: var(--bg-tertiary);
-  }
+.progress-bar {
+  background: var(--bg-tertiary);
 }
 
 /* ==================== Reset & Base ==================== */
@@ -260,6 +184,31 @@ img {
   background: var(--accent-primary);
   color: white;
   transform: translateY(-2px);
+}
+
+.theme-toggle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.theme-toggle:hover {
+  background: var(--accent-primary);
+  color: white;
+  transform: rotate(15deg) scale(1.1);
+}
+
+.theme-toggle svg {
+  width: 20px;
+  height: 20px;
 }
 
 /* ==================== Float Navigation ==================== */
