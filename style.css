@@ -148,24 +148,23 @@ img {
   transform: translateY(-2px);
 }
 
-/* ==================== Quick Navigation (Side) ==================== */
-.quick-nav {
+/* ==================== Float Navigation ==================== */
+.float-nav {
   position: fixed;
-  right: 24px;
-  top: 50%;
-  transform: translateY(-50%);
+  right: 20px;
+  bottom: 30px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   z-index: 999;
 }
 
-.quick-nav-btn {
-  width: 44px;
-  height: 44px;
+.float-btn {
+  width: 48px;
+  height: 48px;
   background: var(--bg-secondary);
   border: 1px solid var(--bg-tertiary);
-  border-radius: 12px;
+  border-radius: 50%;
   color: var(--text-secondary);
   cursor: pointer;
   display: flex;
@@ -173,25 +172,20 @@ img {
   justify-content: center;
   transition: all 0.3s ease;
   backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-.quick-nav-btn:hover {
+.float-btn:hover {
   background: var(--gradient);
   border-color: transparent;
   color: white;
   transform: scale(1.1);
-  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
 }
 
-.quick-nav-btn svg {
-  width: 18px;
-  height: 18px;
-}
-
-.quick-nav-btn.active {
-  background: var(--gradient);
-  border-color: transparent;
-  color: white;
+.float-btn svg {
+  width: 20px;
+  height: 20px;
 }
 
 /* ==================== Progress Bar ==================== */

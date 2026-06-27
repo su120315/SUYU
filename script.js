@@ -114,39 +114,23 @@ document.addEventListener('DOMContentLoaded', () => {
   initQuickNav();
 });
 
-// ==================== Quick Navigation ====================
+// ==================== Float Navigation ====================
 function initQuickNav() {
+  const toTopBtn = document.getElementById('toTopBtn');
   const toBottomBtn = document.getElementById('toBottomBtn');
-  const sections = ['hero', 'about', 'skills', 'hobbies', 'sites', 'contact'];
-  const navBtns = document.querySelectorAll('.quick-nav-btn');
+
+  toTopBtn.addEventListener('click', () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  });
 
   toBottomBtn.addEventListener('click', () => {
     window.scrollTo({
       top: document.body.scrollHeight,
       behavior: 'smooth'
     });
-  });
-
-  const sectionObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        const id = entry.target.getAttribute('id');
-        navBtns.forEach(btn => {
-          btn.classList.remove('active');
-          const href = btn.getAttribute('href');
-          if (href && href === `#${id}`) {
-            btn.classList.add('active');
-          }
-        });
-      }
-    });
-  }, { threshold: 0.3 });
-
-  sections.forEach(id => {
-    const section = document.getElementById(id);
-    if (section) {
-      sectionObserver.observe(section);
-    }
   });
 }
 
