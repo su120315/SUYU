@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="蘇魚的在线工具箱 - 计算器、倒计时、进制转换、Base64、JSON格式化等实用工具">
+  <meta name="keywords" content="在线工具,计算器,倒计时,进制转换,Base64,JSON格式化">
+  <meta name="author" content="蘇魚">
+  <meta name="theme-color" content="#6366f1">
+  <title>工具箱 | 蘇魚</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-content">
+      <a href="index.html" class="nav-logo">蘇魚</a>
+      <ul class="nav-links">
+        <li><a href="index.html#about">关于</a></li>
+        <li><a href="index.html#skills">技能</a></li>
+        <li><a href="index.html#projects">作品</a></li>
+        <li><a href="index.html#hobbies">爱好</a></li>
+        <li><a href="tools.html" class="active">工具</a></li>
+        <li><a href="index.html#gallery">相册</a></li>
+        <li><a href="index.html#contact">联系</a></li>
+        <li class="nav-divider"></li>
+        <li>
+          <button class="theme-toggle" id="themeToggle" title="切换主题">
+            <i data-lucide="moon"></i>
+          </button>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <section class="tools-hero">
+    <div class="tools-hero-content">
+      <h1 class="tools-title">
+        <span class="gradient-text" data-text="在线工具箱">在线工具箱</span>
+      </h1>
+      <p class="tools-subtitle">纯前端实现，数据不上传，隐私安全</p>
+    </div>
+  </section>
+
+  <section class="tools-section">
+    <div class="container">
+      <div class="tools-grid">
+        <div class="tool-card" data-tool="calculator">
+          <div class="tool-icon">
+            <i data-lucide="calculator"></i>
+          </div>
+          <h3>计算器</h3>
+          <p>简单的加减乘除运算</p>
+        </div>
+
+        <div class="tool-card" data-tool="timer">
+          <div class="tool-icon">
+            <i data-lucide="timer"></i>
+          </div>
+          <h3>倒计时</h3>
+          <p>番茄钟 / 倒计时提醒</p>
+        </div>
+
+        <div class="tool-card" data-tool="base64">
+          <div class="tool-icon">
+            <i data-lucide="shuffle"></i>
+          </div>
+          <h3>Base64</h3>
+          <p>编码 / 解码转换</p>
+        </div>
+
+        <div class="tool-card" data-tool="json">
+          <div class="tool-icon">
+            <i data-lucide="braces"></i>
+          </div>
+          <h3>JSON 格式化</h3>
+          <p>美化 / 压缩 / 校验</p>
+        </div>
+
+        <div class="tool-card" data-tool="color">
+          <div class="tool-icon">
+            <i data-lucide="palette"></i>
+          </div>
+          <h3>颜色工具</h3>
+          <p>HEX / RGB / HSL 转换</p>
+        </div>
+
+        <div class="tool-card" data-tool="baseconv">
+          <div class="tool-icon">
+            <i data-lucide="binary"></i>
+          </div>
+          <h3>进制转换</h3>
+          <p>二/八/十/十六进制互转</p>
+        </div>
+
+        <div class="tool-card" data-tool="password">
+          <div class="tool-icon">
+            <i data-lucide="key"></i>
+          </div>
+          <h3>密码生成</h3>
+          <p>随机强密码生成器</p>
+        </div>
+
+        <div class="tool-card" data-tool="qrcode">
+          <div class="tool-icon">
+            <i data-lucide="qr-code"></i>
+          </div>
+          <h3>二维码生成</h3>
+          <p>文字转二维码</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="tool-modal" id="toolModal">
+    <div class="tool-modal-overlay" id="toolModalOverlay"></div>
+    <div class="tool-modal-content">
+      <div class="tool-modal-header">
+        <h2 id="toolModalTitle">工具</h2>
+        <button class="tool-modal-close" id="toolModalClose">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="tool-modal-body" id="toolModalBody">
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-brand">
+          <h3>蘇魚的小窝</h3>
+          <p>热爱学习，热爱生活 ✨</p>
+        </div>
+        <div class="footer-info">
+          <p>&copy; 2026 蘇魚. All rights reserved.</p>
+          <p>Built with HTML / CSS / JavaScript</p>
+          <p class="update-time">最后更新：<span id="updateTime"></span></p>
+          <p>
+            <a href="https://github.com/su120315/SUYU" target="_blank" rel="noopener">
+              <i data-lucide="git-branch"></i> 源码仓库
+            </a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="tools.js"></script>
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+        if (typeof lucide !== 'undefined') {
+          lucide.createIcons();
+        }
+
+        const toggle = document.getElementById('themeToggle');
+        if (toggle) {
+          function updateIcon() {
+            const isDark = document.body.classList.contains('dark-mode');
+            toggle.innerHTML = `<i data-lucide="${isDark ? 'sun' : 'moon'}"></i>`;
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+          }
+          updateIcon();
+          toggle.addEventListener('click', function() {
+            const isDark = document.body.classList.toggle('dark-mode');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            updateIcon();
+          });
+        }
+
+        document.getElementById('updateTime').textContent = new Date().toLocaleDateString('zh-CN');
+      });
+    })();
+  </script>
+</body>
+</html>
