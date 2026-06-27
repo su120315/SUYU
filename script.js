@@ -108,7 +108,7 @@ window.addEventListener('scroll', () => {
 });
 
 // ==================== Theme Toggle ====================
-function initThemeToggle() {
+(function initThemeToggle() {
   const themeToggle = document.getElementById('themeToggle');
   if (!themeToggle) return;
 
@@ -129,7 +129,7 @@ function initThemeToggle() {
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
     updateThemeIcon(isDark);
   });
-}
+})();
 
 // ==================== Initialize on Load ====================
 document.addEventListener('DOMContentLoaded', () => {
@@ -137,7 +137,6 @@ document.addEventListener('DOMContentLoaded', () => {
   updateNavbar();
   initQuickNav();
   initGallery();
-  initThemeToggle();
 });
 
 // ==================== Float Navigation ====================
