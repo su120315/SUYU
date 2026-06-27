@@ -19,7 +19,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function closeModal() {
     modal.classList.remove('active');
-    document.body.style.overflow = '';
   }
 
   modalClose.addEventListener('click', closeModal);
@@ -56,12 +55,9 @@ document.addEventListener('DOMContentLoaded', function() {
     modalBody.innerHTML = '';
     tool.render(modalBody);
     modal.classList.add('active');
-    // 只禁止 body 滚动，不使用 position:fixed（iOS 上会卡住模态框内部滚动）
-    document.body.style.overflow = 'hidden';
     if (typeof lucide !== 'undefined') {
       lucide.createIcons();
     }
-    // 打开后自动将模态框 body 滚到顶部
     setTimeout(function() { modalBody.scrollTop = 0; }, 50);
   }
 

@@ -1632,6 +1632,7 @@ section {
   align-items: center;
   justify-content: center;
   padding: 20px;
+  overscroll-behavior: contain;
 }
 
 .tool-modal.active {
@@ -1647,8 +1648,6 @@ section {
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  /* 移动端阻止触摸穿透滚动 */
-  touch-action: none;
 }
 
 .tool-modal-content {
@@ -1721,6 +1720,8 @@ section {
   padding: 24px;
   overflow-y: auto;
   flex: 1;
+  min-height: 0;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Calculator */
@@ -2500,11 +2501,6 @@ section {
       transform: translateY(0);
       opacity: 1;
     }
-  }
-
-  .tool-modal-body {
-    -webkit-overflow-scrolling: touch;
-    touch-action: pan-y;
   }
 
   .tool-modal-header {
