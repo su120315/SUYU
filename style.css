@@ -106,7 +106,7 @@ img {
   transition: all 0.3s ease;
 }
 
-.navbar.scrolled {
+.dark-mode .navbar.scrolled {
   background: rgba(10, 10, 15, 0.85);
   backdrop-filter: blur(20px);
   padding: 12px 0;
