@@ -109,25 +109,55 @@ window.addEventListener('scroll', () => {
 
 // ==================== Theme Toggle ====================
 (function initThemeToggle() {
-  const themeToggle = document.getElementById('themeToggle');
-  if (!themeToggle) return;
+  const themeToggles = document.querySelectorAll('#themeToggle, #themeToggleMobile');
+  if (themeToggles.length === 0) return;
 
   const savedTheme = localStorage.getItem('theme');
 
   if (savedTheme === 'dark') {
     document.body.classList.add('dark-mode');
-    updateThemeIcon(true);
+    updateThemeIcons(true);
   }
 
-  function updateThemeIcon(isDark) {
-    themeToggle.innerHTML = `<i data-lucide="${isDark ? 'sun' : 'moon'}"></i>`;
+  function updateThemeIcons(isDark) {
+    themeToggles.forEach(toggle => {
+      toggle.innerHTML = `<i data-lucide="${isDark ? 'sun' : 'moon'}"></i>`;
+    });
     lucide.createIcons();
   }
 
-  themeToggle.addEventListener('click', () => {
-    const isDark = document.body.classList.toggle('dark-mode');
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    updateThemeIcon(isDark);
+  themeToggles.forEach(toggle => {
+    toggle.addEventListener('click', () => {
+      const isDark = document.body.classList.toggle('dark-mode');
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+      updateThemeIcons(isDark);
+    });
+  });
+})();
+
+// ==================== Mobile Nav Toggle ====================
+(function initMobileNav() {
+  const navToggle = document.getElementById('navToggle');
+  const navLinks = document.querySelector('.nav-links');
+  if (!navToggle || !navLinks) return;
+
+  navToggle.addEventListener('click', () => {
+    navToggle.classList.toggle('active');
+    navLinks.classList.toggle('active');
+  });
+
+  navLinks.querySelectorAll('a').forEach(link => {
+    link.addEventListener('click', () => {
+      navToggle.classList.remove('active');
+      navLinks.classList.remove('active');
+    });
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!navLinks.contains(e.target) && !navToggle.contains(e.target)) {
+      navToggle.classList.remove('active');
+      navLinks.classList.remove('active');
+    }
   });
 })();
 
