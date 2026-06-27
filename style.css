@@ -663,6 +663,59 @@ section {
   height: 20px;
 }
 
+/* ==================== Hobbies Section ==================== */
+.hobbies-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 24px;
+}
+
+.hobby-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: 20px;
+  padding: 32px 24px;
+  text-align: center;
+  transition: all 0.3s ease;
+  opacity: 0;
+  transform: translateY(30px);
+}
+
+.hobby-card.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.hobby-card:hover {
+  border-color: var(--accent-tertiary);
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 20px 60px rgba(244, 114, 182, 0.15);
+}
+
+.hobby-emoji {
+  font-size: 3rem;
+  margin-bottom: 16px;
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+.hobby-card:hover .hobby-emoji {
+  transform: scale(1.2) rotate(-5deg);
+}
+
+.hobby-card h3 {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.hobby-card p {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
 /* ==================== Contact Section ==================== */
 .contact-content {
   text-align: center;
