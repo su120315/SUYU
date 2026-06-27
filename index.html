@@ -3,7 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="蘇魚的个人主页 - 汇文中学初二学生，热爱编程、AI、游戏和骑行。记录学习成长，分享有趣的项目。">
+  <meta name="keywords" content="蘇魚,个人主页,汇文中学,编程,AI,学生,Python,网页开发">
+  <meta name="author" content="蘇魚">
+  <meta name="theme-color" content="#6366f1">
+
+  <!-- Open Graph / 分享标签 -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="蘇魚 | 个人主页">
+  <meta property="og:description" content="汇文中学初二学生，热爱编程、AI、游戏和骑行。">
+  <meta property="og:url" content="#">
+  <meta property="og:image" content="#">
+  <meta property="og:site_name" content="蘇魚的小窝">
+
   <title>蘇魚 | 个人主页</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -18,17 +32,19 @@
       <ul class="nav-links">
         <li><a href="#about">关于</a></li>
         <li><a href="#skills">技能</a></li>
+        <li><a href="#projects">作品</a></li>
         <li><a href="#hobbies">爱好</a></li>
+        <li><a href="#gallery">相册</a></li>
         <li><a href="#contact">联系</a></li>
         <li class="nav-divider"></li>
         <li class="quick-access">
-          <a href="https://www.baidu.com" target="_blank">百度</a>
+          <a href="https://www.baidu.com" target="_blank" rel="noopener">百度</a>
         </li>
         <li class="quick-access">
-          <a href="https://www.bilibili.com" target="_blank">B站</a>
+          <a href="https://www.bilibili.com" target="_blank" rel="noopener">B站</a>
         </li>
         <li class="quick-access">
-          <a href="https://www.zhihu.com" target="_blank">知乎</a>
+          <a href="https://www.zhihu.com" target="_blank" rel="noopener">知乎</a>
         </li>
       </ul>
     </div>
@@ -57,6 +73,9 @@
       <div class="orb orb-3"></div>
     </div>
     <div class="hero-content">
+      <div class="hero-avatar">
+        <div class="avatar-placeholder">🐟</div>
+      </div>
       <h1 class="hero-title">
         <span class="gradient-text">蘇魚</span>
       </h1>
@@ -212,43 +231,51 @@
       </div>
       <div class="projects-grid">
         <article class="project-card">
-          <div class="project-image">
+          <div class="project-image project-image-1">
             <div class="project-placeholder">
               <i data-lucide="globe"></i>
+              <span>个人主页</span>
             </div>
           </div>
           <div class="project-content">
-            <h3 class="project-title">个人主页</h3>
-            <p class="project-desc">自己动手做的个人介绍网站，学习了HTML和CSS，第一次做网页好有成就感！</p>
+            <h3 class="project-title">个人主页网站</h3>
+            <p class="project-desc">从零开始学 HTML/CSS/JS 做的第一个网站，深色未来风设计，有动画效果和交互体验～</p>
             <div class="project-tags">
               <span>HTML</span>
               <span>CSS</span>
-              <span>JS</span>
+              <span>JavaScript</span>
             </div>
             <div class="project-links">
-              <a href="#" class="project-link">
+              <a href="#" class="project-link" title="在线预览">
                 <i data-lucide="external-link"></i>
+              </a>
+              <a href="https://github.com/" target="_blank" rel="noopener" class="project-link" title="源码">
+                <i data-lucide="github"></i>
               </a>
             </div>
           </div>
         </article>
         <article class="project-card">
-          <div class="project-image">
+          <div class="project-image project-image-2">
             <div class="project-placeholder">
-              <i data-lucide="gamepad-2"></i>
-            </div>
+            <i data-lucide="gamepad-2"></i>
+            <span>贪吃蛇</span>
+          </div>
           </div>
           <div class="project-content">
-            <h3 class="project-title">Python小游戏</h3>
-            <p class="project-desc">用Python写的贪吃蛇小游戏，虽然简单但是自己做的，玩起来特别有意思～</p>
+            <h3 class="project-title">Python 贪吃蛇</h3>
+            <p class="project-desc">用 Pygame 写的经典贪吃蛇小游戏，有计分、难度递增、最高分记录功能。</p>
             <div class="project-tags">
               <span>Python</span>
               <span>Pygame</span>
-              <span>游戏</span>
+              <span>游戏开发</span>
             </div>
             <div class="project-links">
-              <a href="#" class="project-link">
+              <a href="https://github.com/" target="_blank" rel="noopener" class="project-link" title="源码">
                 <i data-lucide="github"></i>
+              </a>
+              <a href="#" class="project-link" title="下载">
+                <i data-lucide="download"></i>
               </a>
             </div>
           </div>
@@ -299,11 +326,39 @@
     </div>
   </section>
 
+  <!-- Gallery Section -->
+  <section class="gallery" id="gallery">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-label">05</span>
+        <h2 class="section-title">我的相册</h2>
+      </div>
+      <p class="gallery-desc">上传照片记录生活中的美好瞬间～ 照片保存在你的浏览器本地哦</p>
+      <div class="gallery-actions">
+        <label class="upload-btn">
+          <i data-lucide="upload"></i>
+          <span>上传照片</span>
+          <input type="file" id="photoInput" accept="image/*" multiple hidden>
+        </label>
+        <button class="clear-btn" id="clearBtn">
+          <i data-lucide="trash-2"></i>
+          <span>清空相册</span>
+        </button>
+      </div>
+      <div class="gallery-grid" id="galleryGrid">
+        <div class="gallery-empty" id="galleryEmpty">
+          <i data-lucide="image"></i>
+          <p>还没有照片呢，快上传几张吧～</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- Contact Section -->
   <section class="contact" id="contact">
     <div class="container">
       <div class="section-header">
-        <span class="section-label">05</span>
+        <span class="section-label">06</span>
         <h2 class="section-title">联系我</h2>
       </div>
       <div class="contact-content">
@@ -311,21 +366,25 @@
           想和我交朋友吗？<br>
           欢迎来和我一起学习一起玩～
         </p>
-        <a href="tel:19956455767" class="contact-email">
-          <i data-lucide="phone"></i>
-          <span>19956455767</span>
+        <a href="mailto:example@email.com" class="contact-email">
+          <i data-lucide="mail"></i>
+          <span>example@email.com</span>
         </a>
         <div class="social-links">
+          <a href="https://github.com/" target="_blank" rel="noopener" class="social-link" aria-label="GitHub">
+            <i data-lucide="github"></i>
+          </a>
+          <a href="https://space.bilibili.com/" target="_blank" rel="noopener" class="social-link" aria-label="Bilibili">
+            <i data-lucide="tv"></i>
+          </a>
+          <a href="https://www.zhihu.com/" target="_blank" rel="noopener" class="social-link" aria-label="知乎">
+            <i data-lucide="book-open"></i>
+          </a>
           <a href="#" class="social-link" aria-label="QQ">
             <i data-lucide="message-circle"></i>
           </a>
-          <a href="#" class="social-link" aria-label="Bilibili">
-            <i data-lucide="tv"></i>
-          </a>
-          <a href="#" class="social-link" aria-label="游戏">
-            <i data-lucide="gamepad-2"></i>
-          </a>
         </div>
+        <p class="contact-tip">* 手机号等隐私信息不公开，熟了之后自然会知道哒～</p>
       </div>
     </div>
   </section>
@@ -334,11 +393,11 @@
   <section class="useful-sites" id="sites">
     <div class="container">
       <div class="section-header">
-        <span class="section-label">06</span>
+        <span class="section-label">07</span>
         <h2 class="section-title">实用网站</h2>
       </div>
       <div class="sites-grid">
-        <a href="https://www.baidu.com" target="_blank" class="site-card">
+        <a href="https://www.baidu.com" target="_blank" rel="noopener" class="site-card">
           <div class="site-icon">🔍</div>
           <div class="site-info">
             <h3>百度</h3>
@@ -346,7 +405,7 @@
           </div>
           <i data-lucide="external-link" class="site-arrow"></i>
         </a>
-        <a href="https://www.bilibili.com" target="_blank" class="site-card">
+        <a href="https://www.bilibili.com" target="_blank" rel="noopener" class="site-card">
           <div class="site-icon">📺</div>
           <div class="site-info">
             <h3>哔哩哔哩</h3>
@@ -354,7 +413,7 @@
           </div>
           <i data-lucide="external-link" class="site-arrow"></i>
         </a>
-        <a href="https://www.zhihu.com" target="_blank" class="site-card">
+        <a href="https://www.zhihu.com" target="_blank" rel="noopener" class="site-card">
           <div class="site-icon">💡</div>
           <div class="site-info">
             <h3>知乎</h3>
@@ -362,7 +421,7 @@
           </div>
           <i data-lucide="external-link" class="site-arrow"></i>
         </a>
-        <a href="https://www.baidu.com/s?wd=作业帮" target="_blank" class="site-card">
+        <a href="https://www.baidu.com/s?wd=作业帮" target="_blank" rel="noopener" class="site-card">
           <div class="site-icon">📚</div>
           <div class="site-info">
             <h3>作业帮</h3>
@@ -370,7 +429,7 @@
           </div>
           <i data-lucide="external-link" class="site-arrow"></i>
         </a>
-        <a href="https://www.youdao.com" target="_blank" class="site-card">
+        <a href="https://www.youdao.com" target="_blank" rel="noopener" class="site-card">
           <div class="site-icon">📖</div>
           <div class="site-info">
             <h3>有道翻译</h3>
@@ -378,7 +437,7 @@
           </div>
           <i data-lucide="external-link" class="site-arrow"></i>
         </a>
-        <a href="https://www.xiaohongshu.com" target="_blank" class="site-card">
+        <a href="https://www.xiaohongshu.com" target="_blank" rel="noopener" class="site-card">
           <div class="site-icon">📝</div>
           <div class="site-info">
             <h3>小红书</h3>
@@ -386,7 +445,7 @@
           </div>
           <i data-lucide="external-link" class="site-arrow"></i>
         </a>
-        <a href="https://www.163.com" target="_blank" class="site-card">
+        <a href="https://www.163.com" target="_blank" rel="noopener" class="site-card">
           <div class="site-icon">🎵</div>
           <div class="site-info">
             <h3>网易云音乐</h3>
@@ -394,7 +453,7 @@
           </div>
           <i data-lucide="external-link" class="site-arrow"></i>
         </a>
-        <a href="https://www.taobao.com" target="_blank" class="site-card">
+        <a href="https://www.taobao.com" target="_blank" rel="noopener" class="site-card">
           <div class="site-icon">🛒</div>
           <div class="site-info">
             <h3>淘宝</h3>
@@ -408,7 +467,24 @@
 
   <!-- Footer -->
   <footer class="footer">
-    <p>© 2024 蘇魚 · 汇文中学初二 · 好好学习天天向上</p>
+    <div class="container">
+      <div class="footer-content">
+        <p>© 2024 蘇魚 · All rights reserved</p>
+        <p class="footer-meta">
+          <span>用 ❤️ 和代码搭建</span>
+          <span class="dot">·</span>
+          <span>HTML + CSS + JS</span>
+          <span class="dot">·</span>
+          <span>最后更新：2024年</span>
+        </p>
+        <p class="footer-links">
+          <a href="https://github.com/" target="_blank" rel="noopener">
+            <i data-lucide="github"></i>
+            <span>源码仓库</span>
+          </a>
+        </p>
+      </div>
+    </div>
   </footer>
 
   <script src="script.js"></script>
