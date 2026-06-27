@@ -108,25 +108,28 @@ window.addEventListener('scroll', () => {
 });
 
 // ==================== Theme Toggle ====================
-const themeToggle = document.getElementById('themeToggle');
-const savedTheme = localStorage.getItem('theme');
+function initThemeToggle() {
+  const themeToggle = document.getElementById('themeToggle');
+  if (!themeToggle) return;
 
-if (savedTheme === 'dark') {
-  document.body.classList.add('dark-mode');
-  updateThemeIcon(true);
+  const savedTheme = localStorage.getItem('theme');
+
+  if (savedTheme === 'dark') {
+    document.body.classList.add('dark-mode');
+    updateThemeIcon(true);
+  }
+
+  function updateThemeIcon(isDark) {
+    themeToggle.innerHTML = `<i data-lucide="${isDark ? 'sun' : 'moon'}"></i>`;
+    lucide.createIcons();
+  }
+
+  themeToggle.addEventListener('click', () => {
+    const isDark = document.body.classList.toggle('dark-mode');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    updateThemeIcon(isDark);
+  });
 }
-
-function updateThemeIcon(isDark) {
-  const icon = themeToggle.querySelector('i');
-  icon.setAttribute('data-lucide', isDark ? 'sun' : 'moon');
-  lucide.createIcons();
-}
-
-themeToggle.addEventListener('click', () => {
-  const isDark = document.body.classList.toggle('dark-mode');
-  localStorage.setItem('theme', isDark ? 'dark' : 'light');
-  updateThemeIcon(isDark);
-});
 
 // ==================== Initialize on Load ====================
 document.addEventListener('DOMContentLoaded', () => {
@@ -134,6 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateNavbar();
   initQuickNav();
   initGallery();
+  initThemeToggle();
 });
 
 // ==================== Float Navigation ====================
