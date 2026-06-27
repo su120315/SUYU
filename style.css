@@ -75,7 +75,39 @@
 
 html {
   scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 移动端触摸优化 */
+a, button, input, textarea, select, .tool-card, .calc-btn, .timer-btn, .timer-preset, .timer-mode,
+.text-tool-btn, .timer-custom-set, .qrcode-generate, .theme-toggle, .nav-toggle {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* iOS 输入防缩放 */
+input, textarea, select {
   font-size: 16px;
+}
+
+/* 安全区域适配 */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .tool-modal-content {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .float-nav {
+    bottom: calc(30px + env(safe-area-inset-bottom));
+  }
+  @media (max-width: 640px) {
+    .tool-modal-body {
+      padding-bottom: calc(20px + env(safe-area-inset-bottom));
+    }
+    .navbar.scrolled {
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+    }
+  }
 }
 
 body {
@@ -1540,6 +1572,10 @@ section {
   border-color: var(--accent-primary);
 }
 
+.tool-card:active {
+  transform: translateY(-2px) scale(0.98);
+}
+
 .tool-card:hover::before {
   opacity: 1;
 }
@@ -1610,6 +1646,9 @@ section {
   bottom: 0;
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  /* 移动端阻止触摸穿透滚动 */
+  touch-action: none;
 }
 
 .tool-modal-content {
@@ -1674,6 +1713,10 @@ section {
   color: white;
 }
 
+.tool-modal-close:active {
+  transform: scale(0.9);
+}
+
 .tool-modal-body {
   padding: 24px;
   overflow-y: auto;
@@ -1726,6 +1769,12 @@ section {
   background: var(--accent-primary);
   color: white;
   transform: translateY(-2px);
+}
+
+.calc-btn:active {
+  transform: scale(0.95);
+  background: var(--accent-primary);
+  color: white;
 }
 
 .calc-btn.op {
@@ -1928,6 +1977,10 @@ section {
   border-color: var(--accent-primary);
 }
 
+.timer-preset:active {
+  transform: scale(0.95);
+}
+
 .timer-custom-input {
   display: none;
   justify-content: center;
@@ -2019,6 +2072,10 @@ section {
   box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
 }
 
+.timer-btn.primary:active {
+  transform: scale(0.97);
+}
+
 .timer-btn.secondary {
   background: var(--bg-tertiary);
   color: var(--text-secondary);
@@ -2053,6 +2110,10 @@ section {
   background: var(--accent-primary);
   color: white;
   transform: translateY(-2px);
+}
+
+.text-tool-btn:active {
+  transform: scale(0.97);
 }
 
 .text-tool-btn.primary {
@@ -2376,6 +2437,10 @@ section {
   box-shadow: 0 6px 16px rgba(99, 102, 241, 0.3);
 }
 
+.qrcode-generate:active {
+  transform: scale(0.97);
+}
+
 /* Active nav link */
 .nav-links a.active {
   color: var(--accent-primary);
@@ -2415,10 +2480,30 @@ section {
     align-items: flex-end;
   }
 
+  .tool-modal-overlay {
+    background: rgba(0, 0, 0, 0.7);
+  }
+
   .tool-modal-content {
     max-width: 100%;
     max-height: 92vh;
     border-radius: 20px 20px 0 0;
+    animation: modalSlideUp 0.35s ease;
+  }
+
+  @keyframes modalSlideUp {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .tool-modal-body {
+    -webkit-overflow-scrolling: touch;
   }
 
   .tool-modal-header {

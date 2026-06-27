@@ -18,14 +18,29 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   function closeModal() {
+    const scrollY = parseInt(document.body.style.top) * -1 || 0;
     modal.classList.remove('active');
     document.body.style.overflow = '';
+    document.body.style.position = '';
+    document.body.style.width = '';
+    document.body.style.top = '';
+    window.scrollTo(0, scrollY);
   }
 
   modalClose.addEventListener('click', closeModal);
   modalOverlay.addEventListener('click', closeModal);
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeModal();
+  });
+
+  // 键盘弹出时，聚焦输入框自动滚动到可视区域
+  modalBody.addEventListener('focusin', function(e) {
+    const tag = e.target.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+      setTimeout(function() {
+        e.target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }, 300);
+    }
   });
 
   const tools = {
@@ -46,7 +61,12 @@ document.addEventListener('DOMContentLoaded', function() {
     modalBody.innerHTML = '';
     tool.render(modalBody);
     modal.classList.add('active');
+    // 移动端防止背景穿透滚动
+    const scrollY = window.scrollY;
     document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+    document.body.style.top = '-' + scrollY + 'px';
     if (typeof lucide !== 'undefined') {
       lucide.createIcons();
     }
