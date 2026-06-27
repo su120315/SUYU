@@ -1,6 +1,22 @@
 // Initialize Lucide Icons
 lucide.createIcons();
 
+// ==================== 移动端检测 ====================
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+
+// ==================== 滚动性能优化 - 使用 requestAnimationFrame ====================
+let ticking = false;
+
+function requestTick(callback) {
+  if (!ticking) {
+    requestAnimationFrame(() => {
+      callback();
+      ticking = false;
+    });
+    ticking = true;
+  }
+}
+
 // ==================== Progress Bar ====================
 const progressFill = document.querySelector('.progress-fill');
 
@@ -11,7 +27,7 @@ function updateProgressBar() {
   progressFill.style.width = `${progress}%`;
 }
 
-window.addEventListener('scroll', updateProgressBar);
+window.addEventListener('scroll', () => requestTick(updateProgressBar), { passive: true });
 
 // ==================== Navbar Scroll Effect ====================
 const navbar = document.querySelector('.navbar');
@@ -24,7 +40,7 @@ function updateNavbar() {
   }
 }
 
-window.addEventListener('scroll', updateNavbar);
+window.addEventListener('scroll', () => requestTick(updateNavbar), { passive: true });
 
 // ==================== Typewriter Effect ====================
 const typewriterElement = document.querySelector('.typewriter');
@@ -35,12 +51,12 @@ function typeWriter() {
   if (charIndex < fullText.length) {
     typewriterElement.textContent += fullText.charAt(charIndex);
     charIndex++;
-    setTimeout(typeWriter, 100);
+    setTimeout(typeWriter, isMobile ? 80 : 100);
   }
 }
 
 // Start typewriter after a short delay
-setTimeout(typeWriter, 500);
+setTimeout(typeWriter, isMobile ? 300 : 500);
 
 // ==================== Intersection Observer for Animations ====================
 const observerOptions = {
@@ -51,7 +67,11 @@ const observerOptions = {
 const fadeInObserver = new IntersectionObserver((entries) => {
   entries.forEach(entry => {
     if (entry.isIntersecting) {
-      entry.target.classList.add('visible');
+      const delay = entry.target.getAttribute('data-delay') || 0;
+      setTimeout(() => {
+        entry.target.classList.add('visible');
+      }, delay);
+      fadeInObserver.unobserve(entry.target);
     }
   });
 }, observerOptions);
@@ -69,6 +89,7 @@ const skillObserver = new IntersectionObserver((entries) => {
     if (entry.isIntersecting) {
       const width = entry.target.getAttribute('data-width');
       entry.target.style.width = `${width}%`;
+      skillObserver.unobserve(entry.target);
     }
   });
 }, { threshold: 0.5 });
@@ -96,16 +117,20 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
   });
 });
 
-// ==================== Parallax Effect for Orbs ====================
+// ==================== Parallax Effect for Orbs (仅桌面端启用) ====================
 const orbs = document.querySelectorAll('.orb');
 
-window.addEventListener('scroll', () => {
-  const scrollY = window.scrollY;
-  orbs.forEach((orb, index) => {
-    const speed = (index + 1) * 0.05;
-    orb.style.transform = `translateY(${scrollY * speed}px)`;
-  });
-});
+if (!isMobile && window.matchMedia('(prefers-reduced-motion: no-preference)').matches) {
+  window.addEventListener('scroll', () => {
+    requestTick(() => {
+      const scrollY = window.scrollY;
+      orbs.forEach((orb, index) => {
+        const speed = (index + 1) * 0.05;
+        orb.style.transform = `translateY(${scrollY * speed}px)`;
+      });
+    });
+  }, { passive: true });
+}
 
 // ==================== Theme Toggle ====================
 (function initThemeToggle() {
@@ -213,7 +238,7 @@ function initGallery() {
       item.className = 'gallery-item';
       item.style.animationDelay = `${index * 0.05}s`;
       item.innerHTML = `
-        <img src="${photoData}" alt="照片 ${index + 1}">
+        <img src="${photoData}" alt="照片 ${index + 1}" loading="lazy">
         <button class="gallery-delete" data-index="${index}" title="删除">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
         </button>
@@ -265,3 +290,15 @@ function initGallery() {
 
   renderPhotos();
 }
+
+// ==================== 移动端视口高度修复 ====================
+function setVh() {
+  const vh = window.innerHeight * 0.01;
+  document.documentElement.style.setProperty('--vh', `${vh}px`);
+}
+
+setVh();
+window.addEventListener('resize', setVh);
+window.addEventListener('orientationchange', () => {
+  setTimeout(setVh, 100);
+});
