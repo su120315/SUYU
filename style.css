@@ -97,7 +97,7 @@ input, textarea, select {
     padding-bottom: env(safe-area-inset-bottom);
   }
   .float-nav {
-    bottom: calc(30px + env(safe-area-inset-bottom));
+    bottom: calc(40px + env(safe-area-inset-bottom));
   }
   @media (max-width: 640px) {
     .tool-modal-body {
@@ -302,7 +302,7 @@ img {
 .float-nav {
   position: fixed;
   right: 20px;
-  bottom: 30px;
+  bottom: 40px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -2618,8 +2618,8 @@ section {
   }
 
   .float-nav {
-    right: 12px;
-    bottom: 20px;
+    right: 16px;
+    bottom: 80px;
   }
 
   .float-btn {
