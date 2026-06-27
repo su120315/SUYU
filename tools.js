@@ -18,13 +18,8 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   function closeModal() {
-    const scrollY = parseInt(document.body.style.top) * -1 || 0;
     modal.classList.remove('active');
     document.body.style.overflow = '';
-    document.body.style.position = '';
-    document.body.style.width = '';
-    document.body.style.top = '';
-    window.scrollTo(0, scrollY);
   }
 
   modalClose.addEventListener('click', closeModal);
@@ -61,15 +56,13 @@ document.addEventListener('DOMContentLoaded', function() {
     modalBody.innerHTML = '';
     tool.render(modalBody);
     modal.classList.add('active');
-    // 移动端防止背景穿透滚动
-    const scrollY = window.scrollY;
+    // 只禁止 body 滚动，不使用 position:fixed（iOS 上会卡住模态框内部滚动）
     document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.width = '100%';
-    document.body.style.top = '-' + scrollY + 'px';
     if (typeof lucide !== 'undefined') {
       lucide.createIcons();
     }
+    // 打开后自动将模态框 body 滚到顶部
+    setTimeout(function() { modalBody.scrollTop = 0; }, 50);
   }
 
   function renderCalculator(container) {

@@ -2520,21 +2520,22 @@ section {
   }
 
   .timer-time {
-    font-size: 3rem;
+    font-size: 2.5rem;
   }
 
   .timer-display {
-    margin-bottom: 16px;
+    margin-bottom: 12px;
   }
 
   .timer-label {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
   }
 
   .timer-topbar {
-    flex-direction: column;
-    gap: 12px;
-    align-items: center;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
   }
 
   .timer-modes {
@@ -2761,6 +2762,10 @@ section {
     font-size: 2.5rem;
   }
 
+  .timer-display {
+    margin-bottom: 10px;
+  }
+
   .timer-preset {
     padding: 5px 10px;
     font-size: 0.7rem;
@@ -2769,6 +2774,24 @@ section {
   .timer-mode {
     padding: 5px 10px;
     font-size: 0.75rem;
+  }
+
+  .timer-controls {
+    gap: 8px;
+  }
+
+  .timer-btn {
+    padding: 10px 20px;
+    font-size: 0.85rem;
+  }
+
+  .timer-presets {
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+
+  .timer-custom-input {
+    margin-bottom: 10px;
   }
 
   .calc-display {
