@@ -1647,6 +1647,35 @@ section {
 }
 
 /* Timer */
+.timer-modes {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.timer-mode {
+  padding: 8px 20px;
+  border: 1px solid var(--border-color, rgba(99, 102, 241, 0.2));
+  border-radius: 20px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.timer-mode:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.timer-mode.active {
+  background: var(--gradient);
+  color: white;
+  border-color: transparent;
+}
+
 .timer-display {
   text-align: center;
   margin-bottom: 24px;

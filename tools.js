@@ -133,11 +133,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function renderTimer(container) {
     container.innerHTML = `
+      <div class="timer-modes">
+        <button class="timer-mode active" data-mode="countdown">倒计时</button>
+        <button class="timer-mode" data-mode="clock">时钟</button>
+        <button class="timer-mode" data-mode="stopwatch">秒表</button>
+      </div>
       <div class="timer-display">
         <div class="timer-time" id="timerTime">25:00</div>
         <div class="timer-label" id="timerLabel">专注时间</div>
       </div>
-      <div class="timer-presets">
+      <div class="timer-presets" id="timerPresets">
         <button class="timer-preset active" data-min="25" data-label="专注时间">番茄 25min</button>
         <button class="timer-preset" data-min="5" data-label="短休息">休息 5min</button>
         <button class="timer-preset" data-min="15" data-label="长休息">长休 15min</button>
@@ -149,12 +154,18 @@ document.addEventListener('DOMContentLoaded', function() {
       </div>
     `;
 
+    let mode = 'countdown';
     let totalSeconds = 25 * 60;
     let remaining = totalSeconds;
     let timerId = null;
     let running = false;
+    let stopwatchMs = 0;
+    let stopwatchStart = 0;
     const timeEl = container.querySelector('#timerTime');
     const labelEl = container.querySelector('#timerLabel');
+    const presetsEl = container.querySelector('#timerPresets');
+    const startBtn = container.querySelector('#timerStart');
+    const resetBtn = container.querySelector('#timerReset');
 
     function format(s) {
       const m = Math.floor(s / 60).toString().padStart(2, '0');
@@ -162,9 +173,76 @@ document.addEventListener('DOMContentLoaded', function() {
       return `${m}:${sec}`;
     }
 
-    function updateDisplay() {
-      timeEl.textContent = format(remaining);
+    function formatClock() {
+      const now = new Date();
+      const h = now.getHours().toString().padStart(2, '0');
+      const m = now.getMinutes().toString().padStart(2, '0');
+      const s = now.getSeconds().toString().padStart(2, '0');
+      return `${h}:${m}:${s}`;
     }
+
+    function formatStopwatch(ms) {
+      const totalSec = Math.floor(ms / 1000);
+      const m = Math.floor(totalSec / 60).toString().padStart(2, '0');
+      const s = (totalSec % 60).toString().padStart(2, '0');
+      const cs = Math.floor((ms % 1000) / 10).toString().padStart(2, '0');
+      return `${m}:${s}.${cs}`;
+    }
+
+    function updateDisplay() {
+      if (mode === 'countdown') {
+        timeEl.textContent = format(remaining);
+      } else if (mode === 'clock') {
+        timeEl.textContent = formatClock();
+      } else if (mode === 'stopwatch') {
+        timeEl.textContent = formatStopwatch(stopwatchMs);
+      }
+    }
+
+    function stopTimer() {
+      if (timerId) {
+        clearInterval(timerId);
+        timerId = null;
+      }
+      running = false;
+      startBtn.textContent = mode === 'stopwatch' ? '开始' : '开始';
+    }
+
+    function switchMode(newMode) {
+      mode = newMode;
+      stopTimer();
+
+      container.querySelectorAll('.timer-mode').forEach(b => b.classList.remove('active'));
+      container.querySelector(`[data-mode="${newMode}"]`).classList.add('active');
+
+      if (newMode === 'countdown') {
+        presetsEl.style.display = 'flex';
+        labelEl.textContent = '专注时间';
+        remaining = totalSeconds;
+        startBtn.textContent = '开始';
+        resetBtn.style.display = '';
+      } else if (newMode === 'clock') {
+        presetsEl.style.display = 'none';
+        labelEl.textContent = new Date().toLocaleDateString('zh-CN', { weekday: 'long', month: 'long', day: 'numeric' });
+        startBtn.style.display = 'none';
+        resetBtn.style.display = 'none';
+        timerId = setInterval(updateDisplay, 1000);
+      } else if (newMode === 'stopwatch') {
+        presetsEl.style.display = 'none';
+        labelEl.textContent = '秒表计时';
+        stopwatchMs = 0;
+        startBtn.style.display = '';
+        startBtn.textContent = '开始';
+        resetBtn.style.display = '';
+      }
+      updateDisplay();
+    }
+
+    container.querySelectorAll('.timer-mode').forEach(btn => {
+      btn.addEventListener('click', function() {
+        switchMode(this.dataset.mode);
+      });
+    });
 
     container.querySelectorAll('.timer-preset').forEach(btn => {
       btn.addEventListener('click', function() {
@@ -173,50 +251,61 @@ document.addEventListener('DOMContentLoaded', function() {
         totalSeconds = parseInt(this.dataset.min) * 60;
         remaining = totalSeconds;
         labelEl.textContent = this.dataset.label;
-        if (timerId) { clearInterval(timerId); timerId = null; running = false; }
-        container.querySelector('#timerStart').textContent = '开始';
+        stopTimer();
         updateDisplay();
       });
     });
 
-    container.querySelector('#timerStart').addEventListener('click', function() {
-      if (running) {
-        clearInterval(timerId);
-        timerId = null;
-        running = false;
-        this.textContent = '继续';
-      } else {
-        if (remaining <= 0) remaining = totalSeconds;
-        running = true;
-        this.textContent = '暂停';
-        timerId = setInterval(() => {
-          remaining--;
-          updateDisplay();
-          if (remaining <= 0) {
-            clearInterval(timerId);
-            timerId = null;
-            running = false;
-            container.querySelector('#timerStart').textContent = '开始';
-            try {
-              const ctx = new (window.AudioContext || window.webkitAudioContext)();
-              const o = ctx.createOscillator();
-              const g = ctx.createGain();
-              o.connect(g); g.connect(ctx.destination);
-              o.frequency.value = 800;
-              g.gain.setValueAtTime(0.3, ctx.currentTime);
-              g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
-              o.start(); o.stop(ctx.currentTime + 0.5);
-            } catch(e) {}
-            alert('时间到啦！⏰');
-          }
-        }, 1000);
+    startBtn.addEventListener('click', function() {
+      if (mode === 'countdown') {
+        if (running) {
+          stopTimer();
+        } else {
+          if (remaining <= 0) remaining = totalSeconds;
+          running = true;
+          startBtn.textContent = '暂停';
+          timerId = setInterval(() => {
+            remaining--;
+            updateDisplay();
+            if (remaining <= 0) {
+              stopTimer();
+              try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const o = ctx.createOscillator();
+                const g = ctx.createGain();
+                o.connect(g); g.connect(ctx.destination);
+                o.frequency.value = 800;
+                g.gain.setValueAtTime(0.3, ctx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+                o.start(); o.stop(ctx.currentTime + 0.5);
+              } catch(e) {}
+              alert('时间到啦！⏰');
+            }
+          }, 1000);
+        }
+      } else if (mode === 'stopwatch') {
+        if (running) {
+          stopTimer();
+          stopwatchMs += Date.now() - stopwatchStart;
+        } else {
+          running = true;
+          stopwatchStart = Date.now();
+          startBtn.textContent = '暂停';
+          timerId = setInterval(() => {
+            const current = stopwatchMs + Date.now() - stopwatchStart;
+            timeEl.textContent = formatStopwatch(current);
+          }, 10);
+        }
       }
     });
 
-    container.querySelector('#timerReset').addEventListener('click', function() {
-      if (timerId) { clearInterval(timerId); timerId = null; running = false; }
-      remaining = totalSeconds;
-      container.querySelector('#timerStart').textContent = '开始';
+    resetBtn.addEventListener('click', function() {
+      stopTimer();
+      if (mode === 'countdown') {
+        remaining = totalSeconds;
+      } else if (mode === 'stopwatch') {
+        stopwatchMs = 0;
+      }
       updateDisplay();
     });
 
