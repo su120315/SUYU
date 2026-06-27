@@ -393,10 +393,9 @@ section {
 }
 
 .about-content {
-  display: grid;
-  grid-template-columns: 1fr 2fr;
-  gap: 80px;
-  align-items: center;
+  max-width: 700px;
+  margin: 0 auto;
+  text-align: center;
 }
 
 .about-image {
@@ -453,6 +452,7 @@ section {
 
 .about-stats {
   display: flex;
+  justify-content: center;
   gap: 48px;
   margin-top: 48px;
   padding-top: 32px;
