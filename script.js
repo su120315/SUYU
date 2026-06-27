@@ -111,8 +111,44 @@ window.addEventListener('scroll', () => {
 document.addEventListener('DOMContentLoaded', () => {
   updateProgressBar();
   updateNavbar();
-  initGallery();
+  initQuickNav();
 });
+
+// ==================== Quick Navigation ====================
+function initQuickNav() {
+  const toBottomBtn = document.getElementById('toBottomBtn');
+  const sections = ['hero', 'about', 'skills', 'hobbies', 'sites', 'contact'];
+  const navBtns = document.querySelectorAll('.quick-nav-btn');
+
+  toBottomBtn.addEventListener('click', () => {
+    window.scrollTo({
+      top: document.body.scrollHeight,
+      behavior: 'smooth'
+    });
+  });
+
+  const sectionObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.getAttribute('id');
+        navBtns.forEach(btn => {
+          btn.classList.remove('active');
+          const href = btn.getAttribute('href');
+          if (href && href === `#${id}`) {
+            btn.classList.add('active');
+          }
+        });
+      }
+    });
+  }, { threshold: 0.3 });
+
+  sections.forEach(id => {
+    const section = document.getElementById(id);
+    if (section) {
+      sectionObserver.observe(section);
+    }
+  });
+}
 
 // ==================== Gallery ====================
 function initGallery() {
