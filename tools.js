@@ -559,78 +559,25 @@ document.addEventListener('DOMContentLoaded', function() {
       const t = text.value.trim();
       if (!t) { alert('请输入内容'); return; }
       output.innerHTML = '';
-      const size = 200;
       const canvas = document.createElement('canvas');
-      canvas.width = size;
-      canvas.height = size;
-      const ctx = canvas.getContext('2d');
       output.appendChild(canvas);
 
-      loadQRCode(ctx, t, size);
+      if (window.QRCode) {
+        window.QRCode.toCanvas(canvas, t, {
+          width: 220,
+          margin: 2,
+          color: {
+            dark: '#0f172a',
+            light: '#ffffff'
+          }
+        }, function(err) {
+          if (err) {
+            output.innerHTML = '<span style="color:#ef4444;">生成失败，请重试</span>';
+          }
+        });
+      } else {
+        output.innerHTML = '<span style="color:#f59e0b;">QRCode 库加载中，请稍候再试...</span>';
+      }
     });
-
-    function loadQRCode(ctx, text, size) {
-      const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js';
-      script.onload = function() {
-        if (window.QRCode) {
-          window.QRCode.toCanvas(canvas, text, { width: size, margin: 2 }, function(err) {
-            if (err) {
-              output.innerHTML = '<span style="color:#ef4444;">生成失败，请重试</span>';
-            }
-          });
-        } else {
-          drawSimpleQR(ctx, text, size);
-        }
-      };
-      script.onerror = function() {
-        drawSimpleQR(ctx, text, size);
-      };
-
-      const canvas = output.querySelector('canvas');
-      document.head.appendChild(script);
-    }
-
-    function drawSimpleQR(ctx, text, size) {
-      const n = 21;
-      const cell = size / n;
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(0, 0, size, size);
-      ctx.fillStyle = '#000';
-
-      function drawFinder(x, y) {
-        for (let i = 0; i < 7; i++) {
-          for (let j = 0; j < 7; j++) {
-            const onBorder = i === 0 || i === 6 || j === 0 || j === 6;
-            const inner = i >= 2 && i <= 4 && j >= 2 && j <= 4;
-            if (onBorder || inner) {
-              ctx.fillRect((x + i) * cell, (y + j) * cell, cell, cell);
-            }
-          }
-        }
-      }
-
-      drawFinder(0, 0);
-      drawFinder(n - 7, 0);
-      drawFinder(0, n - 7);
-
-      let seed = 0;
-      for (let i = 0; i < text.length; i++) seed = (seed * 31 + text.charCodeAt(i)) >>> 0;
-      function rand() {
-        seed = (seed * 1664525 + 1013904223) >>> 0;
-        return seed / 0xffffffff;
-      }
-
-      for (let i = 0; i < n; i++) {
-        for (let j = 0; j < n; j++) {
-          if ((i < 8 && j < 8) || (i > n - 8 && j < 8) || (i < 8 && j > n - 8)) continue;
-          if (rand() > 0.5) {
-            ctx.fillRect(j * cell, i * cell, cell, cell);
-          }
-        }
-      }
-
-      output.innerHTML += '<p style="font-size:0.75rem;color:var(--text-muted);margin-top:8px;">（简易演示版，加载 CDN 后可生成真实二维码）</p>';
-    }
   }
 });
