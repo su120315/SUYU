@@ -18,9 +18,18 @@
       <ul class="nav-links">
         <li><a href="#about">关于</a></li>
         <li><a href="#skills">技能</a></li>
-        <li><a href="#gallery">相册</a></li>
         <li><a href="#hobbies">爱好</a></li>
         <li><a href="#contact">联系</a></li>
+        <li class="nav-divider"></li>
+        <li class="quick-access">
+          <a href="https://www.baidu.com" target="_blank">百度</a>
+        </li>
+        <li class="quick-access">
+          <a href="https://www.bilibili.com" target="_blank">B站</a>
+        </li>
+        <li class="quick-access">
+          <a href="https://www.zhihu.com" target="_blank">知乎</a>
+        </li>
       </ul>
     </div>
   </nav>
@@ -238,34 +247,6 @@
     </div>
   </section>
 
-  <!-- Gallery Section -->
-  <section class="gallery" id="gallery">
-    <div class="container">
-      <div class="section-header">
-        <span class="section-label">03.5</span>
-        <h2 class="section-title">我的相册</h2>
-      </div>
-      <p class="gallery-desc">上传你喜欢的照片吧～ 存在你的浏览器里，刷新也不会丢哦！</p>
-      <div class="gallery-actions">
-        <label class="upload-btn">
-          <i data-lucide="upload"></i>
-          <span>上传照片</span>
-          <input type="file" id="photoInput" accept="image/*" multiple hidden>
-        </label>
-        <button class="clear-btn" id="clearBtn">
-          <i data-lucide="trash-2"></i>
-          <span>清空相册</span>
-        </button>
-      </div>
-      <div class="gallery-grid" id="galleryGrid">
-        <div class="gallery-empty" id="galleryEmpty">
-          <i data-lucide="image"></i>
-          <p>还没有照片呢，快来上传第一张吧～</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
   <!-- Hobbies Section -->
   <section class="hobbies" id="hobbies">
     <div class="container">
@@ -335,6 +316,82 @@
             <i data-lucide="gamepad-2"></i>
           </a>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Useful Sites Section -->
+  <section class="useful-sites" id="sites">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-label">06</span>
+        <h2 class="section-title">实用网站</h2>
+      </div>
+      <div class="sites-grid">
+        <a href="https://www.baidu.com" target="_blank" class="site-card">
+          <div class="site-icon">🔍</div>
+          <div class="site-info">
+            <h3>百度</h3>
+            <p>搜索引擎，什么都能搜</p>
+          </div>
+          <i data-lucide="external-link" class="site-arrow"></i>
+        </a>
+        <a href="https://www.bilibili.com" target="_blank" class="site-card">
+          <div class="site-icon">📺</div>
+          <div class="site-info">
+            <h3>哔哩哔哩</h3>
+            <p>看视频、追番、学知识</p>
+          </div>
+          <i data-lucide="external-link" class="site-arrow"></i>
+        </a>
+        <a href="https://www.zhihu.com" target="_blank" class="site-card">
+          <div class="site-icon">💡</div>
+          <div class="site-info">
+            <h3>知乎</h3>
+            <p>有问题，上知乎</p>
+          </div>
+          <i data-lucide="external-link" class="site-arrow"></i>
+        </a>
+        <a href="https://www.baidu.com/s?wd=作业帮" target="_blank" class="site-card">
+          <div class="site-icon">📚</div>
+          <div class="site-info">
+            <h3>作业帮</h3>
+            <p>不会的题目搜一搜</p>
+          </div>
+          <i data-lucide="external-link" class="site-arrow"></i>
+        </a>
+        <a href="https://www.youdao.com" target="_blank" class="site-card">
+          <div class="site-icon">📖</div>
+          <div class="site-info">
+            <h3>有道翻译</h3>
+            <p>英语翻译好帮手</p>
+          </div>
+          <i data-lucide="external-link" class="site-arrow"></i>
+        </a>
+        <a href="https://www.xiaohongshu.com" target="_blank" class="site-card">
+          <div class="site-icon">📝</div>
+          <div class="site-info">
+            <h3>小红书</h3>
+            <p>种草、攻略、生活分享</p>
+          </div>
+          <i data-lucide="external-link" class="site-arrow"></i>
+        </a>
+        <a href="https://www.163.com" target="_blank" class="site-card">
+          <div class="site-icon">🎵</div>
+          <div class="site-info">
+            <h3>网易云音乐</h3>
+            <p>听歌必备</p>
+          </div>
+          <i data-lucide="external-link" class="site-arrow"></i>
+        </a>
+        <a href="https://www.taobao.com" target="_blank" class="site-card">
+          <div class="site-icon">🛒</div>
+          <div class="site-info">
+            <h3>淘宝</h3>
+            <p>买买买</p>
+          </div>
+          <i data-lucide="external-link" class="site-arrow"></i>
+        </a>
       </div>
     </div>
   </section>

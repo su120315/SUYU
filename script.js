@@ -57,7 +57,7 @@ const fadeInObserver = new IntersectionObserver((entries) => {
 }, observerOptions);
 
 // Observe all fade-in elements
-document.querySelectorAll('.skill-card, .project-card, .hobby-card').forEach(el => {
+document.querySelectorAll('.skill-card, .project-card, .hobby-card, .site-card').forEach(el => {
   fadeInObserver.observe(el);
 });
 
