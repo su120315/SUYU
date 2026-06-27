@@ -4,6 +4,59 @@ lucide.createIcons();
 // ==================== 移动端检测 ====================
 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
 
+// ==================== Loading Animation ====================
+(function initLoading() {
+  const loadingOverlay = document.getElementById('loadingOverlay');
+  const loadingProgressBar = document.getElementById('loadingProgressBar');
+  
+  if (!loadingOverlay) return;
+
+  // 模拟加载进度
+  let progress = 0;
+  const interval = setInterval(() => {
+    progress += Math.random() * 15;
+    if (progress > 100) progress = 100;
+    if (loadingProgressBar) {
+      loadingProgressBar.style.width = progress + '%';
+    }
+  }, 200);
+
+  // 页面加载完成后隐藏加载动画
+  window.addEventListener('load', () => {
+    clearInterval(interval);
+    if (loadingProgressBar) {
+      loadingProgressBar.style.width = '100%';
+    }
+    setTimeout(() => {
+      loadingOverlay.classList.add('hidden');
+      // 加载完成后触发入场动画
+      setTimeout(initPageEntryAnimations, 100);
+    }, 600);
+  });
+
+  // 如果加载时间过长，直接隐藏
+  setTimeout(() => {
+    if (!loadingOverlay.classList.contains('hidden')) {
+      loadingOverlay.classList.add('hidden');
+      initPageEntryAnimations();
+    }
+  }, 3000);
+})();
+
+// ==================== 页面入场动画 ====================
+function initPageEntryAnimations() {
+  const elements = document.querySelectorAll('.hero-title, .hero-subtitle, .hero-tags, .btn-primary');
+  elements.forEach((el, index) => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(30px)';
+    el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+    setTimeout(() => {
+      el.style.opacity = '1';
+      el.style.transform = 'translateY(0)';
+    }, index * 150);
+  });
+}
+
 // ==================== 滚动性能优化 - 使用 requestAnimationFrame ====================
 let ticking = false;
 
@@ -273,6 +326,8 @@ function initGallery() {
         photos.push(event.target.result);
         savePhotos();
         renderPhotos();
+        // 添加成功动画
+        showConfetti();
       };
       reader.readAsDataURL(file);
     });
@@ -301,4 +356,143 @@ setVh();
 window.addEventListener('resize', setVh);
 window.addEventListener('orientationchange', () => {
   setTimeout(setVh, 100);
+});
+
+// ==================== Ripple Effect (涟漪效果) ====================
+function createRipple(event) {
+  const button = event.currentTarget;
+  const ripple = document.createElement('span');
+  const rect = button.getBoundingClientRect();
+  
+  ripple.className = 'ripple';
+  ripple.style.left = (event.clientX - rect.left) + 'px';
+  ripple.style.top = (event.clientY - rect.top) + 'px';
+  
+  button.appendChild(ripple);
+  
+  setTimeout(() => {
+    ripple.remove();
+  }, 600);
+}
+
+// 为所有按钮添加涟漪效果
+document.querySelectorAll('button, .btn-primary, .tool-card, .project-link, .social-link').forEach(el => {
+  el.addEventListener('click', createRipple);
+});
+
+// ==================== 鼠标跟随光效 (仅桌面端) ====================
+if (!isMobile) {
+  const cursorGlow = document.createElement('div');
+  cursorGlow.className = 'cursor-glow';
+  document.body.appendChild(cursorGlow);
+
+  document.addEventListener('mousemove', (e) => {
+    requestAnimationFrame(() => {
+      cursorGlow.style.left = e.clientX + 'px';
+      cursorGlow.style.top = e.clientY + 'px';
+    });
+  });
+
+  document.addEventListener('mouseenter', () => {
+    cursorGlow.classList.add('active');
+  });
+
+  document.addEventListener('mouseleave', () => {
+    cursorGlow.classList.remove('active');
+  });
+}
+
+// ==================== Confetti Effect (彩带效果) ====================
+function showConfetti() {
+  const colors = ['#6366f1', '#22d3ee', '#f472b6', '#10b981', '#f59e0b'];
+  const confettiCount = 30;
+  
+  for (let i = 0; i < confettiCount; i++) {
+    const confetti = document.createElement('div');
+    confetti.className = 'confetti';
+    confetti.style.left = Math.random() * 100 + 'vw';
+    confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+    confetti.style.animationDelay = Math.random() * 0.5 + 's';
+    confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+    confetti.style.width = (Math.random() * 8 + 5) + 'px';
+    confetti.style.height = (Math.random() * 8 + 5) + 'px';
+    confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+    
+    document.body.appendChild(confetti);
+    
+    setTimeout(() => {
+      confetti.remove();
+    }, 4000);
+  }
+}
+
+// ==================== 卡片 3D 倾斜效果 (仅桌面端) ====================
+if (!isMobile) {
+  const cards3D = document.querySelectorAll('.skill-card, .project-card, .hobby-card, .site-card');
+  
+  cards3D.forEach(card => {
+    card.addEventListener('mousemove', (e) => {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      
+      const rotateX = (y - centerY) / 20;
+      const rotateY = (centerX - x) / 20;
+      
+      card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+    });
+    
+    card.addEventListener('mouseleave', () => {
+      card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale3d(1, 1, 1)';
+    });
+  });
+}
+
+// ==================== 数字滚动动画 ====================
+function animateCounter(element, target, duration = 2000) {
+  const start = 0;
+  const increment = target / (duration / 16);
+  let current = start;
+  
+  const timer = setInterval(() => {
+    current += increment;
+    if (current >= target) {
+      element.textContent = target;
+      clearInterval(timer);
+    } else {
+      element.textContent = Math.floor(current);
+    }
+  }, 16);
+}
+
+// 为技能卡片添加动画效果增强
+const skillObserverEnhanced = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('glow');
+      skillObserverEnhanced.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.5 });
+
+document.querySelectorAll('.skill-card').forEach(card => {
+  skillObserverEnhanced.observe(card);
+});
+
+// ==================== 增强卡片闪光效果 ====================
+document.querySelectorAll('.project-card, .hobby-card').forEach(card => {
+  card.classList.add('enhanced-card');
+});
+
+// ==================== 图片缩放效果 ====================
+document.querySelectorAll('.project-image').forEach(img => {
+  img.classList.add('image-zoom');
+});
+
+// ==================== 发光边框效果 ====================
+document.querySelectorAll('.social-link').forEach(link => {
+  link.classList.add('glow-border');
 });
