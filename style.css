@@ -33,24 +33,100 @@
     opacity: 0.25;
   }
 
-  .avatar-placeholder {
-    background: var(--bg-tertiary);
-  }
-
   .progress-bar {
     background: var(--bg-tertiary);
   }
 
-  .navbar {
-    background: transparent;
+  .navbar.scrolled {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
   }
 
-  .navbar.scrolled {
-    background: rgba(248, 250, 252, 0.85);
+  .nav-links a {
+    color: var(--text-secondary);
+  }
+
+  .nav-links a:hover {
+    color: var(--text-primary);
   }
 
   .nav-divider {
     background: var(--bg-tertiary);
+  }
+
+  .quick-access a {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+  }
+
+  .quick-access a:hover {
+    background: var(--accent-primary);
+    color: white;
+  }
+
+  .float-btn {
+    background: var(--bg-secondary);
+    border-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+  }
+
+  .tag {
+    background: var(--bg-secondary);
+    border-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+  }
+
+  .tag:hover {
+    border-color: var(--accent-primary);
+    color: var(--text-primary);
+  }
+
+  .project-card {
+    background: var(--bg-secondary);
+  }
+
+  .hobby-card {
+    background: var(--bg-secondary);
+  }
+
+  .skill-card {
+    background: var(--bg-secondary);
+  }
+
+  .site-card {
+    background: var(--bg-secondary);
+  }
+
+  .site-card:hover {
+    background: var(--bg-tertiary);
+  }
+
+  .contact-email {
+    background: var(--bg-secondary);
+    border-color: var(--bg-tertiary);
+  }
+
+  .contact-email:hover {
+    background: var(--bg-tertiary);
+  }
+
+  .social-link {
+    background: var(--bg-secondary);
+    border-color: var(--bg-tertiary);
+  }
+
+  .upload-btn {
+    color: white;
+  }
+
+  .clear-btn {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border-color: var(--bg-tertiary);
+  }
+
+  .footer {
+    border-top-color: var(--bg-tertiary);
   }
 }
 
