@@ -1,5 +1,6 @@
 /* ==================== CSS Variables ==================== */
 :root {
+  /* 深色模式（默认） */
   --bg-primary: #0a0a0f;
   --bg-secondary: #12121a;
   --bg-tertiary: #1a1a24;
@@ -14,6 +15,43 @@
   --font-heading: 'Space Grotesk', sans-serif;
   --font-body: 'Noto Sans SC', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
+}
+
+/* 浅色模式 */
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg-primary: #f8fafc;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f1f5f9;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
+  }
+
+  /* 浅色模式 orb 光斑调淡 */
+  .orb {
+    opacity: 0.25;
+  }
+
+  .avatar-placeholder {
+    background: var(--bg-tertiary);
+  }
+
+  .progress-bar {
+    background: var(--bg-tertiary);
+  }
+
+  .navbar {
+    background: transparent;
+  }
+
+  .navbar.scrolled {
+    background: rgba(248, 250, 252, 0.85);
+  }
+
+  .nav-divider {
+    background: var(--bg-tertiary);
+  }
 }
 
 /* ==================== Reset & Base ==================== */
