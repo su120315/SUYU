@@ -133,10 +133,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function renderTimer(container) {
     container.innerHTML = `
-      <div class="timer-modes">
-        <button class="timer-mode active" data-mode="countdown">倒计时</button>
-        <button class="timer-mode" data-mode="clock">时钟</button>
-        <button class="timer-mode" data-mode="stopwatch">秒表</button>
+      <div class="timer-topbar">
+        <div class="timer-modes">
+          <button class="timer-mode active" data-mode="countdown">倒计时</button>
+          <button class="timer-mode" data-mode="clock">时钟</button>
+          <button class="timer-mode" data-mode="stopwatch">秒表</button>
+        </div>
+        <button class="timer-fullscreen" id="timerFullscreen" title="全屏">
+          <i data-lucide="maximize"></i>
+        </button>
       </div>
       <div class="timer-display">
         <div class="timer-time" id="timerTime">25:00</div>
@@ -307,6 +312,37 @@ document.addEventListener('DOMContentLoaded', function() {
         stopwatchMs = 0;
       }
       updateDisplay();
+    });
+
+    const fsBtn = container.querySelector('#timerFullscreen');
+    let isFullscreen = false;
+
+    function enterFullscreen() {
+      const modalContent = document.querySelector('.tool-modal-content');
+      if (modalContent) {
+        modalContent.classList.add('timer-fs');
+      }
+      isFullscreen = true;
+      fsBtn.innerHTML = '<i data-lucide="minimize"></i>';
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    function exitFullscreen() {
+      const modalContent = document.querySelector('.tool-modal-content');
+      if (modalContent) {
+        modalContent.classList.remove('timer-fs');
+      }
+      isFullscreen = false;
+      fsBtn.innerHTML = '<i data-lucide="maximize"></i>';
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    fsBtn.addEventListener('click', function() {
+      if (isFullscreen) {
+        exitFullscreen();
+      } else {
+        enterFullscreen();
+      }
     });
 
     updateDisplay();

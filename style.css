@@ -1676,6 +1676,102 @@ section {
   border-color: transparent;
 }
 
+.timer-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.timer-topbar .timer-modes {
+  margin-bottom: 0;
+}
+
+.timer-fullscreen {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color, rgba(99, 102, 241, 0.2));
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.timer-fullscreen:hover {
+  background: var(--accent-primary);
+  color: white;
+  border-color: var(--accent-primary);
+}
+
+.timer-fullscreen i {
+  width: 18px;
+  height: 18px;
+}
+
+.tool-modal-content.timer-fs {
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  border-radius: 0 !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.tool-modal-content.timer-fs .tool-modal-header {
+  display: none;
+}
+
+.tool-modal-content.timer-fs .tool-modal-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  flex: 1;
+}
+
+.tool-modal-content.timer-fs .timer-topbar {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+}
+
+.tool-modal-content.timer-fs .timer-time {
+  font-size: clamp(5rem, 20vw, 16rem) !important;
+  font-weight: 700 !important;
+}
+
+.tool-modal-content.timer-fs .timer-label {
+  font-size: 1.5rem !important;
+  margin-top: 16px !important;
+}
+
+.tool-modal-content.timer-fs .timer-display {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 40px;
+}
+
+.tool-modal-content.timer-fs .timer-controls {
+  gap: 20px;
+}
+
+.tool-modal-content.timer-fs .timer-btn {
+  padding: 18px 48px;
+  font-size: 1.2rem;
+}
+
 .timer-display {
   text-align: center;
   margin-bottom: 24px;
