@@ -129,6 +129,13 @@ img {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.nav-logo:hover {
+  filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.6));
+  transform: scale(1.05);
 }
 
 .nav-links {
@@ -390,6 +397,25 @@ img {
   background-clip: text;
   background-size: 200% 200%;
   animation: gradientShift 5s ease infinite;
+  text-shadow: 0 0 80px rgba(99, 102, 241, 0.5);
+  filter: drop-shadow(0 0 30px rgba(99, 102, 241, 0.4)) drop-shadow(0 0 60px rgba(34, 211, 238, 0.3));
+  position: relative;
+}
+
+.gradient-text::after {
+  content: attr(data-text);
+  position: absolute;
+  left: 0;
+  top: 0;
+  background: var(--gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  background-size: 200% 200%;
+  animation: gradientShift 5s ease infinite;
+  filter: blur(20px);
+  opacity: 0.6;
+  z-index: -1;
 }
 
 @keyframes gradientShift {
@@ -512,6 +538,22 @@ section {
   font-family: var(--font-heading);
   font-size: clamp(2rem, 5vw, 3rem);
   font-weight: 600;
+  background: var(--gradient-short);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  position: relative;
+}
+
+.section-title::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  width: 60px;
+  height: 4px;
+  background: var(--gradient);
+  border-radius: 2px;
 }
 
 /* ==================== About Section ==================== */
@@ -657,6 +699,10 @@ section {
   font-size: 1.25rem;
   font-weight: 600;
   margin-bottom: 8px;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .skill-desc {
@@ -739,6 +785,10 @@ section {
   font-size: 1.35rem;
   font-weight: 600;
   margin-bottom: 12px;
+  background: var(--gradient-short);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .project-desc {
@@ -976,6 +1026,10 @@ section {
   font-size: 1.25rem;
   font-weight: 600;
   margin-bottom: 8px;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .hobby-card p {
