@@ -111,4 +111,82 @@ window.addEventListener('scroll', () => {
 document.addEventListener('DOMContentLoaded', () => {
   updateProgressBar();
   updateNavbar();
+  initGallery();
 });
+
+// ==================== Gallery ====================
+function initGallery() {
+  const photoInput = document.getElementById('photoInput');
+  const clearBtn = document.getElementById('clearBtn');
+  const galleryGrid = document.getElementById('galleryGrid');
+  const galleryEmpty = document.getElementById('galleryEmpty');
+
+  let photos = JSON.parse(localStorage.getItem('myGallery') || '[]');
+
+  function renderPhotos() {
+    if (photos.length === 0) {
+      galleryEmpty.style.display = 'block';
+      galleryGrid.querySelectorAll('.gallery-item').forEach(el => el.remove());
+      return;
+    }
+
+    galleryEmpty.style.display = 'none';
+    galleryGrid.querySelectorAll('.gallery-item').forEach(el => el.remove());
+
+    photos.forEach((photoData, index) => {
+      const item = document.createElement('div');
+      item.className = 'gallery-item';
+      item.style.animationDelay = `${index * 0.05}s`;
+      item.innerHTML = `
+        <img src="${photoData}" alt="照片 ${index + 1}">
+        <button class="gallery-delete" data-index="${index}" title="删除">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+        </button>
+      `;
+      galleryGrid.appendChild(item);
+    });
+
+    galleryGrid.querySelectorAll('.gallery-delete').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const idx = parseInt(btn.getAttribute('data-index'));
+        photos.splice(idx, 1);
+        savePhotos();
+        renderPhotos();
+      });
+    });
+  }
+
+  function savePhotos() {
+    try {
+      localStorage.setItem('myGallery', JSON.stringify(photos));
+    } catch (e) {
+      alert('照片太多啦，存不下了，删几张再上传吧～');
+    }
+  }
+
+  photoInput.addEventListener('change', (e) => {
+    const files = Array.from(e.target.files);
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        photos.push(event.target.result);
+        savePhotos();
+        renderPhotos();
+      };
+      reader.readAsDataURL(file);
+    });
+    photoInput.value = '';
+  });
+
+  clearBtn.addEventListener('click', () => {
+    if (photos.length === 0) return;
+    if (confirm('确定要清空所有照片吗？')) {
+      photos = [];
+      savePhotos();
+      renderPhotos();
+    }
+  });
+
+  renderPhotos();
+}

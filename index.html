@@ -18,7 +18,7 @@
       <ul class="nav-links">
         <li><a href="#about">关于</a></li>
         <li><a href="#skills">技能</a></li>
-        <li><a href="#projects">作品</a></li>
+        <li><a href="#gallery">相册</a></li>
         <li><a href="#hobbies">爱好</a></li>
         <li><a href="#contact">联系</a></li>
       </ul>
@@ -165,7 +165,7 @@
             <i data-lucide="gamepad-2"></i>
           </div>
           <h3 class="skill-name">游戏</h3>
-          <p class="skill-desc">原神, MC, 王者, 各种休闲游戏</p>
+          <p class="skill-desc">三角洲行动, 极品飞车:集结, MC</p>
           <div class="skill-bar">
             <div class="skill-fill" data-width="90"></div>
           </div>
@@ -234,22 +234,34 @@
             </div>
           </div>
         </article>
-        <article class="project-card">
-          <div class="project-image">
-            <div class="project-placeholder">
-              <i data-lucide="trophy"></i>
-            </div>
-          </div>
-          <div class="project-content">
-            <h3 class="project-title">数学竞赛</h3>
-            <p class="project-desc">参加学校数学竞赛获得了二等奖，努力刷题终于有了回报，继续加油！</p>
-            <div class="project-tags">
-              <span>数学</span>
-              <span>竞赛</span>
-              <span>获奖</span>
-            </div>
-          </div>
-        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Gallery Section -->
+  <section class="gallery" id="gallery">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-label">03.5</span>
+        <h2 class="section-title">我的相册</h2>
+      </div>
+      <p class="gallery-desc">上传你喜欢的照片吧～ 存在你的浏览器里，刷新也不会丢哦！</p>
+      <div class="gallery-actions">
+        <label class="upload-btn">
+          <i data-lucide="upload"></i>
+          <span>上传照片</span>
+          <input type="file" id="photoInput" accept="image/*" multiple hidden>
+        </label>
+        <button class="clear-btn" id="clearBtn">
+          <i data-lucide="trash-2"></i>
+          <span>清空相册</span>
+        </button>
+      </div>
+      <div class="gallery-grid" id="galleryGrid">
+        <div class="gallery-empty" id="galleryEmpty">
+          <i data-lucide="image"></i>
+          <p>还没有照片呢，快来上传第一张吧～</p>
+        </div>
       </div>
     </div>
   </section>
@@ -265,7 +277,7 @@
         <div class="hobby-card">
           <div class="hobby-emoji">🎮</div>
           <h3>打游戏</h3>
-          <p>原神、MC、王者，还有各种好玩的独立游戏～</p>
+          <p>三角洲行动、极品飞车集结、MC，超爱开车和打枪！</p>
         </div>
         <div class="hobby-card">
           <div class="hobby-emoji">🚴</div>
