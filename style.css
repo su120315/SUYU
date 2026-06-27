@@ -2486,7 +2486,7 @@ section {
 
   .tool-modal-content {
     max-width: 100%;
-    max-height: 92vh;
+    max-height: 95vh;
     border-radius: 20px 20px 0 0;
     animation: modalSlideUp 0.35s ease;
   }
@@ -2504,6 +2504,7 @@ section {
 
   .tool-modal-body {
     -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
   }
 
   .tool-modal-header {
@@ -2515,11 +2516,19 @@ section {
   }
 
   .tool-modal-body {
-    padding: 20px;
+    padding: 20px 20px 36px;
   }
 
   .timer-time {
     font-size: 3rem;
+  }
+
+  .timer-display {
+    margin-bottom: 16px;
+  }
+
+  .timer-label {
+    font-size: 0.8rem;
   }
 
   .timer-topbar {
@@ -2539,11 +2548,16 @@ section {
 
   .timer-presets {
     gap: 8px;
+    margin-bottom: 12px;
   }
 
   .timer-preset {
     padding: 6px 12px;
     font-size: 0.75rem;
+  }
+
+  .timer-custom-input {
+    margin-bottom: 12px;
   }
 
   .timer-custom-row {
