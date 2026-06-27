@@ -152,6 +152,23 @@ document.addEventListener('DOMContentLoaded', function() {
         <button class="timer-preset" data-min="5" data-label="短休息">休息 5min</button>
         <button class="timer-preset" data-min="15" data-label="长休息">长休 15min</button>
         <button class="timer-preset" data-min="60" data-label="学习时间">学习 60min</button>
+        <button class="timer-preset timer-custom-btn" id="timerCustomBtn">
+          <i data-lucide="settings-2" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>自定义
+        </button>
+      </div>
+      <div class="timer-custom-input" id="timerCustomInput">
+        <div class="timer-custom-row">
+          <div class="timer-custom-field">
+            <input type="number" id="customMin" min="0" max="999" value="25">
+            <span>分</span>
+          </div>
+          <div class="timer-custom-sep">:</div>
+          <div class="timer-custom-field">
+            <input type="number" id="customSec" min="0" max="59" value="0">
+            <span>秒</span>
+          </div>
+          <button class="timer-custom-set" id="timerCustomSet">确定</button>
+        </div>
       </div>
       <div class="timer-controls">
         <button class="timer-btn primary" id="timerStart">开始</button>
@@ -226,6 +243,8 @@ document.addEventListener('DOMContentLoaded', function() {
         remaining = totalSeconds;
         startBtn.textContent = '开始';
         resetBtn.style.display = '';
+        startBtn.style.display = '';
+        hideCustomInput();
       } else if (newMode === 'clock') {
         presetsEl.style.display = 'none';
         labelEl.textContent = new Date().toLocaleDateString('zh-CN', { weekday: 'long', month: 'long', day: 'numeric' });
@@ -249,7 +268,7 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     });
 
-    container.querySelectorAll('.timer-preset').forEach(btn => {
+    container.querySelectorAll('.timer-preset:not(.timer-custom-btn)').forEach(btn => {
       btn.addEventListener('click', function() {
         container.querySelectorAll('.timer-preset').forEach(b => b.classList.remove('active'));
         this.classList.add('active');
@@ -258,7 +277,59 @@ document.addEventListener('DOMContentLoaded', function() {
         labelEl.textContent = this.dataset.label;
         stopTimer();
         updateDisplay();
+        hideCustomInput();
       });
+    });
+
+    const customBtn = container.querySelector('#timerCustomBtn');
+    const customInputEl = container.querySelector('#timerCustomInput');
+    const customMinInput = container.querySelector('#customMin');
+    const customSecInput = container.querySelector('#customSec');
+    const customSetBtn = container.querySelector('#timerCustomSet');
+
+    function showCustomInput() {
+      customInputEl.style.display = 'flex';
+      customMinInput.value = Math.floor(totalSeconds / 60);
+      customSecInput.value = totalSeconds % 60;
+      setTimeout(() => customMinInput.focus(), 50);
+    }
+
+    function hideCustomInput() {
+      customInputEl.style.display = 'none';
+    }
+
+    customBtn.addEventListener('click', function() {
+      container.querySelectorAll('.timer-preset').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      if (customInputEl.style.display === 'flex') {
+        hideCustomInput();
+      } else {
+        showCustomInput();
+      }
+    });
+
+    function applyCustomTime() {
+      let m = parseInt(customMinInput.value) || 0;
+      let s = parseInt(customSecInput.value) || 0;
+      if (m < 0) m = 0;
+      if (s < 0) s = 0;
+      if (s > 59) s = 59;
+      if (m > 999) m = 999;
+      totalSeconds = m * 60 + s;
+      if (totalSeconds <= 0) totalSeconds = 1;
+      remaining = totalSeconds;
+      labelEl.textContent = `自定义 ${m}分${s}秒`;
+      stopTimer();
+      updateDisplay();
+    }
+
+    customSetBtn.addEventListener('click', applyCustomTime);
+
+    customMinInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') applyCustomTime();
+    });
+    customSecInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') applyCustomTime();
     });
 
     startBtn.addEventListener('click', function() {
