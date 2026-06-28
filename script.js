@@ -97,15 +97,17 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 });
 
 // ==================== Parallax Effect for Orbs ====================
-const orbs = document.querySelectorAll('.orb');
-
-window.addEventListener('scroll', () => {
-  const scrollY = window.scrollY;
-  orbs.forEach((orb, index) => {
-    const speed = (index + 1) * 0.05;
-    orb.style.transform = `translateY(${scrollY * speed}px)`;
+// 移动端（宽度 <= 768px）禁用视差，避免 scroll 监听性能开销
+if (window.innerWidth > 768) {
+  const orbs = document.querySelectorAll('.orb');
+  window.addEventListener('scroll', () => {
+    const scrollY = window.scrollY;
+    orbs.forEach((orb, index) => {
+      const speed = (index + 1) * 0.05;
+      orb.style.transform = `translateY(${scrollY * speed}px)`;
+    });
   });
-});
+}
 
 // ==================== Initialize on Load ====================
 document.addEventListener('DOMContentLoaded', () => {

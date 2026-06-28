@@ -142,6 +142,17 @@ html {
   font-size: 16px;
 }
 
+/* 尊重系统动画偏好设置 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 body {
   font-family: var(--font-body);
   background-color: var(--bg-primary);
@@ -1354,5 +1365,33 @@ section {
 
   .footer-meta .dot {
     display: none;
+  }
+
+  /* 移动端动画优化：减少重动画以提升性能 */
+  .orb {
+    animation: none;
+    transform: none !important;
+  }
+
+  .gradient-text {
+    animation: none;
+    background-size: 100% 100%;
+  }
+
+  .cursor {
+    animation: none;
+    opacity: 1;
+  }
+
+  .hero-avatar {
+    animation: none;
+  }
+
+  .hero-avatar::before {
+    animation-duration: 1.5s;
+  }
+
+  .scroll-indicator {
+    animation: bounce 3s ease-in-out infinite;
   }
 }
