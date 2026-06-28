@@ -1214,6 +1214,16 @@ section {
     display: none;
   }
 
+  .float-nav {
+    right: 16px;
+    bottom: 90px;
+  }
+
+  .float-btn {
+    width: 44px;
+    height: 44px;
+  }
+
   section {
     padding: 80px 0;
   }
