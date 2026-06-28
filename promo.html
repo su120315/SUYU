@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>蘇魚·个人主页 - 宣传PPT</title>
+<title>蘇魚·个人主页 - 宣传视频</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
@@ -13,7 +13,25 @@ body {
   color: #fff;
   overflow: hidden;
   height: 100vh;
+  user-select: none;
 }
+
+/* ===== 顶部进度条 ===== */
+.progress-bar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  z-index: 1000;
+  background: rgba(255,255,255,0.05);
+}
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #6366f1, #22d3ee);
+  transition: width 0.1s linear;
+}
+
+/* ===== 幻灯片 ===== */
 .slide {
   position: absolute;
   inset: 0;
@@ -23,25 +41,37 @@ body {
   justify-content: center;
   padding: 60px;
   opacity: 0;
+  transform: scale(1.03);
   pointer-events: none;
-  transition: opacity 0.5s;
+  transition: opacity 0.8s ease, transform 0.8s ease;
 }
 .slide.active {
   opacity: 1;
+  transform: scale(1);
   pointer-events: auto;
 }
-/* 背景装饰 */
+.slide.exit {
+  opacity: 0;
+  transform: scale(0.97);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+/* ===== 背景 ===== */
 .bg-orb {
-  position: absolute;
+  position: fixed;
   border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.15;
+  filter: blur(100px);
   pointer-events: none;
   z-index: 0;
+  animation: orbFloat 8s ease-in-out infinite alternate;
 }
-.bg-orb:nth-child(1) { width: 400px; height: 400px; background: #6366f1; top: -100px; right: -100px; }
-.bg-orb:nth-child(2) { width: 300px; height: 300px; background: #22d3ee; bottom: -80px; left: -80px; }
-.bg-orb:nth-child(3) { width: 250px; height: 250px; background: #f472b6; bottom: 20%; right: 10%; }
+.bg-orb:nth-child(1) { width: 450px; height: 450px; background: #6366f1; top: -120px; right: -120px; }
+.bg-orb:nth-child(2) { width: 350px; height: 350px; background: #22d3ee; bottom: -100px; left: -100px; animation-delay: -3s; }
+.bg-orb:nth-child(3) { width: 250px; height: 250px; background: #f472b6; bottom: 30%; right: 15%; animation-delay: -5s; }
+@keyframes orbFloat {
+  0% { transform: translate(0, 0) scale(1); opacity: 0.12; }
+  100% { transform: translate(30px, -30px) scale(1.1); opacity: 0.18; }
+}
 
 .slide-content {
   position: relative;
@@ -51,9 +81,24 @@ body {
   text-align: center;
 }
 
-/* 封面色 */
+/* ===== 入场动画 ===== */
+.slide.active .anim-item {
+  opacity: 0;
+  transform: translateY(30px);
+}
+.slide.active .anim-item:nth-child(1) { animation: fadeUp 0.6s 0.2s forwards; }
+.slide.active .anim-item:nth-child(2) { animation: fadeUp 0.6s 0.35s forwards; }
+.slide.active .anim-item:nth-child(3) { animation: fadeUp 0.6s 0.5s forwards; }
+.slide.active .anim-item:nth-child(4) { animation: fadeUp 0.6s 0.65s forwards; }
+.slide.active .anim-item:nth-child(5) { animation: fadeUp 0.6s 0.8s forwards; }
+.slide.active .anim-item:nth-child(6) { animation: fadeUp 0.6s 0.95s forwards; }
+@keyframes fadeUp {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== 封面 ===== */
 .cover .logo {
-  font-size: 4rem;
+  font-size: 4.5rem;
   font-weight: 900;
   background: linear-gradient(135deg, #6366f1, #22d3ee, #f472b6);
   background-clip: text;
@@ -75,23 +120,12 @@ body {
   color: #a5b4fc;
   font-size: 0.95rem;
   margin: 0 6px 10px;
+  background: rgba(99,102,241,0.05);
 }
-.cover .tag:nth-child(2) { border-color: rgba(34,211,238,0.4); color: #67e8f9; }
-.cover .tag:nth-child(3) { border-color: rgba(244,114,182,0.4); color: #f9a8d4; }
-.cover .cta {
-  margin-top: 50px;
-  padding: 14px 40px;
-  background: linear-gradient(135deg, #6366f1, #22d3ee);
-  border-radius: 50px;
-  border: none;
-  color: #fff;
-  font-size: 1.1rem;
-  font-weight: 500;
-  cursor: pointer;
-  box-shadow: 0 8px 30px rgba(99,102,241,0.3);
-}
+.cover .tag:nth-child(2) { border-color: rgba(34,211,238,0.4); color: #67e8f9; background: rgba(34,211,238,0.05); }
+.cover .tag:nth-child(3) { border-color: rgba(244,114,182,0.4); color: #f9a8d4; background: rgba(244,114,182,0.05); }
 
-/* 通用标题 */
+/* ===== 通用标题 ===== */
 .slide-num {
   font-size: 0.85rem;
   color: #6366f1;
@@ -115,30 +149,30 @@ body {
   margin: 0 auto 30px;
 }
 
-/* 卡片网格 */
+/* ===== 卡片网格 ===== */
 .card-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  gap: 14px;
   margin-top: 10px;
 }
 .card {
   background: rgba(255,255,255,0.04);
   border: 1px solid rgba(255,255,255,0.06);
   border-radius: 16px;
-  padding: 24px 16px;
+  padding: 22px 14px;
   text-align: center;
-  transition: all 0.3s;
+  backdrop-filter: blur(10px);
 }
-.card .icon { font-size: 2rem; margin-bottom: 10px; }
-.card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 6px; }
-.card p { font-size: 0.8rem; color: #64748b; line-height: 1.5; }
+.card .icon { font-size: 2rem; margin-bottom: 8px; }
+.card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 4px; }
+.card p { font-size: 0.82rem; color: #64748b; line-height: 1.5; }
 
-/* 两列布局 */
+/* ===== 两列 ===== */
 .two-col {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  gap: 20px;
   text-align: left;
   margin-top: 10px;
 }
@@ -146,104 +180,77 @@ body {
   background: rgba(255,255,255,0.03);
   border: 1px solid rgba(255,255,255,0.06);
   border-radius: 16px;
-  padding: 28px;
+  padding: 26px;
 }
-.two-col .col h3 {
-  font-size: 1.1rem;
-  margin-bottom: 12px;
-  color: #a5b4fc;
-}
-.two-col .col ul {
-  list-style: none;
-  padding: 0;
-}
-.two-col .col li {
-  padding: 6px 0;
-  color: #94a3b8;
-  font-size: 0.95rem;
-  line-height: 1.6;
-}
-.two-col .col li::before {
-  content: "✦ ";
-  color: #6366f1;
-}
+.two-col .col h3 { font-size: 1.1rem; margin-bottom: 12px; color: #a5b4fc; }
+.two-col .col ul { list-style: none; padding: 0; }
+.two-col .col li { padding: 6px 0; color: #94a3b8; font-size: 0.95rem; line-height: 1.6; }
+.two-col .col li::before { content: "✦ "; color: #6366f1; }
 
-/* 技术栈 */
-.tech-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  justify-content: center;
-  margin-top: 20px;
-}
+/* ===== 技术标签 ===== */
+.tech-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 16px; }
 .tech-tag {
-  padding: 10px 24px;
+  padding: 8px 22px;
   border-radius: 12px;
   background: rgba(99,102,241,0.1);
   border: 1px solid rgba(99,102,241,0.2);
   color: #a5b4fc;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 500;
 }
-.tech-tag:nth-child(2n) {
-  background: rgba(34,211,238,0.1);
-  border-color: rgba(34,211,238,0.2);
-  color: #67e8f9;
-}
-.tech-tag:nth-child(3n) {
-  background: rgba(244,114,182,0.1);
-  border-color: rgba(244,114,182,0.2);
-  color: #f9a8d4;
-}
+.tech-tag:nth-child(2n) { background: rgba(34,211,238,0.1); border-color: rgba(34,211,238,0.2); color: #67e8f9; }
+.tech-tag:nth-child(3n) { background: rgba(244,114,182,0.1); border-color: rgba(244,114,182,0.2); color: #f9a8d4; }
 
-/* 底部导航 */
-.nav-bar {
+/* ===== 底部时间线 ===== */
+.timeline {
   position: fixed;
-  bottom: 30px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 8px;
-  align-items: center;
+  bottom: 0;
+  left: 0;
+  right: 0;
   z-index: 100;
-  background: rgba(10,10,18,0.8);
-  backdrop-filter: blur(12px);
-  padding: 10px 20px;
-  border-radius: 30px;
-  border: 1px solid rgba(255,255,255,0.06);
+  padding: 14px 24px 16px;
+  background: linear-gradient(transparent, rgba(10,10,18,0.92));
 }
-.nav-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(255,255,255,0.2);
-  cursor: pointer;
-  transition: all 0.3s;
-  padding: 0;
-}
-.nav-dot.active { width: 24px; border-radius: 4px; background: #6366f1; }
-.nav-arrow {
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: #94a3b8;
-  width: 36px; height: 36px;
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 1.1rem;
+.timeline-dots {
   display: flex;
+  gap: 4px;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
+  margin-bottom: 8px;
 }
-.nav-arrow:hover { background: rgba(99,102,241,0.2); color: #fff; border-color: #6366f1; }
-.nav-counter {
+.tl-dot {
+  flex: 1;
+  max-width: 40px;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255,255,255,0.12);
+  overflow: hidden;
+  position: relative;
+}
+.tl-dot .tl-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #6366f1, #22d3ee);
+  border-radius: 2px;
+  transition: none;
+}
+.tl-dot.active .tl-fill { width: 100%; transition: width 5.5s linear; }
+.tl-dot.done .tl-fill { width: 100%; transition: none; }
+.timeline-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
   color: #64748b;
-  font-size: 0.8rem;
-  min-width: 50px;
-  text-align: center;
+  max-width: 350px;
+  margin: 0 auto;
 }
+.timeline-info .play-btn {
+  background: none; border: none; color: #94a3b8;
+  cursor: pointer; font-size: 0.8rem; padding: 0 4px;
+}
+.timeline-info .play-btn:hover { color: #fff; }
 
-/* 最后一页 */
+/* ===== 结尾 ===== */
 .final .cta-big {
   margin-top: 30px;
   font-size: 2rem;
@@ -254,48 +261,57 @@ body {
   -webkit-text-fill-color: transparent;
 }
 
+/* ===== 响应式 ===== */
 @media (max-width: 768px) {
   .slide { padding: 30px 20px; }
-  .cover .logo { font-size: 2.5rem; }
+  .cover .logo { font-size: 2.8rem; }
   .slide-title { font-size: 1.8rem; }
-  .card-grid { grid-template-columns: repeat(2, 1fr); }
-  .two-col { grid-template-columns: 1fr; }
   .slide-desc { font-size: 0.95rem; }
+  .card-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .card { padding: 16px 10px; }
+  .two-col { grid-template-columns: 1fr; }
+  .cover .subtitle { font-size: 1rem; }
+  .final .cta-big { font-size: 1.4rem; }
+  .timeline { padding: 10px 12px 12px; }
 }
 @media (max-width: 480px) {
   .card-grid { grid-template-columns: 1fr; }
-  .cover .logo { font-size: 2rem; }
+  .cover .logo { font-size: 2.2rem; }
+  .slide-title { font-size: 1.4rem; }
 }
 </style>
 </head>
 <body>
+
 <div class="bg-orb"></div><div class="bg-orb"></div><div class="bg-orb"></div>
+
+<!-- 顶部进度条 -->
+<div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
 
 <!-- Slide 1: 封面 -->
 <div class="slide cover active" data-index="0">
   <div class="slide-content">
-    <div class="logo">蘇魚</div>
-    <div class="subtitle">一个初二生的个人主页 · 探索 · 创造 · 分享</div>
-    <div>
+    <div class="logo anim-item">蘇魚</div>
+    <div class="subtitle anim-item">一个初二生的个人主页 · 探索 · 创造 · 分享</div>
+    <div class="anim-item">
       <span class="tag">💻 编程</span>
       <span class="tag">🤖 AI</span>
       <span class="tag">🎮 游戏</span>
     </div>
-    <div class="cta">👇 按 → 键翻页</div>
   </div>
 </div>
 
 <!-- Slide 2: 我是谁 -->
 <div class="slide" data-index="1">
   <div class="slide-content">
-    <div class="slide-num">01</div>
-    <div class="slide-title">👋 我是蘇魚</div>
-    <div class="slide-desc">
+    <div class="slide-num anim-item">01</div>
+    <div class="slide-title anim-item">👋 我是蘇魚</div>
+    <div class="slide-desc anim-item">
       六安市汇文中学 · 初二学生<br>
       热爱编程、AI 探索、游戏和骑行<br>
       这是我用心打造的个人主页，分享我的世界
     </div>
-    <div class="card-grid" style="max-width:600px;margin:0 auto;">
+    <div class="card-grid anim-item" style="max-width:600px;margin:0 auto;">
       <div class="card"><div class="icon">🏫</div><h3>汇文中学</h3><p>初二在读，努力学习中</p></div>
       <div class="card"><div class="icon">💡</div><h3>编程爱好者</h3><p>Python · 网页开发 · 小游戏</p></div>
       <div class="card"><div class="icon">🚀</div><h3>AI 探索者</h3><p>ChatGPT · 图像生成 · 自动化</p></div>
@@ -306,9 +322,9 @@ body {
 <!-- Slide 3: 网站亮点 -->
 <div class="slide" data-index="2">
   <div class="slide-content">
-    <div class="slide-num">02</div>
-    <div class="slide-title">✨ 个人主页亮点</div>
-    <div class="card-grid">
+    <div class="slide-num anim-item">02</div>
+    <div class="slide-title anim-item">✨ 个人主页亮点</div>
+    <div class="card-grid anim-item">
       <div class="card"><div class="icon">🌙</div><h3>深色/浅色主题</h3><p>一键切换，白天黑夜都舒适</p></div>
       <div class="card"><div class="icon">🎨</div><h3>精美动画</h3><p>打字机、涟漪光效、3D卡片倾斜</p></div>
       <div class="card"><div class="icon">📱</div><h3>全端适配</h3><p>手机 / 平板 / 电脑都完美显示</p></div>
@@ -322,18 +338,18 @@ body {
 <!-- Slide 4: 工具箱 -->
 <div class="slide" data-index="3">
   <div class="slide-content">
-    <div class="slide-num">03</div>
-    <div class="slide-title">🧰 在线工具箱</div>
-    <div class="slide-desc">我亲手做的一站式工具箱，日常使用超方便</div>
-    <div class="card-grid" style="grid-template-columns:repeat(4,1fr);">
+    <div class="slide-num anim-item">03</div>
+    <div class="slide-title anim-item">🧰 在线工具箱</div>
+    <div class="slide-desc anim-item">我亲手做的一站式工具箱，日常使用超方便</div>
+    <div class="card-grid anim-item" style="grid-template-columns:repeat(4,1fr);">
       <div class="card"><div class="icon">🧮</div><h3>计算器</h3></div>
       <div class="card"><div class="icon">⏱️</div><h3>倒计时/番茄钟</h3></div>
-      <div class="card"><div class="icon">🔐</div><h3>Base64编解码</h3></div>
+      <div class="card"><div class="icon">🔐</div><h3>Base64</h3></div>
       <div class="card"><div class="icon">📋</div><h3>JSON格式化</h3></div>
       <div class="card"><div class="icon">🎨</div><h3>颜色工具</h3></div>
       <div class="card"><div class="icon">🔢</div><h3>进制转换</h3></div>
       <div class="card"><div class="icon">🔑</div><h3>密码生成器</h3></div>
-      <div class="card"><div class="icon">📱</div><h3>二维码生成</h3></div>
+      <div class="card"><div class="icon">📱</div><h3>二维码</h3></div>
     </div>
   </div>
 </div>
@@ -341,9 +357,9 @@ body {
 <!-- Slide 5: 互动功能 -->
 <div class="slide" data-index="4">
   <div class="slide-content">
-    <div class="slide-num">04</div>
-    <div class="slide-title">🎮 更多互动</div>
-    <div class="two-col">
+    <div class="slide-num anim-item">04</div>
+    <div class="slide-title anim-item">🎮 更多互动</div>
+    <div class="two-col anim-item">
       <div class="col">
         <h3>📖 小说阅读</h3>
         <ul>
@@ -362,7 +378,7 @@ body {
         </ul>
       </div>
     </div>
-    <div style="margin-top:20px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+    <div class="anim-item" style="margin-top:20px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
       <span class="tech-tag">💬 留言板</span>
       <span class="tech-tag">🔍 全屏查看</span>
       <span class="tech-tag">📸 照片上传</span>
@@ -374,10 +390,10 @@ body {
 <!-- Slide 6: 技术栈 -->
 <div class="slide" data-index="5">
   <div class="slide-content">
-    <div class="slide-num">05</div>
-    <div class="slide-title">⚙️ 技术栈</div>
-    <div class="slide-desc">纯前端实现，零后端成本，GitHub Pages 免费部署</div>
-    <div class="tech-grid">
+    <div class="slide-num anim-item">05</div>
+    <div class="slide-title anim-item">⚙️ 技术栈</div>
+    <div class="slide-desc anim-item">纯前端实现，零后端成本，GitHub Pages 免费部署</div>
+    <div class="tech-grid anim-item">
       <span class="tech-tag">HTML5</span>
       <span class="tech-tag">CSS3</span>
       <span class="tech-tag">JavaScript</span>
@@ -387,11 +403,9 @@ body {
       <span class="tech-tag">Lucide Icons</span>
       <span class="tech-tag">响应式设计</span>
     </div>
-    <div style="margin-top:30px;background:rgba(255,255,255,0.03);border-radius:12px;padding:20px;max-width:500px;margin-left:auto;margin-right:auto;">
-      <p style="color:#94a3b8;font-size:0.9rem;">
-        📍 访问地址：<br>
-        <span style="color:#a5b4fc;font-size:1.1rem;word-break:break-all;">su120315.github.io/SUYU</span>
-      </p>
+    <div class="anim-item" style="margin-top:24px;background:rgba(255,255,255,0.03);border-radius:12px;padding:18px;max-width:480px;margin-left:auto;margin-right:auto;">
+      <p style="color:#94a3b8;font-size:0.85rem;">📍 访问地址</p>
+      <p style="color:#a5b4fc;font-size:1.15rem;word-break:break-all;font-weight:500;">su120315.github.io/SUYU</p>
     </div>
   </div>
 </div>
@@ -399,63 +413,169 @@ body {
 <!-- Slide 7: 结尾 -->
 <div class="slide final" data-index="6">
   <div class="slide-content">
-    <div class="slide-title">🌟 感谢观看</div>
-    <div class="slide-desc">
+    <div class="slide-title anim-item">🌟 感谢观看</div>
+    <div class="slide-desc anim-item">
       一个初二学生课余时间的用心之作<br>
       如果你喜欢，欢迎来我的网站看看～
     </div>
-    <div class="cta-big">🎯 su120315.github.io/SUYU</div>
-    <div style="margin-top:30px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
-      <span style="padding:8px 20px;background:rgba(255,255,255,0.05);border-radius:20px;color:#94a3b8;font-size:0.9rem;">👍 点赞</span>
-      <span style="padding:8px 20px;background:rgba(255,255,255,0.05);border-radius:20px;color:#94a3b8;font-size:0.9rem;">💬 评论</span>
-      <span style="padding:8px 20px;background:rgba(255,255,255,0.05);border-radius:20px;color:#94a3b8;font-size:0.9rem;">🔄 转发</span>
+    <div class="cta-big anim-item">🎯 su120315.github.io/SUYU</div>
+    <div class="anim-item" style="margin-top:28px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
+      <span style="padding:8px 20px;background:rgba(255,255,255,0.05);border-radius:20px;color:#94a3b8;font-size:0.85rem;">👍 点赞</span>
+      <span style="padding:8px 20px;background:rgba(255,255,255,0.05);border-radius:20px;color:#94a3b8;font-size:0.85rem;">💬 评论</span>
+      <span style="padding:8px 20px;background:rgba(255,255,255,0.05);border-radius:20px;color:#94a3b8;font-size:0.85rem;">🔄 转发</span>
     </div>
   </div>
 </div>
 
-<!-- 底部导航 -->
-<div class="nav-bar">
-  <button class="nav-arrow" id="prevBtn">◀</button>
-  <span class="nav-counter" id="counter">1 / 7</span>
-  <div id="dots"></div>
-  <button class="nav-arrow" id="nextBtn">▶</button>
+<!-- 底部时间线 -->
+<div class="timeline">
+  <div class="timeline-dots" id="tlDots"></div>
+  <div class="timeline-info">
+    <span>蘇魚 · 个人主页</span>
+    <button class="play-btn" id="playBtn">⏸ 暂停</button>
+    <span id="tlCounter">1 / 7</span>
+  </div>
 </div>
 
 <script>
 const slides = document.querySelectorAll('.slide');
 const total = slides.length;
 let current = 0;
+let playing = true;
+let timer = null;
+let progressTimer = null;
+let slideInterval = 5800; // 每页停留5.8秒
+const SLIDE_DELAY = 200;  // 入场动画时间
 
-const dotsContainer = document.getElementById('dots');
+// 创建时间线圆点
+const tlDots = document.getElementById('tlDots');
 for (let i = 0; i < total; i++) {
-  const dot = document.createElement('button');
-  dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
-  dot.dataset.index = i;
-  dot.addEventListener('click', () => goTo(i));
-  dotsContainer.appendChild(dot);
+  const dot = document.createElement('div');
+  dot.className = 'tl-dot' + (i === 0 ? ' active' : '');
+  const fill = document.createElement('div');
+  fill.className = 'tl-fill';
+  dot.appendChild(fill);
+  dot.addEventListener('click', () => { if (!playing) goTo(i); });
+  tlDots.appendChild(dot);
+}
+
+function updateDots() {
+  document.querySelectorAll('.tl-dot').forEach((d, i) => {
+    d.classList.toggle('done', i < current);
+    d.classList.toggle('active', i === current);
+  });
+  document.getElementById('tlCounter').textContent = `${current + 1} / ${total}`;
 }
 
 function goTo(index) {
   if (index < 0 || index >= total) return;
-  slides.forEach(s => s.classList.remove('active'));
+  
+  // 退出当前
+  slides.forEach(s => s.classList.remove('active', 'exit'));
+  if (current !== index) slides[current].classList.add('exit');
+  
+  // 进入目标
   slides[index].classList.add('active');
-  document.querySelectorAll('.nav-dot').forEach((d, i) => d.classList.toggle('active', i === index));
-  document.getElementById('counter').textContent = `${index + 1} / ${total}`;
   current = index;
+  updateDots();
+  
+  // 重置顶部进度条
+  resetProgress();
+  
+  if (playing && index === total - 1) {
+    // 最后一页停留久一点
+    clearTimeout(timer);
+    timer = setTimeout(() => playing = false, 8000);
+  }
 }
 
-document.getElementById('prevBtn').addEventListener('click', () => goTo(current - 1));
-document.getElementById('nextBtn').addEventListener('click', () => goTo(current + 1));
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); goTo(current + 1); }
-  if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(current - 1); }
+// 重置每页进度条动画
+function resetProgress() {
+  const fill = document.getElementById('progressFill');
+  fill.style.transition = 'none';
+  fill.style.width = '0%';
+  // 触发重排
+  void fill.offsetWidth;
+  fill.style.transition = `width ${slideInterval}ms linear`;
+  fill.style.width = '100%';
+}
+
+function nextSlide() {
+  if (current < total - 1) {
+    goTo(current + 1);
+  } else {
+    // 最后一页循环回第一页
+    setTimeout(() => {
+      if (playing) {
+        slides.forEach(s => s.classList.remove('active', 'exit'));
+        goTo(0);
+      }
+    }, 2000);
+  }
+}
+
+function startAutoPlay() {
+  stopAutoPlay();
+  if (!playing) return;
+  resetProgress();
+  timer = setInterval(() => {
+    if (!playing) return;
+    if (current < total - 1) {
+      goTo(current + 1);
+    }
+  }, slideInterval + 300);
+}
+
+function stopAutoPlay() {
+  clearInterval(timer);
+  clearTimeout(timer);
+}
+
+// 暂停/继续
+document.getElementById('playBtn').addEventListener('click', () => {
+  playing = !playing;
+  document.getElementById('playBtn').textContent = playing ? '⏸ 暂停' : '▶ 播放';
+  if (playing) {
+    startAutoPlay();
+  } else {
+    stopAutoPlay();
+    // 暂停进度条
+    const fill = document.getElementById('progressFill');
+    fill.style.transition = 'none';
+  }
 });
 
-// 点击幻灯片翻页
+// 键盘控制
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === ' ') {
+    e.preventDefault();
+    playing = false;
+    document.getElementById('playBtn').textContent = '▶ 播放';
+    stopAutoPlay();
+    nextSlide();
+  }
+  if (e.key === 'ArrowLeft') {
+    e.preventDefault();
+    playing = false;
+    document.getElementById('playBtn').textContent = '▶ 播放';
+    stopAutoPlay();
+    if (current > 0) goTo(current - 1);
+  }
+});
+
+// 点击翻页也暂停自动播放
 slides.forEach(s => s.addEventListener('click', (e) => {
-  if (e.target.closest('.card, .cta, .tech-tag')) return;
-  goTo(current + 1);
+  if (e.target.closest('.card, .tech-tag')) return;
+  playing = false;
+  document.getElementById('playBtn').textContent = '▶ 播放';
+  stopAutoPlay();
+  const next = current + 1;
+  if (next < total) goTo(next);
 }));
+
+// 初始化
+updateDots();
+startAutoPlay();
 </script>
 </body>
 </html>
