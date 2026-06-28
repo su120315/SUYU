@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>蘇魚·个人主页 - 宣传PPT</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
+body {
+  font-family: 'Noto Sans SC', sans-serif;
+  background: #0a0a12;
+  color: #fff;
+  overflow: hidden;
+  height: 100vh;
+}
+.slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s;
+}
+.slide.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+/* 背景装饰 */
+.bg-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.15;
+  pointer-events: none;
+  z-index: 0;
+}
+.bg-orb:nth-child(1) { width: 400px; height: 400px; background: #6366f1; top: -100px; right: -100px; }
+.bg-orb:nth-child(2) { width: 300px; height: 300px; background: #22d3ee; bottom: -80px; left: -80px; }
+.bg-orb:nth-child(3) { width: 250px; height: 250px; background: #f472b6; bottom: 20%; right: 10%; }
+
+.slide-content {
+  position: relative;
+  z-index: 1;
+  max-width: 900px;
+  width: 100%;
+  text-align: center;
+}
+
+/* 封面色 */
+.cover .logo {
+  font-size: 4rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, #6366f1, #22d3ee, #f472b6);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 16px;
+}
+.cover .subtitle {
+  font-size: 1.3rem;
+  color: #94a3b8;
+  font-weight: 300;
+  margin-bottom: 40px;
+}
+.cover .tag {
+  display: inline-block;
+  padding: 8px 24px;
+  border: 1px solid rgba(99,102,241,0.4);
+  border-radius: 30px;
+  color: #a5b4fc;
+  font-size: 0.95rem;
+  margin: 0 6px 10px;
+}
+.cover .tag:nth-child(2) { border-color: rgba(34,211,238,0.4); color: #67e8f9; }
+.cover .tag:nth-child(3) { border-color: rgba(244,114,182,0.4); color: #f9a8d4; }
+.cover .cta {
+  margin-top: 50px;
+  padding: 14px 40px;
+  background: linear-gradient(135deg, #6366f1, #22d3ee);
+  border-radius: 50px;
+  border: none;
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 8px 30px rgba(99,102,241,0.3);
+}
+
+/* 通用标题 */
+.slide-num {
+  font-size: 0.85rem;
+  color: #6366f1;
+  letter-spacing: 3px;
+  margin-bottom: 8px;
+}
+.slide-title {
+  font-size: 2.8rem;
+  font-weight: 700;
+  margin-bottom: 20px;
+  background: linear-gradient(135deg, #fff, #94a3b8);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.slide-desc {
+  font-size: 1.15rem;
+  color: #94a3b8;
+  line-height: 1.8;
+  max-width: 700px;
+  margin: 0 auto 30px;
+}
+
+/* 卡片网格 */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 10px;
+}
+.card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+  padding: 24px 16px;
+  text-align: center;
+  transition: all 0.3s;
+}
+.card .icon { font-size: 2rem; margin-bottom: 10px; }
+.card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 6px; }
+.card p { font-size: 0.8rem; color: #64748b; line-height: 1.5; }
+
+/* 两列布局 */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  text-align: left;
+  margin-top: 10px;
+}
+.two-col .col {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+  padding: 28px;
+}
+.two-col .col h3 {
+  font-size: 1.1rem;
+  margin-bottom: 12px;
+  color: #a5b4fc;
+}
+.two-col .col ul {
+  list-style: none;
+  padding: 0;
+}
+.two-col .col li {
+  padding: 6px 0;
+  color: #94a3b8;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+.two-col .col li::before {
+  content: "✦ ";
+  color: #6366f1;
+}
+
+/* 技术栈 */
+.tech-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 20px;
+}
+.tech-tag {
+  padding: 10px 24px;
+  border-radius: 12px;
+  background: rgba(99,102,241,0.1);
+  border: 1px solid rgba(99,102,241,0.2);
+  color: #a5b4fc;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+.tech-tag:nth-child(2n) {
+  background: rgba(34,211,238,0.1);
+  border-color: rgba(34,211,238,0.2);
+  color: #67e8f9;
+}
+.tech-tag:nth-child(3n) {
+  background: rgba(244,114,182,0.1);
+  border-color: rgba(244,114,182,0.2);
+  color: #f9a8d4;
+}
+
+/* 底部导航 */
+.nav-bar {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  z-index: 100;
+  background: rgba(10,10,18,0.8);
+  backdrop-filter: blur(12px);
+  padding: 10px 20px;
+  border-radius: 30px;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.nav-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255,255,255,0.2);
+  cursor: pointer;
+  transition: all 0.3s;
+  padding: 0;
+}
+.nav-dot.active { width: 24px; border-radius: 4px; background: #6366f1; }
+.nav-arrow {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #94a3b8;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.nav-arrow:hover { background: rgba(99,102,241,0.2); color: #fff; border-color: #6366f1; }
+.nav-counter {
+  color: #64748b;
+  font-size: 0.8rem;
+  min-width: 50px;
+  text-align: center;
+}
+
+/* 最后一页 */
+.final .cta-big {
+  margin-top: 30px;
+  font-size: 2rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #6366f1, #22d3ee, #f472b6);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+@media (max-width: 768px) {
+  .slide { padding: 30px 20px; }
+  .cover .logo { font-size: 2.5rem; }
+  .slide-title { font-size: 1.8rem; }
+  .card-grid { grid-template-columns: repeat(2, 1fr); }
+  .two-col { grid-template-columns: 1fr; }
+  .slide-desc { font-size: 0.95rem; }
+}
+@media (max-width: 480px) {
+  .card-grid { grid-template-columns: 1fr; }
+  .cover .logo { font-size: 2rem; }
+}
+</style>
+</head>
+<body>
+<div class="bg-orb"></div><div class="bg-orb"></div><div class="bg-orb"></div>
+
+<!-- Slide 1: 封面 -->
+<div class="slide cover active" data-index="0">
+  <div class="slide-content">
+    <div class="logo">蘇魚</div>
+    <div class="subtitle">一个初二生的个人主页 · 探索 · 创造 · 分享</div>
+    <div>
+      <span class="tag">💻 编程</span>
+      <span class="tag">🤖 AI</span>
+      <span class="tag">🎮 游戏</span>
+    </div>
+    <div class="cta">👇 按 → 键翻页</div>
+  </div>
+</div>
+
+<!-- Slide 2: 我是谁 -->
+<div class="slide" data-index="1">
+  <div class="slide-content">
+    <div class="slide-num">01</div>
+    <div class="slide-title">👋 我是蘇魚</div>
+    <div class="slide-desc">
+      六安市汇文中学 · 初二学生<br>
+      热爱编程、AI 探索、游戏和骑行<br>
+      这是我用心打造的个人主页，分享我的世界
+    </div>
+    <div class="card-grid" style="max-width:600px;margin:0 auto;">
+      <div class="card"><div class="icon">🏫</div><h3>汇文中学</h3><p>初二在读，努力学习中</p></div>
+      <div class="card"><div class="icon">💡</div><h3>编程爱好者</h3><p>Python · 网页开发 · 小游戏</p></div>
+      <div class="card"><div class="icon">🚀</div><h3>AI 探索者</h3><p>ChatGPT · 图像生成 · 自动化</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 3: 网站亮点 -->
+<div class="slide" data-index="2">
+  <div class="slide-content">
+    <div class="slide-num">02</div>
+    <div class="slide-title">✨ 个人主页亮点</div>
+    <div class="card-grid">
+      <div class="card"><div class="icon">🌙</div><h3>深色/浅色主题</h3><p>一键切换，白天黑夜都舒适</p></div>
+      <div class="card"><div class="icon">🎨</div><h3>精美动画</h3><p>打字机、涟漪光效、3D卡片倾斜</p></div>
+      <div class="card"><div class="icon">📱</div><h3>全端适配</h3><p>手机 / 平板 / 电脑都完美显示</p></div>
+      <div class="card"><div class="icon">⚡</div><h3>性能优化</h3><p>requestAnimationFrame节流</p></div>
+      <div class="card"><div class="icon">🎯</div><h3>交互体验</h3><p>彩带庆祝、滚动动画、进度条</p></div>
+      <div class="card"><div class="icon">🔗</div><h3>实用网站</h3><p>常用工具导航，一键直达</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 4: 工具箱 -->
+<div class="slide" data-index="3">
+  <div class="slide-content">
+    <div class="slide-num">03</div>
+    <div class="slide-title">🧰 在线工具箱</div>
+    <div class="slide-desc">我亲手做的一站式工具箱，日常使用超方便</div>
+    <div class="card-grid" style="grid-template-columns:repeat(4,1fr);">
+      <div class="card"><div class="icon">🧮</div><h3>计算器</h3></div>
+      <div class="card"><div class="icon">⏱️</div><h3>倒计时/番茄钟</h3></div>
+      <div class="card"><div class="icon">🔐</div><h3>Base64编解码</h3></div>
+      <div class="card"><div class="icon">📋</div><h3>JSON格式化</h3></div>
+      <div class="card"><div class="icon">🎨</div><h3>颜色工具</h3></div>
+      <div class="card"><div class="icon">🔢</div><h3>进制转换</h3></div>
+      <div class="card"><div class="icon">🔑</div><h3>密码生成器</h3></div>
+      <div class="card"><div class="icon">📱</div><h3>二维码生成</h3></div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 5: 互动功能 -->
+<div class="slide" data-index="4">
+  <div class="slide-content">
+    <div class="slide-num">04</div>
+    <div class="slide-title">🎮 更多互动</div>
+    <div class="two-col">
+      <div class="col">
+        <h3>📖 小说阅读</h3>
+        <ul>
+          <li>朋友写的小说，在线阅读</li>
+          <li>支持上传 .txt 文件</li>
+          <li>云端存储，随时刷新</li>
+        </ul>
+      </div>
+      <div class="col">
+        <h3>🖼️ 云端相册</h3>
+        <ul>
+          <li>多分类管理照片</li>
+          <li>全屏查看 + 下载</li>
+          <li>图片自动压缩</li>
+          <li>所有人可见的共享相册</li>
+        </ul>
+      </div>
+    </div>
+    <div style="margin-top:20px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+      <span class="tech-tag">💬 留言板</span>
+      <span class="tech-tag">🔍 全屏查看</span>
+      <span class="tech-tag">📸 照片上传</span>
+      <span class="tech-tag">🗑️ 删除保护</span>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 6: 技术栈 -->
+<div class="slide" data-index="5">
+  <div class="slide-content">
+    <div class="slide-num">05</div>
+    <div class="slide-title">⚙️ 技术栈</div>
+    <div class="slide-desc">纯前端实现，零后端成本，GitHub Pages 免费部署</div>
+    <div class="tech-grid">
+      <span class="tech-tag">HTML5</span>
+      <span class="tech-tag">CSS3</span>
+      <span class="tech-tag">JavaScript</span>
+      <span class="tech-tag">GitHub Pages</span>
+      <span class="tech-tag">GitHub Gist</span>
+      <span class="tech-tag">REST API</span>
+      <span class="tech-tag">Lucide Icons</span>
+      <span class="tech-tag">响应式设计</span>
+    </div>
+    <div style="margin-top:30px;background:rgba(255,255,255,0.03);border-radius:12px;padding:20px;max-width:500px;margin-left:auto;margin-right:auto;">
+      <p style="color:#94a3b8;font-size:0.9rem;">
+        📍 访问地址：<br>
+        <span style="color:#a5b4fc;font-size:1.1rem;word-break:break-all;">su120315.github.io/SUYU</span>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 7: 结尾 -->
+<div class="slide final" data-index="6">
+  <div class="slide-content">
+    <div class="slide-title">🌟 感谢观看</div>
+    <div class="slide-desc">
+      一个初二学生课余时间的用心之作<br>
+      如果你喜欢，欢迎来我的网站看看～
+    </div>
+    <div class="cta-big">🎯 su120315.github.io/SUYU</div>
+    <div style="margin-top:30px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
+      <span style="padding:8px 20px;background:rgba(255,255,255,0.05);border-radius:20px;color:#94a3b8;font-size:0.9rem;">👍 点赞</span>
+      <span style="padding:8px 20px;background:rgba(255,255,255,0.05);border-radius:20px;color:#94a3b8;font-size:0.9rem;">💬 评论</span>
+      <span style="padding:8px 20px;background:rgba(255,255,255,0.05);border-radius:20px;color:#94a3b8;font-size:0.9rem;">🔄 转发</span>
+    </div>
+  </div>
+</div>
+
+<!-- 底部导航 -->
+<div class="nav-bar">
+  <button class="nav-arrow" id="prevBtn">◀</button>
+  <span class="nav-counter" id="counter">1 / 7</span>
+  <div id="dots"></div>
+  <button class="nav-arrow" id="nextBtn">▶</button>
+</div>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+const total = slides.length;
+let current = 0;
+
+const dotsContainer = document.getElementById('dots');
+for (let i = 0; i < total; i++) {
+  const dot = document.createElement('button');
+  dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+  dot.dataset.index = i;
+  dot.addEventListener('click', () => goTo(i));
+  dotsContainer.appendChild(dot);
+}
+
+function goTo(index) {
+  if (index < 0 || index >= total) return;
+  slides.forEach(s => s.classList.remove('active'));
+  slides[index].classList.add('active');
+  document.querySelectorAll('.nav-dot').forEach((d, i) => d.classList.toggle('active', i === index));
+  document.getElementById('counter').textContent = `${index + 1} / ${total}`;
+  current = index;
+}
+
+document.getElementById('prevBtn').addEventListener('click', () => goTo(current - 1));
+document.getElementById('nextBtn').addEventListener('click', () => goTo(current + 1));
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); goTo(current + 1); }
+  if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(current - 1); }
+});
+
+// 点击幻灯片翻页
+slides.forEach(s => s.addEventListener('click', (e) => {
+  if (e.target.closest('.card, .cta, .tech-tag')) return;
+  goTo(current + 1);
+}));
+</script>
+</body>
+</html>
