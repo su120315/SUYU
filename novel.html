@@ -21,56 +21,9 @@
     .loading-overlay.active { display: flex; }
     .loading-spinner { width: 48px; height: 48px; border: 3px solid var(--bg-tertiary); border-top-color: var(--accent-primary); border-radius: 50%; animation: spin 1s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .novel-pagination {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      margin-top: 40px;
-      padding-top: 24px;
-      border-top: 1px solid var(--bg-tertiary);
-    }
-    .page-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 10px 20px;
-      border: 1px solid var(--border-color, rgba(99,102,241,0.3));
-      border-radius: 10px;
-      background: var(--bg-secondary);
-      color: var(--text-primary);
-      font-size: 0.95rem;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .page-btn:hover:not(:disabled) {
-      background: var(--accent-primary);
-      color: #fff;
-      border-color: var(--accent-primary);
-    }
-    .page-btn:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-    .page-info {
-      font-size: 0.9rem;
-      color: var(--text-muted);
-      min-width: 100px;
-      text-align: center;
-    }
-    .novel-word-count {
-      text-align: center;
-      color: var(--text-muted);
-      font-size: 0.85rem;
-      margin-top: 8px;
-      margin-bottom: 8px;
-    }
     @media (max-width: 768px) {
       .container-novel { padding: 100px 16px 40px; }
       .section-title { font-size: 2rem; }
-      .novel-pagination { gap: 8px; }
-      .page-btn { padding: 8px 14px; font-size: 0.85rem; }
-      .page-info { font-size: 0.8rem; min-width: 80px; }
     }
   </style>
 </head>
@@ -116,8 +69,6 @@
         <p>还没有上传小说，快来分享吧～</p>
       </div>
     </div>
-
-    <div class="novel-word-count" id="wordCount" style="display:none;"></div>
 
     <div class="novel-actions">
       <button class="action-btn" id="refreshBtn">
@@ -214,109 +165,32 @@
       lucide.createIcons();
     }
 
-    // ==================== 分页配置 ====================
-    const CHARS_PER_PAGE = 2000;  // 每页字符数
-    let currentPage = 0;
-    let totalPages = 0;
-    let allParagraphs = [];
-    let novelTitle = null;
-
     function displayNovel(content) {
       const titleMatch = content.match(/^(第[一二三四五六七八九十百千]+[章节回章])\s*[:：\s]\s*(.+)$/m);
+      let title = null;
       let text = content;
 
       if (titleMatch) {
-        novelTitle = `${titleMatch[1]}：${titleMatch[2]}`;
+        title = `${titleMatch[1]}：${titleMatch[2]}`;
         text = content.replace(titleMatch[0], '').trim();
-      } else {
-        novelTitle = null;
       }
 
       const charCount = text.length;
+      let html = title ? `<h2 class="novel-title">${title}</h2>` : '';
 
-      // 按空行分段，保留分段结构
-      allParagraphs = text.split(/\n\s*\n/).filter(p => p.trim());
-      
-      // 如果分段太少，按句号/换行进一步拆分长段落
-      if (allParagraphs.length <= 3 && charCount > 2000) {
-        const refined = [];
-        for (const p of allParagraphs) {
-          const sentences = p.split(/(?<=[。！？\n])/);
-          if (sentences.length > 1) {
-            refined.push(...sentences.filter(s => s.trim()));
-          } else {
-            refined.push(p);
-          }
-        }
-        allParagraphs = refined;
-      }
-
-      // 计算总页数
-      totalPages = Math.max(1, Math.ceil(charCount / CHARS_PER_PAGE));
-      currentPage = 0;
-
-      renderPage();
-      
-      // 显示字数（仅长文）
-      const wordCountEl = document.getElementById('wordCount');
-      if (charCount > 1000) {
-        wordCountEl.textContent = `全文约 ${charCount} 字`;
-        wordCountEl.style.display = 'block';
+      // 按空行分段
+      const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim());
+      if (paragraphs.length > 1) {
+        html += paragraphs.map(p => `<div class="novel-paragraph">${p.replace(/\n/g, '<br>')}</div>`).join('');
       } else {
-        wordCountEl.style.display = 'none';
-      }
-    }
-
-    // 获取指定页的内容（按段落分配，确保每页不超过 CHARS_PER_PAGE）
-    function getPageContent(page) {
-      const pages = [];
-      let currentPageParas = [];
-      let currentLen = 0;
-
-      for (const p of allParagraphs) {
-        const pLen = p.length;
-        if (currentLen + pLen > CHARS_PER_PAGE && currentPageParas.length > 0) {
-          pages.push(currentPageParas);
-          currentPageParas = [];
-          currentLen = 0;
-        }
-        currentPageParas.push(p);
-        currentLen += pLen;
-      }
-      if (currentPageParas.length > 0) {
-        pages.push(currentPageParas);
+        html += `<div class="novel-text">${text.replace(/\n/g, '<br>')}</div>`;
       }
 
-      return pages[page] || [];
-    }
-
-    function renderPage() {
-      const paras = getPageContent(currentPage);
-      
-      let html = novelTitle ? `<h2 class="novel-title">${novelTitle}</h2>` : '';
-      html += paras.map(p => `<div class="novel-paragraph">${p.replace(/\n/g, '<br>')}</div>`).join('');
-
-      // 分页导航
-      if (totalPages > 1) {
-        html += `<div class="novel-pagination">`;
-        html += `<button class="page-btn" id="prevPage" ${currentPage === 0 ? 'disabled' : ''}><i data-lucide="chevron-left"></i> 上一页</button>`;
-        html += `<span class="page-info">第 ${currentPage + 1} / ${totalPages} 页</span>`;
-        html += `<button class="page-btn" id="nextPage" ${currentPage >= totalPages - 1 ? 'disabled' : ''}>下一页 <i data-lucide="chevron-right"></i></button>`;
-        html += `</div>`;
+      if (charCount > 1000) {
+        html += `<div class="novel-word-count">全文约 ${charCount} 字</div>`;
       }
 
       novelContent.innerHTML = html;
-      lucide.createIcons();
-
-      // 绑定翻页事件
-      if (totalPages > 1) {
-        document.getElementById('prevPage')?.addEventListener('click', () => {
-          if (currentPage > 0) { currentPage--; renderPage(); window.scrollTo({ top: novelContent.offsetTop - 100, behavior: 'smooth' }); }
-        });
-        document.getElementById('nextPage')?.addEventListener('click', () => {
-          if (currentPage < totalPages - 1) { currentPage++; renderPage(); window.scrollTo({ top: novelContent.offsetTop - 100, behavior: 'smooth' }); }
-        });
-      }
     }
 
     async function saveNovel(content) {
