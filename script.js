@@ -214,63 +214,49 @@ function initQuickNav() {
   });
 }
 
-// ==================== Gallery ====================
+// ==================== Gallery (支持分类) ====================
 function initGallery() {
   const photoInput = document.getElementById('photoInput');
   const clearBtn = document.getElementById('clearBtn');
   const galleryGrid = document.getElementById('galleryGrid');
   const galleryEmpty = document.getElementById('galleryEmpty');
   const galleryLoading = document.getElementById('galleryLoading');
+  const categoryBar = document.getElementById('categoryBar');
 
-  // GitHub Token - 用于保存照片
   const TOKEN_PART1 = 'ghp_GMiHyZUI5RkF';
   const TOKEN_PART2 = 'DIFadXOlohhXN9nvl63RzsQM';
   const GITHUB_TOKEN = TOKEN_PART1 + TOKEN_PART2;
   
-  // Gist ID 和直链
   const GIST_ID = '070c70e1da8ce50d80a1e805a3e5491d';
   const GIST_FILENAME = 'gallery-photos.json';
-  // 添加时间戳避免缓存
-  const GIST_RAW_URL = `https://gist.githubusercontent.com/su120315/${GIST_ID}/raw/${GIST_FILENAME}?t=${Date.now()}`;
   
-  let photos = [];
+  // 数据: { categories: { "默认相册": [base64...], "旅行": [...] }, currentCategory: "默认相册" }
+  let galleryData = { categories: { "默认相册": [] }, currentCategory: "默认相册" };
   let isUploading = false;
   let isExpanded = false;
+
+  function getPhotos() {
+    return galleryData.categories[galleryData.currentCategory] || [];
+  }
 
   async function compressImage(base64Str, maxWidth = 1200, maxHeight = 1200, quality = 0.85) {
     return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
-        let width = img.width;
-        let height = img.height;
-
-        if (width > maxWidth) {
-          height = (height * maxWidth) / width;
-          width = maxWidth;
-        }
-        if (height > maxHeight) {
-          width = (width * maxHeight) / height;
-          height = maxHeight;
-        }
-
+        let width = img.width, height = img.height;
+        if (width > maxWidth) { height = (height * maxWidth) / width; width = maxWidth; }
+        if (height > maxHeight) { width = (width * maxHeight) / height; height = maxHeight; }
         const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
         resolve(canvas.toDataURL('image/jpeg', quality));
       };
-      img.onerror = () => {
-        resolve(base64Str);
-      };
+      img.onerror = () => resolve(base64Str);
       img.src = base64Str;
     });
   }
 
   let currentLightboxIndex = 0;
-
   const lightbox = document.getElementById('lightbox');
   const lightboxImage = document.getElementById('lightboxImage');
   const lightboxClose = document.getElementById('lightboxClose');
@@ -281,38 +267,20 @@ function initGallery() {
 
   function openLightbox(index) {
     currentLightboxIndex = index;
-    lightboxImage.src = photos[index];
+    lightboxImage.src = getPhotos()[index];
     lightbox.classList.add('active');
     document.body.style.overflow = 'hidden';
     lucide.createIcons();
   }
 
-  function closeLightbox() {
-    lightbox.classList.remove('active');
-    document.body.style.overflow = '';
-  }
-
-  function showPrev() {
-    if (currentLightboxIndex > 0) {
-      currentLightboxIndex--;
-      lightboxImage.src = photos[currentLightboxIndex];
-    }
-  }
-
-  function showNext() {
-    if (currentLightboxIndex < photos.length - 1) {
-      currentLightboxIndex++;
-      lightboxImage.src = photos[currentLightboxIndex];
-    }
-  }
-
+  function closeLightbox() { lightbox.classList.remove('active'); document.body.style.overflow = ''; }
+  function showPrev() { if (currentLightboxIndex > 0) { currentLightboxIndex--; lightboxImage.src = getPhotos()[currentLightboxIndex]; } }
+  function showNext() { if (currentLightboxIndex < getPhotos().length - 1) { currentLightboxIndex++; lightboxImage.src = getPhotos()[currentLightboxIndex]; } }
   function downloadPhoto() {
     const link = document.createElement('a');
-    link.href = photos[currentLightboxIndex];
+    link.href = getPhotos()[currentLightboxIndex];
     link.download = `photo-${currentLightboxIndex + 1}.jpg`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    document.body.appendChild(link); link.click(); document.body.removeChild(link);
   }
 
   lightboxClose.addEventListener('click', closeLightbox);
@@ -320,7 +288,6 @@ function initGallery() {
   lightboxPrev.addEventListener('click', showPrev);
   lightboxNext.addEventListener('click', showNext);
   lightboxDownload.addEventListener('click', downloadPhoto);
-
   document.addEventListener('keydown', (e) => {
     if (!lightbox.classList.contains('active')) return;
     if (e.key === 'Escape') closeLightbox();
@@ -328,55 +295,82 @@ function initGallery() {
     if (e.key === 'ArrowRight') showNext();
   });
 
-  // 加载照片 - 使用直链，不需要认证
+  // ===== 加载 =====
   async function loadPhotos() {
     try {
       const url = `https://gist.githubusercontent.com/su120315/${GIST_ID}/raw/${GIST_FILENAME}?t=${Date.now()}`;
-      const response = await fetch(url, { cache: 'no-store' });
-      if (response.ok) {
-        const data = await response.text();
-        photos = JSON.parse(data);
+      const resp = await fetch(url, { cache: 'no-store' });
+      if (resp.ok) {
+        const data = JSON.parse(await resp.text());
+        // 兼容旧格式（数组 → 默认相册）
+        if (Array.isArray(data)) {
+          galleryData = { categories: { "默认相册": data }, currentCategory: "默认相册" };
+        } else {
+          galleryData = data;
+          if (!galleryData.categories) galleryData.categories = { "默认相册": [] };
+          if (!galleryData.currentCategory || !galleryData.categories[galleryData.currentCategory]) galleryData.currentCategory = Object.keys(galleryData.categories)[0];
+        }
       }
-    } catch (e) {
-      console.log('加载照片失败:', e);
-    }
-    // 加载完成，隐藏加载状态
-    if (galleryLoading) {
-      galleryLoading.style.display = 'none';
-    }
+    } catch (e) { console.log('加载照片失败:', e); }
+    if (galleryLoading) galleryLoading.style.display = 'none';
+    renderCategoryBar();
     renderPhotos();
   }
 
-  // 保存照片到 Gist
+  // ===== 保存 =====
   async function savePhotos() {
     try {
       await fetch(`https://api.github.com/gists/${GIST_ID}`, {
         method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${GITHUB_TOKEN}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/vnd.github.v3+json'
-        },
-        body: JSON.stringify({
-          files: {
-            [GIST_FILENAME]: {
-              content: JSON.stringify(photos)
-            }
-          }
-        })
+        headers: { 'Authorization': `Bearer ${GITHUB_TOKEN}`, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github.v3+json' },
+        body: JSON.stringify({ files: { [GIST_FILENAME]: { content: JSON.stringify(galleryData) } } })
       });
-    } catch (error) {
-      console.error('保存失败:', error);
-    }
+    } catch (error) { console.error('保存失败:', error); }
   }
 
+  // ===== 分类栏 =====
+  function renderCategoryBar() {
+    const cats = Object.keys(galleryData.categories);
+    let html = cats.map(name =>
+      `<button class="cat-tab ${name === galleryData.currentCategory ? 'active' : ''}" data-cat="${name}">${name}</button>`
+    ).join('');
+    html += `<button class="cat-add" id="catAddBtn" title="新建分类">+</button>`;
+    categoryBar.innerHTML = html;
+    lucide.createIcons();
+
+    // 切换分类
+    categoryBar.querySelectorAll('.cat-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        galleryData.currentCategory = btn.getAttribute('data-cat');
+        isExpanded = false;
+        renderCategoryBar();
+        renderPhotos();
+      });
+    });
+
+    // 新建分类
+    document.getElementById('catAddBtn').addEventListener('click', () => {
+      const name = prompt('请输入新分类名称：');
+      if (!name || !name.trim()) return;
+      const key = name.trim();
+      if (galleryData.categories[key]) { alert('该分类已存在！'); return; }
+      galleryData.categories[key] = [];
+      galleryData.currentCategory = key;
+      isExpanded = false;
+      savePhotos();
+      renderCategoryBar();
+      renderPhotos();
+    });
+  }
+
+  // ===== 渲染照片 =====
   function renderPhotos() {
+    const photos = getPhotos();
     if (photos.length === 0) {
       galleryEmpty.style.display = 'block';
       galleryGrid.querySelectorAll('.gallery-item, .gallery-more').forEach(el => el.remove());
       return;
     }
-
     galleryEmpty.style.display = 'none';
     galleryGrid.querySelectorAll('.gallery-item, .gallery-more').forEach(el => el.remove());
 
@@ -387,51 +381,32 @@ function initGallery() {
       item.className = 'gallery-item';
       item.style.animationDelay = `${index * 0.05}s`;
       item.innerHTML = `
-        <img src="${photoData}" alt="照片 ${index + 1}" loading="lazy" 
+        <img src="${photoData}" alt="照片 ${index + 1}" loading="lazy"
              onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect fill=%22%23ddd%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2255%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2240%22>🖼️</text></svg>'">
         <button class="gallery-delete" data-index="${index}" title="删除">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
         </button>
       `;
-      item.querySelector('img').addEventListener('click', () => {
-        openLightbox(index);
-      });
+      item.querySelector('img').addEventListener('click', () => openLightbox(index));
       galleryGrid.appendChild(item);
     });
 
-    // 如果照片超过3张且没展开，显示"更多"卡片
     if (photos.length > 3 && !isExpanded) {
-      const moreCount = photos.length - 3;
-      const moreCard = document.createElement('div');
-      moreCard.className = 'gallery-more';
-      moreCard.style.animationDelay = `${3 * 0.05}s`;
-      moreCard.innerHTML = `
-        <span class="gallery-more-count">+${moreCount}</span>
-        <span class="gallery-more-text">查看更多</span>
-      `;
-      moreCard.addEventListener('click', () => {
-        isExpanded = true;
-        renderPhotos();
-      });
-      galleryGrid.appendChild(moreCard);
+      const more = document.createElement('div');
+      more.className = 'gallery-more';
+      more.style.animationDelay = `${3 * 0.05}s`;
+      more.innerHTML = `<span class="gallery-more-count">+${photos.length - 3}</span><span class="gallery-more-text">查看更多</span>`;
+      more.addEventListener('click', () => { isExpanded = true; renderPhotos(); });
+      galleryGrid.appendChild(more);
     }
 
-    // 如果展开了，显示"收起"按钮
     if (isExpanded && photos.length > 3) {
-      const collapseCard = document.createElement('div');
-      collapseCard.className = 'gallery-more';
-      collapseCard.style.animationDelay = `${photos.length * 0.05}s`;
-      collapseCard.innerHTML = `
-        <span class="gallery-more-count">↑</span>
-        <span class="gallery-more-text">收起</span>
-      `;
-      collapseCard.addEventListener('click', () => {
-        isExpanded = false;
-        renderPhotos();
-        // 滚动回相册顶部
-        document.getElementById('gallery').scrollIntoView({ behavior: 'smooth' });
-      });
-      galleryGrid.appendChild(collapseCard);
+      const collapse = document.createElement('div');
+      collapse.className = 'gallery-more';
+      collapse.style.animationDelay = `${photos.length * 0.05}s`;
+      collapse.innerHTML = `<span class="gallery-more-count">↑</span><span class="gallery-more-text">收起</span>`;
+      collapse.addEventListener('click', () => { isExpanded = false; renderPhotos(); document.getElementById('gallery').scrollIntoView({ behavior: 'smooth' }); });
+      galleryGrid.appendChild(collapse);
     }
 
     galleryGrid.querySelectorAll('.gallery-delete').forEach(btn => {
@@ -440,38 +415,26 @@ function initGallery() {
         const password = prompt('请输入删除密码：');
         if (password === '120315') {
           const idx = parseInt(btn.getAttribute('data-index'));
-          photos.splice(isExpanded ? idx : idx, 1);
+          const photos = getPhotos();
+          photos.splice(idx, 1);
           savePhotos();
           renderPhotos();
-        } else if (password !== null) {
-          alert('密码错误！');
-        }
+        } else if (password !== null) alert('密码错误！');
       });
     });
   }
 
+  // ===== 上传 =====
   photoInput.addEventListener('change', async (e) => {
     if (isUploading) return;
-    
     const files = Array.from(e.target.files);
-    
     for (const file of files) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert('图片太大了，请选择 5MB 以下的图片');
-        continue;
-      }
-
+      if (file.size > 5 * 1024 * 1024) { alert('图片太大了，请选择 5MB 以下的图片'); continue; }
       isUploading = true;
-      
       try {
         const loadingItem = document.createElement('div');
         loadingItem.className = 'gallery-item loading';
-        loadingItem.innerHTML = `
-          <div class="gallery-loading">
-            <div class="loading-spinner"></div>
-            <span>上传中...</span>
-          </div>
-        `;
+        loadingItem.innerHTML = `<div class="gallery-loading"><div class="loading-spinner"></div><span>上传中...</span></div>`;
         galleryEmpty.style.display = 'none';
         galleryGrid.appendChild(loadingItem);
 
@@ -481,39 +444,34 @@ function initGallery() {
           reader.onerror = reject;
           reader.readAsDataURL(file);
         });
-
-        const compressedBase64 = await compressImage(base64);
-        photos.push(compressedBase64);
+        const compressed = await compressImage(base64);
+        galleryData.categories[galleryData.currentCategory].push(compressed);
         await savePhotos();
-        
         loadingItem.remove();
         renderPhotos();
         showConfetti();
-        
       } catch (error) {
         console.error('上传失败:', error);
         alert('上传失败，请稍后重试');
         galleryGrid.querySelector('.gallery-item.loading')?.remove();
       }
-      
       isUploading = false;
     }
-    
     photoInput.value = '';
   });
 
+  // ===== 清空当前分类 =====
   clearBtn.addEventListener('click', () => {
+    const photos = getPhotos();
     if (photos.length === 0) return;
     const password = prompt('请输入清空密码：');
     if (password === '120315') {
-      if (confirm('确定要清空所有照片吗？此操作不可恢复！')) {
-        photos = [];
+      if (confirm(`确定要清空「${galleryData.currentCategory}」的所有照片吗？`)) {
+        galleryData.categories[galleryData.currentCategory] = [];
         savePhotos();
         renderPhotos();
       }
-    } else if (password !== null) {
-      alert('密码错误！');
-    }
+    } else if (password !== null) alert('密码错误！');
   });
 
   loadPhotos();
