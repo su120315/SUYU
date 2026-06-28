@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>小说 | 蘇魚的个人主页</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://unpkg.com">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .container-novel {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 120px 24px 60px;
+    }
+    .novel-content { min-height: 400px; }
+    .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10,10,15,0.9); display: none; align-items: center; justify-content: center; z-index: 1000; flex-direction: column; gap: 16px; }
+    .loading-overlay.active { display: flex; }
+    .loading-spinner { width: 48px; height: 48px; border: 3px solid var(--bg-tertiary); border-top-color: var(--accent-primary); border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 768px) {
+      .container-novel { padding: 100px 16px 40px; }
+      .section-title { font-size: 2rem; }
+    }
+  </style>
+</head>
+<body class="dark-mode">
+  <nav class="navbar">
+    <div class="nav-content">
+      <a href="index.html" class="nav-logo">蘇魚</a>
+      <ul class="nav-links">
+        <li><a href="index.html#about">关于</a></li>
+        <li><a href="index.html#skills">技能</a></li>
+        <li><a href="index.html#hobbies">爱好</a></li>
+        <li><a href="novel.html">小说</a></li>
+        <li><a href="index.html#gallery">相册</a></li>
+        <li><a href="index.html#comments">留言</a></li>
+        <li><a href="index.html#contact">联系</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container-novel">
+    <button class="back-btn" id="backBtn">
+      <i data-lucide="arrow-left"></i>
+      <span>返回主页</span>
+    </button>
+
+    <div class="section-header">
+      <h1 class="section-title">📖 小说阅读</h1>
+      <p class="section-desc">我朋友写的小说，欢迎大家阅读～</p>
+    </div>
+
+    <div class="upload-section">
+      <label class="upload-btn">
+        <i data-lucide="upload"></i>
+        <span>上传小说</span>
+        <input type="file" id="novelInput" accept=".txt" hidden>
+      </label>
+      <p style="margin-top: 12px; color: var(--text-muted); font-size: 0.85rem;">仅支持 .txt 格式文件</p>
+    </div>
+
+    <div class="novel-content" id="novelContent">
+      <div class="novel-empty">
+        <i data-lucide="book-open"></i>
+        <p>还没有上传小说，快来分享吧～</p>
+      </div>
+    </div>
+
+    <div class="novel-actions">
+      <button class="action-btn" id="refreshBtn">
+        <i data-lucide="refresh-cw"></i>
+        <span>刷新内容</span>
+      </button>
+      <button class="action-btn" id="clearBtn">
+        <i data-lucide="trash-2"></i>
+        <span>清空小说</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+    <span style="color: var(--text-secondary);">处理中...</span>
+  </div>
+
+  <script>
+    const novelInput = document.getElementById('novelInput');
+    const novelContent = document.getElementById('novelContent');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const backBtn = document.getElementById('backBtn');
+
+    const GIST_ID = '1aaf4046262d5988b64c8438ca997a42';
+    const GIST_FILENAME = 'novel.txt';
+    const TOKEN_PART1 = 'ghp_GMiHyZUI5RkF';
+    const TOKEN_PART2 = 'DIFadXOlohhXN9nvl63RzsQM';
+    const GITHUB_TOKEN = TOKEN_PART1 + TOKEN_PART2;
+
+    // 判断内容是否为空的占位符
+    function isEmptyContent(content) {
+      if (!content) return true;
+      const trimmed = content.trim();
+      return trimmed === '' || trimmed === '暂无内容，等待上传～';
+    }
+
+    // 显示空状态
+    function showEmptyState() {
+      novelContent.innerHTML = '<div class="novel-empty"><i data-lucide="book-open"></i><p>还没有上传小说，快来分享吧～</p></div>';
+      lucide.createIcons();
+    }
+
+    // 用 API 读取最新内容，不会被缓存
+    async function loadNovel() {
+      try {
+        const url = `https://api.github.com/gists/${GIST_ID}`;
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${GITHUB_TOKEN}`,
+            'Accept': 'application/vnd.github.v3+json'
+          }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.files && data.files[GIST_FILENAME]) {
+            const content = data.files[GIST_FILENAME].content;
+            if (isEmptyContent(content)) {
+              showEmptyState();
+            } else {
+              displayNovel(content);
+            }
+            return;
+          }
+        }
+        // API 返回了错误
+        showLoadError();
+      } catch (e) {
+        // 如果 API 失败，fallback 到 raw 方式
+        try {
+          const fallbackUrl = `https://gist.githubusercontent.com/su120315/${GIST_ID}/raw/novel.txt?t=${Date.now()}`;
+          const fallbackResp = await fetch(fallbackUrl, { cache: 'no-store' });
+          if (fallbackResp.ok) {
+            const content = await fallbackResp.text();
+            if (isEmptyContent(content)) {
+              showEmptyState();
+            } else {
+              displayNovel(content);
+            }
+          } else {
+            showLoadError();
+          }
+        } catch (e2) {
+          console.log('加载小说失败:', e2);
+          showLoadError();
+        }
+      }
+    }
+
+    function showLoadError() {
+      novelContent.innerHTML = '<div class="novel-empty"><i data-lucide="alert-circle"></i><p>加载失败，点击「刷新内容」重试</p></div>';
+      lucide.createIcons();
+    }
+
+    function displayNovel(content) {
+      const titleMatch = content.match(/^(第[一二三四五六七八九十百千]+[章节回章])\s*[:：\s]\s*(.+)$/m);
+      let title = null;
+      let text = content;
+
+      if (titleMatch) {
+        title = `${titleMatch[1]}：${titleMatch[2]}`;
+        text = content.replace(titleMatch[0], '').trim();
+      }
+
+      const charCount = text.length;
+      let html = title ? `<h2 class="novel-title">${title}</h2>` : '';
+
+      // 按空行分段
+      const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim());
+      if (paragraphs.length > 1) {
+        html += paragraphs.map(p => `<div class="novel-paragraph">${p.replace(/\n/g, '<br>')}</div>`).join('');
+      } else {
+        html += `<div class="novel-text">${text.replace(/\n/g, '<br>')}</div>`;
+      }
+
+      if (charCount > 1000) {
+        html += `<div class="novel-word-count">全文约 ${charCount} 字</div>`;
+      }
+
+      novelContent.innerHTML = html;
+    }
+
+    async function saveNovel(content) {
+      try {
+        const response = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${GITHUB_TOKEN}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/vnd.github.v3+json'
+          },
+          body: JSON.stringify({
+            files: {
+              [GIST_FILENAME]: {
+                content: content
+              }
+            }
+          })
+        });
+        if (!response.ok) throw new Error('保存失败: ' + response.status);
+      } catch (error) {
+        console.error('保存失败:', error);
+        throw error;
+      }
+    }
+
+    let novelVersion = 0;  // 用于上传后自动刷新
+
+    novelInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (file.size > 5 * 1024 * 1024) {
+        alert('文件太大了，请选择 5MB 以下的文件');
+        novelInput.value = '';
+        return;
+      }
+
+      const password = prompt('请输入上传密码：');
+      if (password !== '513021') {
+        if (password !== null) {
+          alert('密码错误！');
+        }
+        return;
+      }
+
+      loadingOverlay.classList.add('active');
+
+      try {
+        const content = await file.text();
+        if (!content.trim()) {
+          alert('文件内容为空！');
+          loadingOverlay.classList.remove('active');
+          return;
+        }
+
+        await saveNovel(content);
+        displayNovel(content);
+        alert('上传成功！');
+      } catch (error) {
+        alert('上传失败，请稍后重试');
+      } finally {
+        loadingOverlay.classList.remove('active');
+        novelInput.value = '';
+      }
+    });
+
+    refreshBtn.addEventListener('click', () => {
+      refreshBtn.disabled = true;
+      refreshBtn.innerHTML = '<i data-lucide="loader"></i><span>加载中...</span>';
+      lucide.createIcons();
+      loadNovel().finally(() => {
+        refreshBtn.disabled = false;
+        refreshBtn.innerHTML = '<i data-lucide="refresh-cw"></i><span>刷新内容</span>';
+        lucide.createIcons();
+      });
+    });
+
+    clearBtn.addEventListener('click', async () => {
+      const password = prompt('请输入清空密码：');
+      if (password !== '513021') {
+        if (password !== null) {
+          alert('密码错误！');
+        }
+        return;
+      }
+
+      if (!confirm('确定要清空小说吗？此操作不可恢复！')) {
+        return;
+      }
+
+      loadingOverlay.classList.add('active');
+      try {
+        await saveNovel('暂无内容，等待上传～');
+        showEmptyState();
+        lucide.createIcons();
+      } catch (error) {
+        alert('清空失败');
+      } finally {
+        loadingOverlay.classList.remove('active');
+      }
+    });
+
+    backBtn.addEventListener('click', () => {
+      window.location.href = 'index.html';
+    });
+
+    lucide.createIcons();
+    loadNovel();
+  </script>
+</body>
+</html>

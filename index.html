@@ -20,6 +20,7 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://unpkg.com">
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="stylesheet" href="style.css">
@@ -34,7 +35,10 @@
         <li><a href="#skills">技能</a></li>
         <li><a href="#projects">作品</a></li>
         <li><a href="#hobbies">爱好</a></li>
+        <li><a href="novel.html">小说</a></li>
+        <li><a href="tools.html">工具</a></li>
         <li><a href="#gallery">相册</a></li>
+        <li><a href="#comments">留言</a></li>
         <li><a href="#contact">联系</a></li>
         <li class="nav-divider"></li>
         <li class="quick-access">
@@ -46,7 +50,17 @@
         <li class="quick-access">
           <a href="https://www.zhihu.com" target="_blank" rel="noopener">知乎</a>
         </li>
+        <li class="desktop-theme">
+          <button class="theme-toggle" id="themeToggleDesktop" title="切换主题">
+            <i data-lucide="moon"></i>
+          </button>
+        </li>
       </ul>
+      <button class="nav-toggle" id="navToggle" aria-label="菜单">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
     </div>
   </nav>
 
@@ -74,7 +88,7 @@
     </div>
     <div class="hero-content">
       <h1 class="hero-title">
-        <span class="gradient-text">蘇魚</span>
+        <span class="gradient-text" data-text="蘇魚">蘇魚</span>
       </h1>
       <p class="hero-subtitle">
         <span class="typewriter" data-text="汇文中学 · 初二 · 热爱生活"></span>
@@ -247,7 +261,7 @@
                 <i data-lucide="external-link"></i>
               </a>
               <a href="https://github.com/" target="_blank" rel="noopener" class="project-link" title="源码">
-                <i data-lucide="github"></i>
+                <i data-lucide="git-branch"></i>
               </a>
             </div>
           </div>
@@ -269,7 +283,7 @@
             </div>
             <div class="project-links">
               <a href="https://github.com/" target="_blank" rel="noopener" class="project-link" title="源码">
-                <i data-lucide="github"></i>
+                <i data-lucide="git-branch"></i>
               </a>
               <a href="#" class="project-link" title="下载">
                 <i data-lucide="download"></i>
@@ -330,7 +344,7 @@
         <span class="section-label">05</span>
         <h2 class="section-title">我的相册</h2>
       </div>
-      <p class="gallery-desc">上传照片记录生活中的美好瞬间～ 照片保存在你的浏览器本地哦</p>
+      <p class="gallery-desc">记录生活中的美好瞬间 📸 照片来自仓库的 gallery 文件夹</p>
       <div class="gallery-actions">
         <label class="upload-btn">
           <i data-lucide="upload"></i>
@@ -342,10 +356,46 @@
           <span>清空相册</span>
         </button>
       </div>
+      <div class="gallery-notice">
+        <p>⚠️ 上传即表示你同意以下规则：</p>
+        <ul>
+          <li>🚫 禁止上传任何违法、色情、暴力内容</li>
+          <li>🚫 禁止上传他人隐私或未经授权的照片</li>
+          <li>🚫 禁止删除他人上传的照片</li>
+          <li>🚫 禁止上传广告、垃圾信息</li>
+          <li>📵 如有违规，相关内容将被删除并追究责任</li>
+        </ul>
+      </div>
       <div class="gallery-grid" id="galleryGrid">
-        <div class="gallery-empty" id="galleryEmpty">
+        <div class="gallery-loading-full" id="galleryLoading">
+          <div class="loading-spinner-large"></div>
+          <div class="loading-bar">
+            <div class="loading-bar-fill"></div>
+          </div>
+          <span>加载照片中...</span>
+        </div>
+        <div class="gallery-empty" id="galleryEmpty" style="display:none;">
           <i data-lucide="image"></i>
           <p>还没有照片呢，快上传几张吧～</p>
+        </div>
+      </div>
+
+      <div class="lightbox" id="lightbox">
+        <div class="lightbox-overlay" id="lightboxOverlay"></div>
+        <div class="lightbox-content">
+          <button class="lightbox-close" id="lightboxClose" aria-label="关闭">
+            <i data-lucide="x"></i>
+          </button>
+          <button class="lightbox-prev" id="lightboxPrev" aria-label="上一张">
+            <i data-lucide="chevron-left"></i>
+          </button>
+          <button class="lightbox-next" id="lightboxNext" aria-label="下一张">
+            <i data-lucide="chevron-right"></i>
+          </button>
+          <img src="" alt="" id="lightboxImage">
+          <button class="lightbox-download" id="lightboxDownload" aria-label="下载照片">
+            <i data-lucide="download"></i>
+          </button>
         </div>
       </div>
     </div>
@@ -363,13 +413,13 @@
           想和我交朋友吗？<br>
           欢迎来和我一起学习一起玩～
         </p>
-        <a href="mailto:example@email.com" class="contact-email">
+        <a href="mailto:jx120315@qq.com" class="contact-email">
           <i data-lucide="mail"></i>
-          <span>example@email.com</span>
+          <span>jx120315@qq.com</span>
         </a>
         <div class="social-links">
           <a href="https://github.com/" target="_blank" rel="noopener" class="social-link" aria-label="GitHub">
-            <i data-lucide="github"></i>
+            <i data-lucide="git-branch"></i>
           </a>
           <a href="https://space.bilibili.com/3546878031432247" target="_blank" rel="noopener" class="social-link" aria-label="Bilibili">
             <i data-lucide="tv"></i>
@@ -383,6 +433,28 @@
         </div>
         <p class="contact-tip">* 手机号等隐私信息不公开，熟了之后自然会知道哒～</p>
       </div>
+    </div>
+  </section>
+
+  <!-- Comments Section -->
+  <section class="comments" id="comments">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-label">06</span>
+        <h2 class="section-title">留言板</h2>
+      </div>
+      <p class="comments-desc">想说点什么？留个言吧～ 💬</p>
+      
+      <div class="comment-form">
+        <input type="text" id="commentName" placeholder="你的名字" maxlength="20">
+        <textarea id="commentContent" placeholder="想说点什么..." maxlength="500"></textarea>
+        <button class="comment-submit" id="commentSubmit">
+          <i data-lucide="send"></i>
+          <span>发布留言</span>
+        </button>
+      </div>
+      
+      <div class="comments-list" id="commentsList"></div>
     </div>
   </section>
 
@@ -458,6 +530,30 @@
           </div>
           <i data-lucide="external-link" class="site-arrow"></i>
         </a>
+        <a href="https://store.steampowered.com" target="_blank" rel="noopener" class="site-card">
+          <div class="site-icon">🎮</div>
+          <div class="site-info">
+            <h3>Steam</h3>
+            <p>游戏平台</p>
+          </div>
+          <i data-lucide="external-link" class="site-arrow"></i>
+        </a>
+        <a href="https://www.tbtool.cn" target="_blank" rel="noopener" class="site-card">
+          <div class="site-icon">🔧</div>
+          <div class="site-info">
+            <h3>图吧工具箱</h3>
+            <p>硬件检测工具</p>
+          </div>
+          <i data-lucide="external-link" class="site-arrow"></i>
+        </a>
+        <a href="https://www.watttool.com" target="_blank" rel="noopener" class="site-card">
+          <div class="site-icon">⚡</div>
+          <div class="site-info">
+            <h3>瓦特工具箱</h3>
+            <p>Steam 多功能工具箱</p>
+          </div>
+          <i data-lucide="external-link" class="site-arrow"></i>
+        </a>
       </div>
     </div>
   </section>
@@ -466,17 +562,17 @@
   <footer class="footer">
     <div class="container">
       <div class="footer-content">
-        <p>© 2024 蘇魚 · All rights reserved</p>
+        <p>© 2026 蘇魚 · All rights reserved</p>
         <p class="footer-meta">
           <span>用 ❤️ 和代码搭建</span>
           <span class="dot">·</span>
           <span>HTML + CSS + JS</span>
           <span class="dot">·</span>
-          <span>最后更新：2024年</span>
+          <span>最后更新：2026年</span>
         </p>
         <p class="footer-links">
           <a href="https://github.com/" target="_blank" rel="noopener">
-            <i data-lucide="github"></i>
+            <i data-lucide="git-branch"></i>
             <span>源码仓库</span>
           </a>
         </p>
