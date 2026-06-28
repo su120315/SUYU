@@ -1357,6 +1357,26 @@ section {
   height: 16px;
 }
 
+/* 移动端动画优化：减少重动画以提升低配设备性能 */
+@media (max-width: 768px) {
+  /* 降低模糊半径（blur 计算量随半径平方增长） */
+  .orb {
+    filter: blur(40px);
+  }
+
+  /* 简化浮动动画，低配设备更流畅 */
+  .orb-1,
+  .orb-2,
+  .orb-3 {
+    animation: floatSimple 20s ease-in-out infinite;
+  }
+}
+
+@keyframes floatSimple {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(20px, -20px); }
+}
+
 @media (max-width: 768px) {
   .footer-meta {
     flex-direction: column;
