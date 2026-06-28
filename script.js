@@ -277,8 +277,22 @@ function initGallery() {
   }
 
   function closeLightbox() { lightbox.classList.remove('active'); document.body.style.overflow = ''; }
-  function showPrev() { if (currentLightboxIndex > 0) { currentLightboxIndex--; lightboxImage.src = getPhotos()[currentLightboxIndex]; } }
-  function showNext() { if (currentLightboxIndex < getPhotos().length - 1) { currentLightboxIndex++; lightboxImage.src = getPhotos()[currentLightboxIndex]; } }
+  function showPrev() {
+    if (currentLightboxIndex > 0) {
+      currentLightboxIndex--;
+      lightboxImage.src = getPhotos()[currentLightboxIndex];
+      const anims = ['anim-popZoom', 'anim-popRotate', 'anim-popSlide', 'anim-popFlip', 'anim-popBounce', 'anim-popSkew'];
+      lightboxImage.className = anims[Math.floor(Math.random() * anims.length)];
+    }
+  }
+  function showNext() {
+    if (currentLightboxIndex < getPhotos().length - 1) {
+      currentLightboxIndex++;
+      lightboxImage.src = getPhotos()[currentLightboxIndex];
+      const anims = ['anim-popZoom', 'anim-popRotate', 'anim-popSlide', 'anim-popFlip', 'anim-popBounce', 'anim-popSkew'];
+      lightboxImage.className = anims[Math.floor(Math.random() * anims.length)];
+    }
+  }
   function downloadPhoto() {
     const link = document.createElement('a');
     link.href = getPhotos()[currentLightboxIndex];
@@ -386,11 +400,24 @@ function initGallery() {
       item.innerHTML = `
         <img src="${photoData}" alt="照片 ${index + 1}" loading="lazy"
              onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect fill=%22%23ddd%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2255%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2240%22>🖼️</text></svg>'">
-        <button class="gallery-delete" data-index="${index}" title="删除">
+        <button class="gallery-delete" data-index="${index}" title="删除照片（长按）">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
         </button>
       `;
       item.querySelector('img').addEventListener('click', () => openLightbox(index));
+
+      // 移动端：长按显示删除按钮
+      if (isMobile) {
+        let longPressTimer = null;
+        const deleteBtn = item.querySelector('.gallery-delete');
+        deleteBtn.style.display = 'none';
+        item.addEventListener('touchstart', (e) => {
+          longPressTimer = setTimeout(() => { deleteBtn.style.display = 'flex'; }, 500);
+        });
+        item.addEventListener('touchend', () => clearTimeout(longPressTimer));
+        item.addEventListener('touchmove', () => clearTimeout(longPressTimer));
+      }
+
       galleryGrid.appendChild(item);
     });
 
@@ -777,6 +804,11 @@ function initComments() {
     commentName.value = '';
     commentContent.value = '';
     renderComments();
+    // 滚动到最新评论
+    setTimeout(() => {
+      const lastComment = commentsList.querySelector('.comment-item:last-child');
+      if (lastComment) lastComment.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
     
     commentSubmit.disabled = false;
     commentSubmit.innerHTML = '<i data-lucide="send"></i><span>发布留言</span>';

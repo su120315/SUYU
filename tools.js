@@ -94,11 +94,21 @@ document.addEventListener('DOMContentLoaded', function() {
     const exprEl = container.querySelector('#calcExpr');
     const resultEl = container.querySelector('#calcResult');
 
+    // 安全数学解析（支持 + - * / % 和括号）
+    function safeEval(expr) {
+      // 替换 % 为 /100 (在数字后面时)
+      expr = expr.replace(/(\d+)%/g, '($1/100)');
+      // 只允许数字、运算符、括号、小数点
+      if (!/^[\d+\-*/().%\s]+$/.test(expr)) throw new Error('Invalid');
+      // 用 Function 替代 eval（沙箱化）
+      return new Function('return (' + expr + ')')();
+    }
+
     function updateDisplay() {
       exprEl.textContent = expression.replace(/\*/g, '×').replace(/\//g, '÷').replace(/-/g, '−');
       try {
         if (expression) {
-          const r = eval(expression.replace(/%/g, '/100'));
+          const r = safeEval(expression);
           if (!isNaN(r) && isFinite(r)) {
             resultEl.textContent = Math.round(r * 1e10) / 1e10;
           } else {
@@ -120,7 +130,7 @@ document.addEventListener('DOMContentLoaded', function() {
         else if (action === 'back') { expression = expression.slice(0, -1); }
         else if (action === 'equals') {
           try {
-            const r = eval(expression.replace(/%/g, '/100'));
+            const r = safeEval(expression);
             if (!isNaN(r) && isFinite(r)) {
               expression = String(Math.round(r * 1e10) / 1e10);
             }
@@ -472,8 +482,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     container.querySelector('#b64Copy').addEventListener('click', function() {
       if (!output.value) return;
-      output.select();
-      document.execCommand('copy');
+      navigator.clipboard.writeText(output.value).catch(() => {
+        output.select(); document.execCommand('copy');
+      });
       showStatus('已复制到剪贴板 📋', 'success');
     });
   }
@@ -525,8 +536,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     container.querySelector('#jsonCopy').addEventListener('click', function() {
       if (!output.value) return;
-      output.select();
-      document.execCommand('copy');
+      navigator.clipboard.writeText(output.value).catch(() => {
+        output.select(); document.execCommand('copy');
+      });
       showStatus('已复制到剪贴板 📋', 'success');
     });
 
@@ -543,6 +555,10 @@ document.addEventListener('DOMContentLoaded', function() {
         <div class="color-input-group">
           <label>HEX</label>
           <input type="text" id="colorHex" value="#6366f1">
+        </div>
+        <div class="color-input-group" style="flex:0.6;">
+          <label>取色</label>
+          <input type="color" id="colorNative" value="#6366f1" style="width:100%;height:36px;border:none;border-radius:8px;cursor:pointer;">
         </div>
       </div>
       <div class="color-values">
@@ -575,6 +591,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const preview = container.querySelector('#colorPreview');
     const hexInput = container.querySelector('#colorHex');
+    const nativePicker = container.querySelector('#colorNative');
+
+    nativePicker.addEventListener('input', function() {
+      hexInput.value = this.value;
+      updateFromHex(this.value);
+    });
 
     function hexToRgb(hex) {
       hex = hex.replace('#', '');
@@ -736,8 +758,9 @@ document.addEventListener('DOMContentLoaded', function() {
     container.querySelector('#pwGen').addEventListener('click', generate);
     container.querySelector('#pwCopy').addEventListener('click', function() {
       if (!output.value) return;
-      output.select();
-      document.execCommand('copy');
+      navigator.clipboard.writeText(output.value).catch(() => {
+        output.select(); document.execCommand('copy');
+      });
       this.textContent = '已复制';
       setTimeout(() => this.textContent = '复制', 1500);
     });
@@ -778,6 +801,19 @@ document.addEventListener('DOMContentLoaded', function() {
         }, function(err) {
           if (err) {
             output.innerHTML = '<span style="color:#ef4444;">生成失败，请重试</span>';
+          } else {
+            // 生成成功后添加下载按钮
+            const dlBtn = document.createElement('button');
+            dlBtn.className = 'text-tool-btn';
+            dlBtn.style.marginTop = '12px';
+            dlBtn.textContent = '⬇ 下载二维码';
+            dlBtn.addEventListener('click', () => {
+              const link = document.createElement('a');
+              link.download = 'qrcode.png';
+              link.href = canvas.toDataURL('image/png');
+              link.click();
+            });
+            output.appendChild(dlBtn);
           }
         });
       } else {

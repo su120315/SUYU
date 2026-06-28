@@ -910,7 +910,7 @@ section {
 }
 
 .skill-card.visible .skill-fill {
-  width: attr(data-width);
+  /* 宽度由 JS 动态设置 */
 }
 
 /* ==================== Projects Section ==================== */
