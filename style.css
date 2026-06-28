@@ -4670,6 +4670,54 @@ textarea:focus-visible {
   border-top: 1px solid var(--bg-tertiary);
 }
 
+.novel-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid var(--bg-tertiary);
+}
+
+.page-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border: 1px solid var(--border-color, rgba(99,102,241,0.3));
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.page-btn:hover:not(:disabled) {
+  background: var(--accent-primary);
+  color: #fff;
+  border-color: var(--accent-primary);
+}
+
+.page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.page-info {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  min-width: 100px;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .novel-pagination { gap: 8px; }
+  .page-btn { padding: 8px 14px; font-size: 0.85rem; }
+  .page-info { font-size: 0.8rem; min-width: 80px; }
+}
+
 .novel-empty {
   text-align: center;
   color: var(--text-muted);
