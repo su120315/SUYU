@@ -746,15 +746,35 @@ function initComments() {
     // 按时间倒序排列
     const sortedComments = [...comments].sort((a, b) => b.time - a.time);
     
-    commentsList.innerHTML = sortedComments.map(comment => `
+    commentsList.innerHTML = sortedComments.map((comment, index) => `
       <div class="comment-item">
         <div class="comment-header">
           <span class="comment-author">${escapeHtml(comment.name)}</span>
           <span class="comment-time">${formatTime(comment.time)}</span>
+          <button class="comment-delete" data-index="${index}" title="删除留言">
+            <i data-lucide="trash-2"></i>
+          </button>
         </div>
         <div class="comment-content">${escapeHtml(comment.content)}</div>
       </div>
     `).join('');
+
+    commentsList.querySelectorAll('.comment-delete').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const password = prompt('请输入删除密码：');
+        if (password === '120315') {
+          const idx = parseInt(btn.getAttribute('data-index'));
+          const originalIndex = comments.findIndex(c => c.time === sortedComments[idx].time);
+          if (originalIndex !== -1) {
+            comments.splice(originalIndex, 1);
+            saveComments();
+            renderComments();
+          }
+        } else if (password !== null) {
+          alert('密码错误！');
+        }
+      });
+    });
   }
 
   // HTML 转义
