@@ -268,6 +268,9 @@ function initGallery() {
   function openLightbox(index) {
     currentLightboxIndex = index;
     lightboxImage.src = getPhotos()[index];
+    // 随机分配一种弹开动画
+    const anims = ['anim-popZoom', 'anim-popRotate', 'anim-popSlide', 'anim-popFlip', 'anim-popBounce', 'anim-popSkew'];
+    lightboxImage.className = anims[Math.floor(Math.random() * anims.length)];
     lightbox.classList.add('active');
     document.body.style.overflow = 'hidden';
     lucide.createIcons();
