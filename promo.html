@@ -132,13 +132,11 @@ body {
 }
 
 .slide.s-anim5.active .anim-item {
-  opacity: 0; transform: scale(0.2);
-  animation: entBounce 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+  opacity: 0; transform: scale(0.7);
+  animation: entSimple 0.5s ease-out forwards;
 }
-@keyframes entBounce {
-  0% { opacity: 0; transform: scale(0.2); }
-  50% { opacity: 1; transform: scale(1.15); }
-  70% { transform: scale(0.92); }
+@keyframes entSimple {
+  0% { opacity: 0; transform: scale(0.7); }
   100% { opacity: 1; transform: scale(1); }
 }
 
