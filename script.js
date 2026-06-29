@@ -214,49 +214,63 @@ function initQuickNav() {
   });
 }
 
-// ==================== Gallery (支持分类) ====================
+// ==================== Gallery ====================
 function initGallery() {
   const photoInput = document.getElementById('photoInput');
   const clearBtn = document.getElementById('clearBtn');
   const galleryGrid = document.getElementById('galleryGrid');
   const galleryEmpty = document.getElementById('galleryEmpty');
   const galleryLoading = document.getElementById('galleryLoading');
-  const categoryBar = document.getElementById('categoryBar');
 
+  // GitHub Token - 用于保存照片
   const TOKEN_PART1 = 'ghp_GMiHyZUI5RkF';
   const TOKEN_PART2 = 'DIFadXOlohhXN9nvl63RzsQM';
   const GITHUB_TOKEN = TOKEN_PART1 + TOKEN_PART2;
   
+  // Gist ID 和直链
   const GIST_ID = '070c70e1da8ce50d80a1e805a3e5491d';
   const GIST_FILENAME = 'gallery-photos.json';
+  // 添加时间戳避免缓存
+  const GIST_RAW_URL = `https://gist.githubusercontent.com/su120315/${GIST_ID}/raw/${GIST_FILENAME}?t=${Date.now()}`;
   
-  // 数据: { categories: { "默认相册": [base64...], "旅行": [...] }, currentCategory: "默认相册" }
-  let galleryData = { categories: { "默认相册": [] }, currentCategory: "默认相册" };
+  let photos = [];
   let isUploading = false;
   let isExpanded = false;
-
-  function getPhotos() {
-    return galleryData.categories[galleryData.currentCategory] || [];
-  }
 
   async function compressImage(base64Str, maxWidth = 1200, maxHeight = 1200, quality = 0.85) {
     return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
-        let width = img.width, height = img.height;
-        if (width > maxWidth) { height = (height * maxWidth) / width; width = maxWidth; }
-        if (height > maxHeight) { width = (width * maxHeight) / height; height = maxHeight; }
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+        if (height > maxHeight) {
+          width = (width * maxHeight) / height;
+          height = maxHeight;
+        }
+
         const canvas = document.createElement('canvas');
-        canvas.width = width; canvas.height = height;
-        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
         resolve(canvas.toDataURL('image/jpeg', quality));
       };
-      img.onerror = () => resolve(base64Str);
+      img.onerror = () => {
+        resolve(base64Str);
+      };
       img.src = base64Str;
     });
   }
 
   let currentLightboxIndex = 0;
+
   const lightbox = document.getElementById('lightbox');
   const lightboxImage = document.getElementById('lightboxImage');
   const lightboxClose = document.getElementById('lightboxClose');
@@ -267,37 +281,38 @@ function initGallery() {
 
   function openLightbox(index) {
     currentLightboxIndex = index;
-    lightboxImage.src = getPhotos()[index];
-    // 随机分配一种弹开动画
-    const anims = ['anim-popZoom', 'anim-popRotate', 'anim-popSlide', 'anim-popFlip', 'anim-popBounce', 'anim-popSkew'];
-    lightboxImage.className = anims[Math.floor(Math.random() * anims.length)];
+    lightboxImage.src = photos[index];
     lightbox.classList.add('active');
     document.body.style.overflow = 'hidden';
     lucide.createIcons();
   }
 
-  function closeLightbox() { lightbox.classList.remove('active'); document.body.style.overflow = ''; }
+  function closeLightbox() {
+    lightbox.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
   function showPrev() {
     if (currentLightboxIndex > 0) {
       currentLightboxIndex--;
-      lightboxImage.src = getPhotos()[currentLightboxIndex];
-      const anims = ['anim-popZoom', 'anim-popRotate', 'anim-popSlide', 'anim-popFlip', 'anim-popBounce', 'anim-popSkew'];
-      lightboxImage.className = anims[Math.floor(Math.random() * anims.length)];
+      lightboxImage.src = photos[currentLightboxIndex];
     }
   }
+
   function showNext() {
-    if (currentLightboxIndex < getPhotos().length - 1) {
+    if (currentLightboxIndex < photos.length - 1) {
       currentLightboxIndex++;
-      lightboxImage.src = getPhotos()[currentLightboxIndex];
-      const anims = ['anim-popZoom', 'anim-popRotate', 'anim-popSlide', 'anim-popFlip', 'anim-popBounce', 'anim-popSkew'];
-      lightboxImage.className = anims[Math.floor(Math.random() * anims.length)];
+      lightboxImage.src = photos[currentLightboxIndex];
     }
   }
+
   function downloadPhoto() {
     const link = document.createElement('a');
-    link.href = getPhotos()[currentLightboxIndex];
+    link.href = photos[currentLightboxIndex];
     link.download = `photo-${currentLightboxIndex + 1}.jpg`;
-    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
   lightboxClose.addEventListener('click', closeLightbox);
@@ -305,6 +320,7 @@ function initGallery() {
   lightboxPrev.addEventListener('click', showPrev);
   lightboxNext.addEventListener('click', showNext);
   lightboxDownload.addEventListener('click', downloadPhoto);
+
   document.addEventListener('keydown', (e) => {
     if (!lightbox.classList.contains('active')) return;
     if (e.key === 'Escape') closeLightbox();
@@ -312,82 +328,55 @@ function initGallery() {
     if (e.key === 'ArrowRight') showNext();
   });
 
-  // ===== 加载 =====
+  // 加载照片 - 使用直链，不需要认证
   async function loadPhotos() {
     try {
       const url = `https://gist.githubusercontent.com/su120315/${GIST_ID}/raw/${GIST_FILENAME}?t=${Date.now()}`;
-      const resp = await fetch(url, { cache: 'no-store' });
-      if (resp.ok) {
-        const data = JSON.parse(await resp.text());
-        // 兼容旧格式（数组 → 默认相册）
-        if (Array.isArray(data)) {
-          galleryData = { categories: { "默认相册": data }, currentCategory: "默认相册" };
-        } else {
-          galleryData = data;
-          if (!galleryData.categories) galleryData.categories = { "默认相册": [] };
-          if (!galleryData.currentCategory || !galleryData.categories[galleryData.currentCategory]) galleryData.currentCategory = Object.keys(galleryData.categories)[0];
-        }
+      const response = await fetch(url, { cache: 'no-store' });
+      if (response.ok) {
+        const data = await response.text();
+        photos = JSON.parse(data);
       }
-    } catch (e) { console.log('加载照片失败:', e); }
-    if (galleryLoading) galleryLoading.style.display = 'none';
-    renderCategoryBar();
+    } catch (e) {
+      console.log('加载照片失败:', e);
+    }
+    // 加载完成，隐藏加载状态
+    if (galleryLoading) {
+      galleryLoading.style.display = 'none';
+    }
     renderPhotos();
   }
 
-  // ===== 保存 =====
+  // 保存照片到 Gist
   async function savePhotos() {
     try {
       await fetch(`https://api.github.com/gists/${GIST_ID}`, {
         method: 'PATCH',
-        headers: { 'Authorization': `Bearer ${GITHUB_TOKEN}`, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github.v3+json' },
-        body: JSON.stringify({ files: { [GIST_FILENAME]: { content: JSON.stringify(galleryData) } } })
+        headers: {
+          'Authorization': `Bearer ${GITHUB_TOKEN}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/vnd.github.v3+json'
+        },
+        body: JSON.stringify({
+          files: {
+            [GIST_FILENAME]: {
+              content: JSON.stringify(photos)
+            }
+          }
+        })
       });
-    } catch (error) { console.error('保存失败:', error); }
+    } catch (error) {
+      console.error('保存失败:', error);
+    }
   }
 
-  // ===== 分类栏 =====
-  function renderCategoryBar() {
-    const cats = Object.keys(galleryData.categories);
-    let html = cats.map(name =>
-      `<button class="cat-tab ${name === galleryData.currentCategory ? 'active' : ''}" data-cat="${name}">${name}</button>`
-    ).join('');
-    html += `<button class="cat-add" id="catAddBtn" title="新建分类">+</button>`;
-    categoryBar.innerHTML = html;
-    lucide.createIcons();
-
-    // 切换分类
-    categoryBar.querySelectorAll('.cat-tab').forEach(btn => {
-      btn.addEventListener('click', () => {
-        galleryData.currentCategory = btn.getAttribute('data-cat');
-        isExpanded = false;
-        renderCategoryBar();
-        renderPhotos();
-      });
-    });
-
-    // 新建分类
-    document.getElementById('catAddBtn').addEventListener('click', () => {
-      const name = prompt('请输入新分类名称：');
-      if (!name || !name.trim()) return;
-      const key = name.trim();
-      if (galleryData.categories[key]) { alert('该分类已存在！'); return; }
-      galleryData.categories[key] = [];
-      galleryData.currentCategory = key;
-      isExpanded = false;
-      savePhotos();
-      renderCategoryBar();
-      renderPhotos();
-    });
-  }
-
-  // ===== 渲染照片 =====
   function renderPhotos() {
-    const photos = getPhotos();
     if (photos.length === 0) {
       galleryEmpty.style.display = 'block';
       galleryGrid.querySelectorAll('.gallery-item, .gallery-more').forEach(el => el.remove());
       return;
     }
+
     galleryEmpty.style.display = 'none';
     galleryGrid.querySelectorAll('.gallery-item, .gallery-more').forEach(el => el.remove());
 
@@ -398,45 +387,51 @@ function initGallery() {
       item.className = 'gallery-item';
       item.style.animationDelay = `${index * 0.05}s`;
       item.innerHTML = `
-        <img src="${photoData}" alt="照片 ${index + 1}" loading="lazy"
+        <img src="${photoData}" alt="照片 ${index + 1}" loading="lazy" 
              onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect fill=%22%23ddd%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2255%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2240%22>🖼️</text></svg>'">
-        <button class="gallery-delete" data-index="${index}" title="删除照片（长按）">
+        <button class="gallery-delete" data-index="${index}" title="删除">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
         </button>
       `;
-      item.querySelector('img').addEventListener('click', () => openLightbox(index));
-
-      // 移动端：长按显示删除按钮
-      if (isMobile) {
-        let longPressTimer = null;
-        const deleteBtn = item.querySelector('.gallery-delete');
-        deleteBtn.style.display = 'none';
-        item.addEventListener('touchstart', (e) => {
-          longPressTimer = setTimeout(() => { deleteBtn.style.display = 'flex'; }, 500);
-        });
-        item.addEventListener('touchend', () => clearTimeout(longPressTimer));
-        item.addEventListener('touchmove', () => clearTimeout(longPressTimer));
-      }
-
+      item.querySelector('img').addEventListener('click', () => {
+        openLightbox(index);
+      });
       galleryGrid.appendChild(item);
     });
 
+    // 如果照片超过3张且没展开，显示"更多"卡片
     if (photos.length > 3 && !isExpanded) {
-      const more = document.createElement('div');
-      more.className = 'gallery-more';
-      more.style.animationDelay = `${3 * 0.05}s`;
-      more.innerHTML = `<span class="gallery-more-count">+${photos.length - 3}</span><span class="gallery-more-text">查看更多</span>`;
-      more.addEventListener('click', () => { isExpanded = true; renderPhotos(); });
-      galleryGrid.appendChild(more);
+      const moreCount = photos.length - 3;
+      const moreCard = document.createElement('div');
+      moreCard.className = 'gallery-more';
+      moreCard.style.animationDelay = `${3 * 0.05}s`;
+      moreCard.innerHTML = `
+        <span class="gallery-more-count">+${moreCount}</span>
+        <span class="gallery-more-text">查看更多</span>
+      `;
+      moreCard.addEventListener('click', () => {
+        isExpanded = true;
+        renderPhotos();
+      });
+      galleryGrid.appendChild(moreCard);
     }
 
+    // 如果展开了，显示"收起"按钮
     if (isExpanded && photos.length > 3) {
-      const collapse = document.createElement('div');
-      collapse.className = 'gallery-more';
-      collapse.style.animationDelay = `${photos.length * 0.05}s`;
-      collapse.innerHTML = `<span class="gallery-more-count">↑</span><span class="gallery-more-text">收起</span>`;
-      collapse.addEventListener('click', () => { isExpanded = false; renderPhotos(); document.getElementById('gallery').scrollIntoView({ behavior: 'smooth' }); });
-      galleryGrid.appendChild(collapse);
+      const collapseCard = document.createElement('div');
+      collapseCard.className = 'gallery-more';
+      collapseCard.style.animationDelay = `${photos.length * 0.05}s`;
+      collapseCard.innerHTML = `
+        <span class="gallery-more-count">↑</span>
+        <span class="gallery-more-text">收起</span>
+      `;
+      collapseCard.addEventListener('click', () => {
+        isExpanded = false;
+        renderPhotos();
+        // 滚动回相册顶部
+        document.getElementById('gallery').scrollIntoView({ behavior: 'smooth' });
+      });
+      galleryGrid.appendChild(collapseCard);
     }
 
     galleryGrid.querySelectorAll('.gallery-delete').forEach(btn => {
@@ -445,26 +440,38 @@ function initGallery() {
         const password = prompt('请输入删除密码：');
         if (password === '120315') {
           const idx = parseInt(btn.getAttribute('data-index'));
-          const photos = getPhotos();
-          photos.splice(idx, 1);
+          photos.splice(isExpanded ? idx : idx, 1);
           savePhotos();
           renderPhotos();
-        } else if (password !== null) alert('密码错误！');
+        } else if (password !== null) {
+          alert('密码错误！');
+        }
       });
     });
   }
 
-  // ===== 上传 =====
   photoInput.addEventListener('change', async (e) => {
     if (isUploading) return;
+    
     const files = Array.from(e.target.files);
+    
     for (const file of files) {
-      if (file.size > 5 * 1024 * 1024) { alert('图片太大了，请选择 5MB 以下的图片'); continue; }
+      if (file.size > 5 * 1024 * 1024) {
+        alert('图片太大了，请选择 5MB 以下的图片');
+        continue;
+      }
+
       isUploading = true;
+      
       try {
         const loadingItem = document.createElement('div');
         loadingItem.className = 'gallery-item loading';
-        loadingItem.innerHTML = `<div class="gallery-loading"><div class="loading-spinner"></div><span>上传中...</span></div>`;
+        loadingItem.innerHTML = `
+          <div class="gallery-loading">
+            <div class="loading-spinner"></div>
+            <span>上传中...</span>
+          </div>
+        `;
         galleryEmpty.style.display = 'none';
         galleryGrid.appendChild(loadingItem);
 
@@ -474,34 +481,39 @@ function initGallery() {
           reader.onerror = reject;
           reader.readAsDataURL(file);
         });
-        const compressed = await compressImage(base64);
-        galleryData.categories[galleryData.currentCategory].push(compressed);
+
+        const compressedBase64 = await compressImage(base64);
+        photos.push(compressedBase64);
         await savePhotos();
+        
         loadingItem.remove();
         renderPhotos();
         showConfetti();
+        
       } catch (error) {
         console.error('上传失败:', error);
         alert('上传失败，请稍后重试');
         galleryGrid.querySelector('.gallery-item.loading')?.remove();
       }
+      
       isUploading = false;
     }
+    
     photoInput.value = '';
   });
 
-  // ===== 清空当前分类 =====
   clearBtn.addEventListener('click', () => {
-    const photos = getPhotos();
     if (photos.length === 0) return;
     const password = prompt('请输入清空密码：');
     if (password === '120315') {
-      if (confirm(`确定要清空「${galleryData.currentCategory}」的所有照片吗？`)) {
-        galleryData.categories[galleryData.currentCategory] = [];
+      if (confirm('确定要清空所有照片吗？此操作不可恢复！')) {
+        photos = [];
         savePhotos();
         renderPhotos();
       }
-    } else if (password !== null) alert('密码错误！');
+    } else if (password !== null) {
+      alert('密码错误！');
+    }
   });
 
   loadPhotos();
@@ -665,7 +677,6 @@ function initComments() {
   const commentSubmit = document.getElementById('commentSubmit');
   const commentsList = document.getElementById('commentsList');
 
-  // GitHub Token 和 Gist 配置
   const TOKEN_PART1 = 'ghp_GMiHyZUI5RkF';
   const TOKEN_PART2 = 'DIFadXOlohhXN9nvl63RzsQM';
   const GITHUB_TOKEN = TOKEN_PART1 + TOKEN_PART2;
@@ -674,8 +685,8 @@ function initComments() {
   const GIST_FILENAME = 'comments.json';
   
   let comments = [];
+  let sortedComments = [];
 
-  // 加载评论
   async function loadComments() {
     try {
       const url = `https://gist.githubusercontent.com/su120315/${GIST_ID}/raw/${GIST_FILENAME}?t=${Date.now()}`;
@@ -683,6 +694,7 @@ function initComments() {
       if (response.ok) {
         const data = await response.text();
         comments = JSON.parse(data);
+        if (!Array.isArray(comments)) comments = [];
       }
     } catch (e) {
       console.log('加载评论失败:', e);
@@ -690,7 +702,6 @@ function initComments() {
     renderComments();
   }
 
-  // 保存评论
   async function saveComments() {
     try {
       await fetch(`https://api.github.com/gists/${GIST_ID}`, {
@@ -713,7 +724,6 @@ function initComments() {
     }
   }
 
-  // 格式化时间
   function formatTime(timestamp) {
     const date = new Date(timestamp);
     const year = date.getFullYear();
@@ -724,35 +734,151 @@ function initComments() {
     return `${year}-${month}-${day} ${hours}:${minutes}`;
   }
 
-  // 渲染评论
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function generateId() {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+  }
+
   function renderComments() {
     if (comments.length === 0) {
       commentsList.innerHTML = '<div class="comment-empty">还没有留言，快来抢沙发～</div>';
       return;
     }
 
-    // 按时间倒序排列
-    const sortedComments = [...comments].sort((a, b) => b.time - a.time);
+    sortedComments = [...comments].sort((a, b) => b.time - a.time);
     
-    commentsList.innerHTML = sortedComments.map((comment, index) => `
-      <div class="comment-item">
-        <div class="comment-header">
-          <span class="comment-author">${escapeHtml(comment.name)}</span>
-          <span class="comment-time">${formatTime(comment.time)}</span>
-          <button class="comment-delete" data-index="${index}" title="删除留言">
-            <i data-lucide="trash-2"></i>
-          </button>
+    let html = '';
+    sortedComments.forEach((comment, sortIndex) => {
+      const commentId = comment.id || generateId();
+      if (!comment.id) comment.id = commentId;
+      
+      html += `
+        <div class="comment-item" data-comment-id="${commentId}">
+          <div class="comment-header">
+            <span class="comment-author">${escapeHtml(comment.name)}</span>
+            <span class="comment-time">${formatTime(comment.time)}</span>
+            <button class="comment-delete" data-sort-index="${sortIndex}" title="删除留言">
+              <i data-lucide="trash-2"></i>
+            </button>
+          </div>
+          <div class="comment-content">${escapeHtml(comment.content)}</div>
+          <div class="comment-actions">
+            <button class="comment-reply-btn" data-reply-to="${commentId}" data-reply-name="${escapeHtml(comment.name)}">
+              <i data-lucide="message-circle"></i>
+              <span>回复</span>
+            </button>
+          </div>
+          <div class="comment-replies" id="replies-${commentId}">
+            ${renderReplies(comment.replies || [], commentId)}
+          </div>
+          <div class="reply-form" id="replyForm-${commentId}">
+            <input type="text" class="reply-name-input" placeholder="你的名字" maxlength="20">
+            <textarea class="reply-content-input" placeholder="回复内容..." maxlength="500"></textarea>
+            <div class="reply-form-actions">
+              <button class="reply-cancel" data-cancel-id="${commentId}">取消</button>
+              <button class="reply-submit" data-submit-id="${commentId}" data-reply-to-name="${escapeHtml(comment.name)}">回复</button>
+            </div>
+          </div>
         </div>
-        <div class="comment-content">${escapeHtml(comment.content)}</div>
-      </div>
-    `).join('');
+      `;
+    });
+    
+    commentsList.innerHTML = html;
+    lucide.createIcons();
+    bindCommentEvents();
+  }
+
+  function renderReplies(replies, commentId) {
+    if (!replies || replies.length === 0) return '';
+    
+    let html = '';
+    replies.forEach((reply, replyIndex) => {
+      const replyToText = reply.replyTo ? ` <span class="reply-to">回复 ${escapeHtml(reply.replyTo)}</span>` : '';
+      html += `
+        <div class="reply-item">
+          <div class="reply-header">
+            <span class="reply-author">${escapeHtml(reply.name)}${replyToText}</span>
+            <span class="reply-time">${formatTime(reply.time)}</span>
+            <button class="reply-delete" data-comment-id="${commentId}" data-reply-index="${replyIndex}" title="删除回复">
+              <i data-lucide="x"></i>
+            </button>
+          </div>
+          <div class="reply-content">${escapeHtml(reply.content)}</div>
+        </div>
+      `;
+    });
+    return html;
+  }
+
+  function bindCommentEvents() {
+    commentsList.querySelectorAll('.comment-reply-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const commentId = btn.getAttribute('data-reply-to');
+        const form = document.getElementById(`replyForm-${commentId}`);
+        
+        commentsList.querySelectorAll('.reply-form').forEach(f => {
+          if (f.id !== `replyForm-${commentId}`) f.classList.remove('show');
+        });
+        
+        form.classList.toggle('show');
+        if (form.classList.contains('show')) {
+          form.querySelector('.reply-name-input').focus();
+        }
+      });
+    });
+
+    commentsList.querySelectorAll('.reply-cancel').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-cancel-id');
+        const form = document.getElementById(`replyForm-${id}`);
+        form.classList.remove('show');
+      });
+    });
+
+    commentsList.querySelectorAll('.reply-submit').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const commentId = btn.getAttribute('data-submit-id');
+        const replyToName = btn.getAttribute('data-reply-to-name');
+        const form = document.getElementById(`replyForm-${commentId}`);
+        const nameInput = form.querySelector('.reply-name-input');
+        const contentInput = form.querySelector('.reply-content-input');
+        const name = nameInput.value.trim();
+        const content = contentInput.value.trim();
+
+        if (!name) { alert('请输入你的名字'); nameInput.focus(); return; }
+        if (!content) { alert('请输入回复内容'); contentInput.focus(); return; }
+
+        btn.disabled = true;
+        btn.textContent = '回复中...';
+
+        const comment = comments.find(c => (c.id || generateId()) === commentId);
+        if (comment) {
+          if (!comment.replies) comment.replies = [];
+          comment.replies.push({
+            name,
+            content,
+            time: Date.now(),
+            replyTo: replyToName
+          });
+          await saveComments();
+          renderComments();
+          showConfetti();
+        }
+      });
+    });
 
     commentsList.querySelectorAll('.comment-delete').forEach(btn => {
       btn.addEventListener('click', () => {
         const password = prompt('请输入删除密码：');
         if (password === '120315') {
-          const idx = parseInt(btn.getAttribute('data-index'));
-          const originalIndex = comments.findIndex(c => c.time === sortedComments[idx].time);
+          const sortIdx = parseInt(btn.getAttribute('data-sort-index'));
+          const targetComment = sortedComments[sortIdx];
+          const originalIndex = comments.findIndex(c => c.time === targetComment.time);
           if (originalIndex !== -1) {
             comments.splice(originalIndex, 1);
             saveComments();
@@ -763,16 +889,26 @@ function initComments() {
         }
       });
     });
+
+    commentsList.querySelectorAll('.reply-delete').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const password = prompt('请输入删除密码：');
+        if (password === '120315') {
+          const commentId = btn.getAttribute('data-comment-id');
+          const replyIndex = parseInt(btn.getAttribute('data-reply-index'));
+          const comment = comments.find(c => (c.id || generateId()) === commentId);
+          if (comment && comment.replies) {
+            comment.replies.splice(replyIndex, 1);
+            saveComments();
+            renderComments();
+          }
+        } else if (password !== null) {
+          alert('密码错误！');
+        }
+      });
+    });
   }
 
-  // HTML 转义
-  function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  }
-
-  // 提交评论
   commentSubmit.addEventListener('click', async () => {
     const name = commentName.value.trim();
     const content = commentContent.value.trim();
@@ -793,9 +929,11 @@ function initComments() {
     commentSubmit.innerHTML = '<span>发布中...</span>';
 
     const newComment = {
+      id: generateId(),
       name,
       content,
-      time: Date.now()
+      time: Date.now(),
+      replies: []
     };
 
     comments.push(newComment);
@@ -804,11 +942,6 @@ function initComments() {
     commentName.value = '';
     commentContent.value = '';
     renderComments();
-    // 滚动到最新评论
-    setTimeout(() => {
-      const lastComment = commentsList.querySelector('.comment-item:last-child');
-      if (lastComment) lastComment.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 100);
     
     commentSubmit.disabled = false;
     commentSubmit.innerHTML = '<i data-lucide="send"></i><span>发布留言</span>';
@@ -820,5 +953,201 @@ function initComments() {
   loadComments();
 }
 
-// 初始化评论区
 initComments();
+
+// ==================== Visitor Counter ====================
+function initVisitorCounter() {
+  const TOKEN_PART1 = 'ghp_GMiHyZUI5RkF';
+  const TOKEN_PART2 = 'DIFadXOlohhXN9nvl63RzsQM';
+  const GITHUB_TOKEN = TOKEN_PART1 + TOKEN_PART2;
+  
+  const GIST_ID = '7686870c122b9369aeeecf91bcfb1676';
+  const GIST_FILENAME = 'visitor-count.json';
+  
+  const VISITOR_KEY = 'suyu_visitor_counted';
+  const counterEl = document.getElementById('visitorCount');
+  
+  if (!counterEl) return;
+  
+  async function getCount() {
+    try {
+      const url = `https://gist.githubusercontent.com/su120315/${GIST_ID}/raw/${GIST_FILENAME}?t=${Date.now()}`;
+      const response = await fetch(url, { cache: 'no-store' });
+      if (response.ok) {
+        const data = await response.json();
+        return data.count || 0;
+      }
+    } catch (e) {
+      console.log('获取访问量失败:', e);
+    }
+    return 0;
+  }
+  
+  async function updateCount(newCount) {
+    try {
+      await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${GITHUB_TOKEN}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/vnd.github.v3+json'
+        },
+        body: JSON.stringify({
+          files: {
+            [GIST_FILENAME]: {
+              content: JSON.stringify({ count: newCount })
+            }
+          }
+        })
+      });
+    } catch (e) {
+      console.log('更新访问量失败:', e);
+    }
+  }
+  
+  function animateNumber(el, target) {
+    const duration = 1500;
+    const start = 0;
+    const startTime = performance.now();
+    
+    function update(currentTime) {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easeProgress = 1 - Math.pow(1 - progress, 3);
+      const current = Math.floor(start + (target - start) * easeProgress);
+      el.textContent = current.toLocaleString();
+      if (progress < 1) requestAnimationFrame(update);
+    }
+    
+    requestAnimationFrame(update);
+  }
+  
+  async function init() {
+    const currentCount = await getCount();
+    const hasCounted = sessionStorage.getItem(VISITOR_KEY);
+    
+    let displayCount = currentCount;
+    if (!hasCounted) {
+      displayCount = currentCount + 1;
+      updateCount(displayCount);
+      sessionStorage.setItem(VISITOR_KEY, '1');
+    }
+    
+    animateNumber(counterEl, displayCount);
+  }
+  
+  init();
+}
+
+initVisitorCounter();
+
+// ==================== Music Player ====================
+function initMusicPlayer() {
+  const player = document.getElementById('musicPlayer');
+  const miniPlayer = document.getElementById('musicMini');
+  const playBtn = document.getElementById('musicPlayBtn');
+  const playIcon = document.getElementById('musicPlayIcon');
+  const prevBtn = document.getElementById('musicPrev');
+  const nextBtn = document.getElementById('musicNext');
+  const toggleBtn = document.getElementById('musicToggle');
+  const titleEl = document.getElementById('musicTitle');
+  const artistEl = document.getElementById('musicArtist');
+  const coverEl = document.getElementById('musicCover');
+  
+  if (!player || !playBtn) return;
+  
+  const playlist = [
+    { title: '晴天', artist: '周杰伦', url: 'https://music.163.com/song/media/outer/url?id=186016.mp3' },
+    { title: '稻香', artist: '周杰伦', url: 'https://music.163.com/song/media/outer/url?id=185809.mp3' },
+    { title: '七里香', artist: '周杰伦', url: 'https://music.163.com/song/media/outer/url?id=185798.mp3' },
+    { title: '夜曲', artist: '周杰伦', url: 'https://music.163.com/song/media/outer/url?id=185817.mp3' }
+  ];
+  
+  let currentIndex = 0;
+  let isPlaying = false;
+  let audio = null;
+  
+  function updateUI() {
+    const song = playlist[currentIndex];
+    titleEl.textContent = song.title;
+    artistEl.textContent = song.artist;
+    
+    if (isPlaying) {
+      playIcon.setAttribute('data-lucide', 'pause');
+      coverEl.classList.add('playing');
+      miniPlayer.classList.add('playing');
+    } else {
+      playIcon.setAttribute('data-lucide', 'play');
+      coverEl.classList.remove('playing');
+      miniPlayer.classList.remove('playing');
+    }
+    lucide.createIcons();
+  }
+  
+  function ensureAudio() {
+    if (!audio) {
+      audio = new Audio();
+      audio.addEventListener('ended', () => {
+        playNext();
+      });
+      audio.addEventListener('error', () => {
+        console.log('音频加载失败，尝试下一首');
+        playNext();
+      });
+    }
+  }
+  
+  function togglePlay() {
+    ensureAudio();
+    if (isPlaying) {
+      audio.pause();
+      isPlaying = false;
+    } else {
+      audio.src = playlist[currentIndex].url;
+      audio.play().catch(e => {
+        console.log('播放失败:', e);
+        alert('由于浏览器限制，请手动点击播放，或歌曲链接可能失效');
+      });
+      isPlaying = true;
+    }
+    updateUI();
+  }
+  
+  function playPrev() {
+    ensureAudio();
+    currentIndex = (currentIndex - 1 + playlist.length) % playlist.length;
+    if (isPlaying) {
+      audio.src = playlist[currentIndex].url;
+      audio.play().catch(e => console.log(e));
+    }
+    updateUI();
+  }
+  
+  function playNext() {
+    ensureAudio();
+    currentIndex = (currentIndex + 1) % playlist.length;
+    if (isPlaying) {
+      audio.src = playlist[currentIndex].url;
+      audio.play().catch(e => console.log(e));
+    }
+    updateUI();
+  }
+  
+  playBtn.addEventListener('click', togglePlay);
+  prevBtn.addEventListener('click', playPrev);
+  nextBtn.addEventListener('click', playNext);
+  
+  toggleBtn.addEventListener('click', () => {
+    player.classList.add('collapsed');
+    miniPlayer.style.display = 'flex';
+  });
+  
+  miniPlayer.addEventListener('click', () => {
+    player.classList.remove('collapsed');
+    miniPlayer.style.display = 'none';
+  });
+  
+  updateUI();
+}
+
+initMusicPlayer();
