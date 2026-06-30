@@ -350,7 +350,18 @@ function initGallery() {
       const response = await fetch(url, { cache: 'no-store' });
       if (response.ok) {
         const data = await response.text();
-        photos = JSON.parse(data);
+        const parsed = JSON.parse(data);
+        // 支持新旧两种数据格式
+        if (parsed && parsed.categories) {
+          // 新格式: {categories: {"默认相册": [...], ...}, currentCategory: "默认相册"}
+          const cat = parsed.currentCategory || '默认相册';
+          photos = parsed.categories[cat] || [];
+        } else if (Array.isArray(parsed)) {
+          // 旧格式: ["url1", "url2", ...]
+          photos = parsed;
+        } else {
+          photos = [];
+        }
       }
     } catch (e) {
       console.log('加载照片失败:', e);
@@ -375,7 +386,10 @@ function initGallery() {
         body: JSON.stringify({
           files: {
             [GIST_FILENAME]: {
-              content: JSON.stringify(photos)
+              content: JSON.stringify({
+                categories: { '默认相册': photos },
+                currentCategory: '默认相册'
+              })
             }
           }
         })
