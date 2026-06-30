@@ -5271,3 +5271,379 @@ textarea:focus-visible {
     height: 38px;
   }
 }
+
+/* ==================== Music Page (music.html) ==================== */
+.music-page {
+  padding: 100px 0 140px;
+  min-height: 100vh;
+}
+
+.music-search-wrap {
+  position: relative;
+  max-width: 480px;
+  margin: 0 auto 24px;
+}
+
+.music-search-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.music-search {
+  width: 100%;
+  padding: 14px 16px 14px 48px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.music-search:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.music-search::placeholder {
+  color: var(--text-muted);
+}
+
+.music-stats {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-bottom: 20px;
+}
+
+.music-stats strong {
+  color: var(--accent-primary);
+}
+
+.music-list {
+  max-width: 600px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.music-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+}
+
+.music-empty i {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 16px;
+  opacity: 0.4;
+}
+
+.music-empty p {
+  font-size: 1rem;
+}
+
+.music-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.music-item:hover {
+  border-color: var(--accent-primary);
+  background: var(--bg-tertiary);
+  transform: translateX(4px);
+}
+
+.music-item.playing {
+  border-color: var(--accent-primary);
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.music-item-cover {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+
+.music-item-cover i {
+  width: 20px;
+  height: 20px;
+}
+
+.music-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.music-item-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.music-item.playing .music-item-title {
+  color: var(--accent-primary);
+}
+
+.music-item-artist {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.music-item-album {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: none;
+}
+
+.music-item-play {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.music-item:hover .music-item-play {
+  color: var(--accent-primary);
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.music-item.playing .music-item-play {
+  color: white;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+}
+
+/* Page Player (底部播放器) */
+.music-page-player {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+  padding: 12px 16px;
+  z-index: 1000;
+  backdrop-filter: blur(12px);
+}
+
+.music-page-player-inner {
+  max-width: 700px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.mp-cover {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+
+.mp-cover.playing {
+  animation: coverSpin 8s linear infinite;
+}
+
+.mp-cover i {
+  width: 24px;
+  height: 24px;
+}
+
+.mp-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.mp-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mp-artist {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.mp-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  max-width: 280px;
+}
+
+.mp-time {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  min-width: 36px;
+}
+
+.mp-progress-bar {
+  flex: 1;
+  height: 4px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+}
+
+.mp-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+  border-radius: 4px;
+  width: 0%;
+  transition: width 0.1s linear;
+}
+
+.mp-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mp-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.mp-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--accent-primary);
+}
+
+.mp-btn i {
+  width: 20px;
+  height: 20px;
+}
+
+.mp-btn.mp-play-btn {
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  color: white;
+}
+
+.mp-btn.mp-play-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+}
+
+/* Music Page Mobile */
+@media (max-width: 768px) {
+  .music-page {
+    padding: 90px 0 130px;
+  }
+
+  .music-item {
+    padding: 10px 14px;
+  }
+
+  .music-item-cover {
+    width: 40px;
+    height: 40px;
+  }
+
+  .music-item-title {
+    font-size: 0.9rem;
+  }
+
+  .music-page-player-inner {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .mp-progress {
+    order: 1;
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .mp-info {
+    min-width: 0;
+  }
+
+  .mp-cover {
+    width: 42px;
+    height: 42px;
+  }
+}
+
+@media (max-width: 480px) {
+  .music-item {
+    padding: 8px 12px;
+    gap: 10px;
+  }
+
+  .music-page-player {
+    padding: 10px 12px;
+  }
+
+  .mp-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .mp-btn i {
+    width: 18px;
+    height: 18px;
+  }
+}
