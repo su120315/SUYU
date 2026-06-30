@@ -17,6 +17,18 @@
   --font-mono: 'JetBrains Mono', monospace;
 }
 
+/* 跟随系统暗色模式（无手动设置时） */
+@media (prefers-color-scheme: dark) {
+  :root:not(:has(.dark-mode)) {
+    --bg-primary: #0a0a0f;
+    --bg-secondary: #12121a;
+    --bg-tertiary: #1a1a24;
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+  }
+}
+
 /* 深色模式 */
 .dark-mode {
   --bg-primary: #0a0a0f;

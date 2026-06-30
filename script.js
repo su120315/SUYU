@@ -138,8 +138,10 @@ if (!isMobile && window.matchMedia('(prefers-reduced-motion: no-preference)').ma
   if (themeToggles.length === 0) return;
 
   const savedTheme = localStorage.getItem('theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
 
-  if (savedTheme === 'dark') {
+  // 无手动保存时，跟随系统
+  if (savedTheme === 'dark' || (!savedTheme && prefersDark.matches)) {
     document.body.classList.add('dark-mode');
     updateThemeIcons(true);
   }
@@ -157,6 +159,19 @@ if (!isMobile && window.matchMedia('(prefers-reduced-motion: no-preference)').ma
       localStorage.setItem('theme', isDark ? 'dark' : 'light');
       updateThemeIcons(isDark);
     });
+  });
+
+  // 系统主题变化时自动跟随（仅当用户没有手动设置过）
+  prefersDark.addEventListener('change', (e) => {
+    if (!localStorage.getItem('theme')) {
+      if (e.matches) {
+        document.body.classList.add('dark-mode');
+        updateThemeIcons(true);
+      } else {
+        document.body.classList.remove('dark-mode');
+        updateThemeIcons(false);
+      }
+    }
   });
 })();
 

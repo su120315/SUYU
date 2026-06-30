@@ -52,11 +52,26 @@
       </div>
 
       <!-- 搜索栏 -->
-      <div class="music-search-wrap" style="max-width:500px;margin:0 auto 20px">
+      <div class="music-search-wrap" style="max-width:500px;margin:0 auto 20px;position:relative">
         <i data-lucide="search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--text-muted);pointer-events:none"></i>
         <input type="text" id="musicSearch" placeholder="搜索歌曲或歌手..."
                style="width:100%;padding:12px 16px 12px 44px;border:1px solid var(--border-color);border-radius:12px;background:var(--bg-secondary);color:var(--text-primary);font-family:inherit;font-size:1rem;box-sizing:border-box"
                oninput="doSearch()">
+        <button id="musicRandomBtn" title="随机一首"
+                style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:linear-gradient(135deg,var(--accent-primary),var(--accent-secondary));color:white;border:none;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:0.85rem;display:flex;align-items:center;gap:4px">
+          <i data-lucide="shuffle" style="width:16px;height:16px"></i><span>随机</span>
+        </button>
+      </div>
+
+      <!-- 自定义播放 -->
+      <div style="max-width:500px;margin:-10px auto 20px;display:flex;gap:8px;align-items:center">
+        <input type="text" id="customSongId" placeholder="粘贴网易云歌曲ID或链接..." 
+               style="flex:1;padding:8px 12px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);font-family:inherit;font-size:0.85rem;box-sizing:border-box"
+               onkeydown="if(event.key==='Enter') playCustom()">
+        <button onclick="playCustom()" style="padding:8px 14px;background:var(--bg-tertiary);color:var(--text-primary);border:1px solid var(--border-color);border-radius:8px;cursor:pointer;font-size:0.85rem;white-space:nowrap;transition:all 0.2s"
+                onmouseover="this.style.borderColor='var(--accent-primary)'" onmouseout="this.style.borderColor='var(--border-color)'">
+          播歌
+        </button>
       </div>
 
       <!-- 统计 -->
@@ -176,6 +191,78 @@
       {title:'遇见',artist:'孙燕姿',url:'https://music.163.com/song/media/outer/url?id=185895.mp3'},
       {title:'天黑黑',artist:'孙燕姿',url:'https://music.163.com/song/media/outer/url?id=185894.mp3'},
       {title:'小幸运',artist:'田馥甄',url:'https://music.163.com/song/media/outer/url?id=34331561.mp3'},
+      // 孙燕姿
+      {title:'第一天',artist:'孙燕姿',url:'https://music.163.com/song/media/outer/url?id=185897.mp3'},
+      {title:'我怀念的',artist:'孙燕姿',url:'https://music.163.com/song/media/outer/url?id=185898.mp3'},
+      {title:'克卜勒',artist:'孙燕姿',url:'https://music.163.com/song/media/outer/url?id=28484894.mp3'},
+      // 张韶涵
+      {title:'寓言',artist:'张韶涵',url:'https://music.163.com/song/media/outer/url?id=185921.mp3'},
+      {title:'淋雨一直走',artist:'张韶涵',url:'https://music.163.com/song/media/outer/url?id=28188134.mp3'},
+      // 王力宏
+      {title:'唯一',artist:'王力宏',url:'https://music.163.com/song/media/outer/url?id=186018.mp3'},
+      {title:'大城小爱',artist:'王力宏',url:'https://music.163.com/song/media/outer/url?id=186021.mp3'},
+      {title:'改变自己',artist:'王力宏',url:'https://music.163.com/song/media/outer/url?id=186020.mp3'},
+      {title:'你不知道的事',artist:'王力宏',url:'https://music.163.com/song/media/outer/url?id=186023.mp3'},
+      // 林宥嘉
+      {title:'说谎',artist:'林宥嘉',url:'https://music.163.com/song/media/outer/url?id=185857.mp3'},
+      {title:'浪费',artist:'林宥嘉',url:'https://music.163.com/song/media/outer/url?id=28588161.mp3'},
+      {title:'背影',artist:'林宥嘉',url:'https://music.163.com/song/media/outer/url?id=185854.mp3'},
+      {title:'成全',artist:'林宥嘉',url:'https://music.163.com/song/media/outer/url?id=472149820.mp3'},
+      // 李荣浩
+      {title:'李白',artist:'李荣浩',url:'https://music.163.com/song/media/outer/url?id=28052468.mp3'},
+      {title:'年少有为',artist:'李荣浩',url:'https://music.163.com/song/media/outer/url?id=1296452516.mp3'},
+      {title:'麻雀',artist:'李荣浩',url:'https://music.163.com/song/media/outer/url?id=1401412690.mp3'},
+      {title:'不将就',artist:'李荣浩',url:'https://music.163.com/song/media/outer/url?id=32324435.mp3'},
+      // 张杰
+      {title:'逆战',artist:'张杰',url:'https://music.163.com/song/media/outer/url?id=65885.mp3'},
+      {title:'天下',artist:'张杰',url:'https://music.163.com/song/media/outer/url?id=65887.mp3'},
+      {title:'我们都一样',artist:'张杰',url:'https://music.163.com/song/media/outer/url?id=65886.mp3'},
+      // 周深
+      {title:'大鱼',artist:'周深',url:'https://music.163.com/song/media/outer/url?id=409646526.mp3'},
+      {title:'光亮',artist:'周深',url:'https://music.163.com/song/media/outer/url?id=1842125858.mp3'},
+      // 汪苏泷
+      {title:'不分手的恋爱',artist:'汪苏泷',url:'https://music.163.com/song/media/outer/url?id=167954.mp3'},
+      {title:'万有引力',artist:'汪苏泷',url:'https://music.163.com/song/media/outer/url?id=26427653.mp3'},
+      {title:'有点甜',artist:'汪苏泷',url:'https://music.163.com/song/media/outer/url?id=27831497.mp3'},
+      // 徐良
+      {title:'客官不可以',artist:'徐良',url:'https://music.163.com/song/media/outer/url?id=168015.mp3'},
+      {title:'坏女孩',artist:'徐良',url:'https://music.163.com/song/media/outer/url?id=168016.mp3'},
+      // 王菲
+      {title:'红豆',artist:'王菲',url:'https://music.163.com/song/media/outer/url?id=185940.mp3'},
+      {title:'匆匆那年',artist:'王菲',url:'https://music.163.com/song/media/outer/url?id=31789516.mp3'},
+      {title:'传奇',artist:'王菲',url:'https://music.163.com/song/media/outer/url?id=185941.mp3'},
+      // 那英
+      {title:'默',artist:'那英',url:'https://music.163.com/song/media/outer/url?id=35447956.mp3'},
+      // 莫文蔚
+      {title:'忽然之间',artist:'莫文蔚',url:'https://music.163.com/song/media/outer/url?id=185930.mp3'},
+      {title:'阴天',artist:'莫文蔚',url:'https://music.163.com/song/media/outer/url?id=185931.mp3'},
+      // 张信哲
+      {title:'爱如潮水',artist:'张信哲',url:'https://music.163.com/song/media/outer/url?id=186037.mp3'},
+      {title:'过火',artist:'张信哲',url:'https://music.163.com/song/media/outer/url?id=186038.mp3'},
+      {title:'信仰',artist:'张信哲',url:'https://music.163.com/song/media/outer/url?id=186040.mp3'},
+      // 刘德华
+      {title:'冰雨',artist:'刘德华',url:'https://music.163.com/song/media/outer/url?id=185979.mp3'},
+      {title:'忘情水',artist:'刘德华',url:'https://music.163.com/song/media/outer/url?id=185977.mp3'},
+      {title:'练习',artist:'刘德华',url:'https://music.163.com/song/media/outer/url?id=185978.mp3'},
+      // 张学友
+      {title:'吻别',artist:'张学友',url:'https://music.163.com/song/media/outer/url?id=185963.mp3'},
+      {title:'一千个伤心的理由',artist:'张学友',url:'https://music.163.com/song/media/outer/url?id=185964.mp3'},
+      {title:'她来听我的演唱会',artist:'张学友',url:'https://music.163.com/song/media/outer/url?id=185969.mp3'},
+      // 任然
+      {title:'山外小楼夜听雨',artist:'任然',url:'https://music.163.com/song/media/outer/url?id=423514467.mp3'},
+      {title:'空空如也',artist:'任然',url:'https://music.163.com/song/media/outer/url?id=530656218.mp3'},
+      {title:'飞鸟和蝉',artist:'任然',url:'https://music.163.com/song/media/outer/url?id=1447832119.mp3'},
+      // 网络热歌
+      {title:'孤勇者',artist:'陈奕迅',url:'https://music.163.com/song/media/outer/url?id=1901376647.mp3'},
+      {title:'白月光与朱砂痣',artist:'大籽',url:'https://music.163.com/song/media/outer/url?id=1814420893.mp3'},
+      {title:'莫问归期',artist:'胡夏',url:'https://music.163.com/song/media/outer/url?id=1456662245.mp3'},
+      {title:'只要平凡',artist:'张杰/张碧晨',url:'https://music.163.com/song/media/outer/url?id=1341259847.mp3'},
+      {title:'后来遇见他',artist:'胡66',url:'https://music.163.com/song/media/outer/url?id=1439353918.mp3'},
+      {title:'执迷不悟',artist:'铁脑袋',url:'https://music.163.com/song/media/outer/url?id=1480408355.mp3'},
+      {title:'大风吹',artist:'刘惜君',url:'https://music.163.com/song/media/outer/url?id=1839496156.mp3'},
+      {title:'下坠Falling',artist:'Corki',url:'https://music.163.com/song/media/outer/url?id=1418368793.mp3'},
+      {title:'氧化氢',artist:'李尖尖',url:'https://music.163.com/song/media/outer/url?id=1446281853.mp3'},
+      {title:'一路生花',artist:'温奕心',url:'https://music.163.com/song/media/outer/url?id=1843420999.mp3'},
     ];
 
     const musicList = document.getElementById('musicList');
@@ -346,6 +433,37 @@
     playBtn.addEventListener('click', togglePlay);
     prevBtn.addEventListener('click', prevSong);
     nextBtn.addEventListener('click', nextSong);
+
+    // 随机播放
+    document.getElementById('musicRandomBtn').addEventListener('click', () => {
+      const list = getDisplayList();
+      if (list.length === 0) return;
+      const rand = Math.floor(Math.random() * list.length);
+      playIdx(playlist.indexOf(list[rand]));
+    });
+
+    // 自定义播放
+    function playCustom() {
+      const input = document.getElementById('customSongId');
+      let val = input.value.trim();
+      if (!val) return;
+      // 从链接中提取ID: https://music.163.com/song?id=186016 或 https://music.163.com/#/song?id=186016 或纯数字
+      const match = val.match(/id=(\d+)/) || val.match(/(\d+)/);
+      if (match) {
+        const id = match[1];
+        const url = 'https://music.163.com/song/media/outer/url?id=' + id + '.mp3';
+        const title = prompt('给这首歌起个名字(可选):') || '自定义歌曲';
+        const artist = prompt('歌手名(可选):') || '未知';
+        // 临时添加到歌单并播放
+        const idx = playlist.length;
+        playlist.push({title, artist, url});
+        playIdx(idx);
+        render();
+        input.value = '';
+      } else {
+        alert('请输入正确的网易云歌曲ID或链接');
+      }
+    }
 
     // 搜索防抖
     let searchTimer;
