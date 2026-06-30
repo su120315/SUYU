@@ -16,20 +16,36 @@
   <script src="https://unpkg.com/lucide@0.460.0"></script>
   <link rel="stylesheet" href="style.css">
   <style>
-    .music-embed {
-      width: 100%;
-      border: none;
-      border-radius: 12px;
-      background: var(--bg-secondary);
-      min-height: 600px;
+    .music-page {
+      padding: 100px 0 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .music-page .container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
     }
 
     .music-embed-wrap {
-      position: relative;
-      width: 100%;
-      overflow: hidden;
-      border-radius: 12px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      border-radius: 12px 12px 0 0;
       border: 1px solid var(--border-color);
+      border-bottom: none;
+      overflow: hidden;
+      position: relative;
+      min-height: 500px;
+    }
+
+    .music-embed {
+      width: 100%;
+      flex: 1;
+      border: none;
+      min-height: 500px;
     }
 
     .music-embed-loading {
@@ -66,25 +82,99 @@
       font-size: 0.9rem;
     }
 
+    /* 搜索栏 */
+    .music-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .music-search-wrap {
+      flex: 1;
+      position: relative;
+      min-width: 200px;
+    }
+
+    .music-search-wrap i {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 18px;
+      height: 18px;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .music-search-wrap input {
+      width: 100%;
+      padding: 10px 14px 10px 42px;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 0.95rem;
+      transition: all 0.3s ease;
+      box-sizing: border-box;
+    }
+
+    .music-search-wrap input:focus {
+      outline: none;
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    }
+
+    .music-search-wrap input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .music-bar-btn {
+      padding: 10px 18px;
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .music-bar-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+    }
+
+    .music-bar-btn i {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* 标签行 */
     .music-tags {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
-      justify-content: center;
-      margin-bottom: 24px;
+      gap: 6px;
+      margin-bottom: 16px;
     }
 
     .music-tag {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 8px 16px;
+      gap: 4px;
+      padding: 5px 12px;
       background: var(--bg-secondary);
       border: 1px solid var(--border-color);
-      border-radius: 20px;
+      border-radius: 16px;
       color: var(--text-primary);
-      font-size: 0.85rem;
-      text-decoration: none;
+      font-size: 0.8rem;
+      cursor: pointer;
       transition: all 0.2s ease;
     }
 
@@ -92,12 +182,11 @@
       border-color: var(--accent-primary);
       background: rgba(99, 102, 241, 0.08);
       color: var(--accent-primary);
-      transform: translateY(-2px);
     }
 
     .music-tag i {
-      width: 14px;
-      height: 14px;
+      width: 12px;
+      height: 12px;
     }
 
     .music-tag.hot {
@@ -107,104 +196,88 @@
     }
 
     .music-tag.hot:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+      box-shadow: 0 3px 10px rgba(239, 68, 68, 0.3);
       color: white;
     }
 
     .music-tag.artist {
-      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+      background: linear-gradient(135deg, var(--accent-primary), #8b5cf6);
       color: white;
       border: none;
     }
 
     .music-tag.artist:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+      box-shadow: 0 3px 10px rgba(99, 102, 241, 0.3);
       color: white;
     }
 
-    .music-quick-search {
+    /* 搜索历史 */
+    .music-history {
       display: flex;
-      gap: 8px;
-      max-width: 500px;
-      margin: 0 auto 16px;
-    }
-
-    .music-quick-search input {
-      flex: 1;
-      padding: 12px 18px;
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      background: var(--bg-secondary);
-      color: var(--text-primary);
-      font-family: inherit;
-      font-size: 1rem;
-      transition: all 0.3s ease;
-    }
-
-    .music-quick-search input:focus {
-      outline: none;
-      border-color: var(--accent-primary);
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
-    }
-
-    .music-quick-search input::placeholder {
-      color: var(--text-muted);
-    }
-
-    .music-quick-search button {
-      padding: 12px 20px;
-      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-      color: white;
-      border: none;
-      border-radius: 12px;
-      cursor: pointer;
-      font-size: 1rem;
-      display: flex;
-      align-items: center;
+      flex-wrap: wrap;
       gap: 6px;
+      margin-bottom: 16px;
+    }
+
+    .music-history-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      background: var(--bg-tertiary);
+      border-radius: 14px;
+      color: var(--text-secondary);
+      font-size: 0.78rem;
+      cursor: pointer;
       transition: all 0.2s ease;
-      white-space: nowrap;
     }
 
-    .music-quick-search button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+    .music-history-tag:hover {
+      color: var(--accent-primary);
+      background: rgba(99, 102, 241, 0.08);
     }
 
-    .music-quick-search button i {
-      width: 18px;
-      height: 18px;
+    .music-history-tag .close-btn {
+      width: 14px;
+      height: 14px;
+      cursor: pointer;
+      opacity: 0.5;
+      transition: opacity 0.2s;
     }
 
-    .music-embed-info {
+    .music-history-tag .close-btn:hover {
+      opacity: 1;
+    }
+
+    .music-info {
       text-align: center;
       color: var(--text-muted);
-      font-size: 0.8rem;
-      margin-top: 12px;
+      font-size: 0.78rem;
+      padding: 10px;
+      border-top: 1px solid var(--border-color);
+      background: var(--bg-secondary);
     }
 
     @media (max-width: 768px) {
-      .music-embed {
-        min-height: 500px;
+      .music-page {
+        padding: 85px 0 0;
       }
-
-      .music-quick-search {
+      .music-embed-wrap {
+        min-height: 400px;
+        border-radius: 8px 8px 0 0;
+      }
+      .music-embed {
+        min-height: 400px;
+      }
+      .music-bar {
         flex-direction: column;
       }
-
-      .music-quick-search button {
+      .music-search-wrap {
+        width: 100%;
+      }
+      .music-bar-btn {
+        width: 100%;
         justify-content: center;
-      }
-
-      .music-tags {
-        gap: 6px;
-      }
-
-      .music-tag {
-        padding: 6px 12px;
-        font-size: 0.8rem;
       }
     }
   </style>
@@ -242,91 +315,151 @@
     <div class="container">
       <div class="section-header">
         <h1 class="section-title">🎵 音乐电台</h1>
-        <p class="section-desc">搜索海量歌曲，想听什么搜什么</p>
+        <p class="section-desc">搜歌 → 选歌 → 直接在当前页面听</p>
       </div>
 
       <!-- 搜索栏 -->
-      <div class="music-quick-search">
-        <input type="text" id="musicSearchInput" placeholder="输入歌曲名或歌手..." autocomplete="off"
-               onkeydown="if(event.key==='Enter') doSearch()">
-        <button onclick="doSearch()">
+      <div class="music-bar">
+        <div class="music-search-wrap">
+          <i data-lucide="search"></i>
+          <input type="text" id="musicSearchInput" placeholder="输入歌曲名或歌手..."
+                 autocomplete="off" onkeydown="if(event.key==='Enter') doSearch()">
+        </div>
+        <button class="music-bar-btn" onclick="doSearch()">
           <i data-lucide="search"></i>
           <span>搜歌</span>
         </button>
       </div>
 
-      <!-- 热门搜索标签 -->
+      <!-- 搜索历史 -->
+      <div class="music-history" id="musicHistory"></div>
+
+      <!-- 热门歌曲 -->
       <div class="music-tags" id="hotTags"></div>
 
-      <!-- 歌手快速入口 -->
-      <div class="music-tags" id="artistTags" style="margin-bottom: 24px;"></div>
+      <!-- 热门歌手 -->
+      <div class="music-tags" id="artistTags"></div>
 
-      <!-- 歌曲海嵌入区域 -->
+      <!-- 歌曲海嵌入 -->
       <div class="music-embed-wrap">
         <div class="music-embed-loading" id="embedLoading">
           <div class="spinner"></div>
           <span>加载中...</span>
         </div>
-        <iframe class="music-embed" id="musicEmbed" src="https://www.gequhai.com/"
+        <iframe class="music-embed" id="musicEmbed"
+                src="https://www.gequhai.com/"
                 sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
                 loading="lazy"
                 onload="document.getElementById('embedLoading').classList.add('hide')"
                 title="歌曲海音乐搜索"></iframe>
       </div>
-      <p class="music-embed-info">数据来源：<a href="https://www.gequhai.com/" target="_blank" rel="noopener" style="color:var(--accent-primary)">歌曲海</a> · 点击歌曲进入详情页即可试听</p>
+      <div class="music-info">
+        歌曲海 · 搜歌后选一首，直接在当前页面播放
+      </div>
     </div>
   </div>
 
   <script>
+    // ==================== 热门标签 ====================
     const hotSearches = [
-      '晴天', '稻香', '七里香', '夜曲', '青花瓷', '告白气球',
-      '江南', '演员', '十年', '光年之外', '泡沫', '消愁',
-      '起风了', '绿色', '错位时空', '踏山河', '半生雪', '少年'
+      '晴天','稻香','七里香','夜曲','青花瓷','告白气球',
+      '江南','演员','十年','光年之外','泡沫','消愁',
+      '起风了','绿色','错位时空','踏山河','半生雪','少年'
     ];
-
     const hotArtists = [
-      '周杰伦', '林俊杰', '薛之谦', '陈奕迅', '邓紫棋',
-      '毛不易', '许嵩', '李荣浩', '刘德华', 'Beyond'
+      '周杰伦','林俊杰','薛之谦','陈奕迅','邓紫棋',
+      '毛不易','许嵩','李荣浩','刘德华','Beyond'
     ];
 
     const hotTags = document.getElementById('hotTags');
     const artistTags = document.getElementById('artistTags');
-    const searchInput = document.getElementById('musicSearchInput');
-    const musicEmbed = document.getElementById('musicEmbed');
 
-    // 热门搜索标签
     hotSearches.forEach(song => {
-      const tag = document.createElement('a');
+      const tag = document.createElement('span');
       tag.className = 'music-tag hot';
-      tag.href = `https://www.gequhai.com/s/${encodeURIComponent(song)}`;
-      tag.target = '_blank';
-      tag.rel = 'noopener';
       tag.innerHTML = `<i data-lucide="trending-up"></i><span>${song}</span>`;
+      tag.addEventListener('click', () => searchGequhai(song));
       hotTags.appendChild(tag);
     });
 
-    // 歌手标签
     hotArtists.forEach(artist => {
-      const tag = document.createElement('a');
+      const tag = document.createElement('span');
       tag.className = 'music-tag artist';
-      tag.href = `https://www.gequhai.com/s/${encodeURIComponent(artist)}`;
-      tag.target = '_blank';
-      tag.rel = 'noopener';
       tag.innerHTML = `<i data-lucide="mic-2"></i><span>${artist}</span>`;
+      tag.addEventListener('click', () => searchGequhai(artist));
       artistTags.appendChild(tag);
     });
 
-    // 搜索函数
-    function doSearch() {
-      const query = searchInput.value.trim();
-      if (!query) {
-        searchInput.focus();
-        return;
-      }
-      musicEmbed.src = `https://www.gequhai.com/s/${encodeURIComponent(query)}`;
-      document.getElementById('embedLoading').classList.remove('hide');
+    // ==================== 搜索历史 ====================
+    const historyContainer = document.getElementById('musicHistory');
+    const HISTORY_KEY = 'suyu_music_history';
+    let searchHistory = [];
+
+    function loadHistory() {
+      try {
+        const data = localStorage.getItem(HISTORY_KEY);
+        searchHistory = data ? JSON.parse(data) : [];
+      } catch(e) { searchHistory = []; }
+      renderHistory();
     }
 
+    function renderHistory() {
+      if (searchHistory.length === 0) {
+        historyContainer.style.display = 'none';
+        return;
+      }
+      historyContainer.style.display = 'flex';
+      historyContainer.innerHTML = searchHistory.map(q =>
+        `<span class="music-history-tag" onclick="searchGequhai('${q.replace(/'/g, "\\'")}')">
+          <i data-lucide="clock" style="width:12px;height:12px"></i>${q}
+          <i data-lucide="x" class="close-btn" onclick="event.stopPropagation();removeHistory('${q.replace(/'/g, "\\'")}')"></i>
+        </span>`
+      ).join('');
+      lucide.createIcons();
+    }
+
+    function addHistory(query) {
+      searchHistory = searchHistory.filter(q => q !== query);
+      searchHistory.unshift(query);
+      if (searchHistory.length > 8) searchHistory = searchHistory.slice(0, 8);
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(searchHistory));
+      renderHistory();
+    }
+
+    function removeHistory(query) {
+      searchHistory = searchHistory.filter(q => q !== query);
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(searchHistory));
+      renderHistory();
+    }
+
+    // ==================== 搜索 ====================
+    const searchInput = document.getElementById('musicSearchInput');
+    const musicEmbed = document.getElementById('musicEmbed');
+    const embedLoading = document.getElementById('embedLoading');
+
+    function doSearch() {
+      const query = searchInput.value.trim();
+      if (!query) { searchInput.focus(); return; }
+      searchGequhai(query);
+    }
+
+    function searchGequhai(query) {
+      if (!query) return;
+      musicEmbed.src = `https://www.gequhai.com/s/${encodeURIComponent(query)}`;
+      embedLoading.classList.remove('hide');
+      addHistory(query);
+      searchInput.value = query;
+    }
+
+    // ==================== 如果是播放页链接, 直接导航到播放页 ====================
+    // 检测点击的链接如果是播放页, 就同步标题
+    window.addEventListener('message', (e) => {
+      if (e.data && e.data.type === 'song_playing') {
+        document.title = e.data.title + ' - 音乐电台 | 蘇魚';
+      }
+    });
+
+    loadHistory();
     lucide.createIcons();
   </script>
 </body>
