@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="蘇魚的音乐电台 - 在线听歌，搜索歌曲">
-  <meta name="keywords" content="音乐,歌单,在线听歌,周杰伦,林俊杰,蘇魚">
+  <meta name="description" content="蘇魚的音乐电台 - 歌曲海搜索，海量歌曲随心听">
+  <meta name="keywords" content="音乐,歌单,在线听歌,歌曲海,搜索,蘇魚">
   <meta name="author" content="蘇魚">
   <meta name="theme-color" content="#6366f1">
   <title>音乐电台 | 蘇魚</title>
@@ -15,6 +15,199 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@0.460.0"></script>
   <link rel="stylesheet" href="style.css">
+  <style>
+    .music-embed {
+      width: 100%;
+      border: none;
+      border-radius: 12px;
+      background: var(--bg-secondary);
+      min-height: 600px;
+    }
+
+    .music-embed-wrap {
+      position: relative;
+      width: 100%;
+      overflow: hidden;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+    }
+
+    .music-embed-loading {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-secondary);
+      z-index: 1;
+      transition: opacity 0.5s ease;
+    }
+
+    .music-embed-loading.hide {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .music-embed-loading .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--bg-tertiary);
+      border-top-color: var(--accent-primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 12px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .music-embed-loading span {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+
+    .music-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 24px;
+    }
+
+    .music-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      color: var(--text-primary);
+      font-size: 0.85rem;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+
+    .music-tag:hover {
+      border-color: var(--accent-primary);
+      background: rgba(99, 102, 241, 0.08);
+      color: var(--accent-primary);
+      transform: translateY(-2px);
+    }
+
+    .music-tag i {
+      width: 14px;
+      height: 14px;
+    }
+
+    .music-tag.hot {
+      background: linear-gradient(135deg, #f97316, #ef4444);
+      color: white;
+      border: none;
+    }
+
+    .music-tag.hot:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+      color: white;
+    }
+
+    .music-tag.artist {
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+      color: white;
+      border: none;
+    }
+
+    .music-tag.artist:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+      color: white;
+    }
+
+    .music-quick-search {
+      display: flex;
+      gap: 8px;
+      max-width: 500px;
+      margin: 0 auto 16px;
+    }
+
+    .music-quick-search input {
+      flex: 1;
+      padding: 12px 18px;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .music-quick-search input:focus {
+      outline: none;
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    }
+
+    .music-quick-search input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .music-quick-search button {
+      padding: 12px 20px;
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .music-quick-search button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+    }
+
+    .music-quick-search button i {
+      width: 18px;
+      height: 18px;
+    }
+
+    .music-embed-info {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      margin-top: 12px;
+    }
+
+    @media (max-width: 768px) {
+      .music-embed {
+        min-height: 500px;
+      }
+
+      .music-quick-search {
+        flex-direction: column;
+      }
+
+      .music-quick-search button {
+        justify-content: center;
+      }
+
+      .music-tags {
+        gap: 6px;
+      }
+
+      .music-tag {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+      }
+    }
+  </style>
 </head>
 <body>
   <nav class="navbar">
@@ -49,335 +242,91 @@
     <div class="container">
       <div class="section-header">
         <h1 class="section-title">🎵 音乐电台</h1>
-        <p class="section-desc">听歌放松一下～</p>
+        <p class="section-desc">搜索海量歌曲，想听什么搜什么</p>
       </div>
 
       <!-- 搜索栏 -->
-      <div class="music-search-wrap">
-        <i data-lucide="search" class="music-search-icon"></i>
-        <input type="text" class="music-search" id="musicSearch" placeholder="搜索歌曲或歌手..." autocomplete="off">
+      <div class="music-quick-search">
+        <input type="text" id="musicSearchInput" placeholder="输入歌曲名或歌手..." autocomplete="off"
+               onkeydown="if(event.key==='Enter') doSearch()">
+        <button onclick="doSearch()">
+          <i data-lucide="search"></i>
+          <span>搜歌</span>
+        </button>
       </div>
 
-      <!-- 统计和分类标签 -->
-      <div class="music-stats">
-        <span>共 <strong id="songCount">0</strong> 首歌</span>
-      </div>
+      <!-- 热门搜索标签 -->
+      <div class="music-tags" id="hotTags"></div>
 
-      <!-- 歌单列表 -->
-      <div class="music-list" id="musicList"></div>
-    </div>
-  </div>
+      <!-- 歌手快速入口 -->
+      <div class="music-tags" id="artistTags" style="margin-bottom: 24px;"></div>
 
-  <!-- 底部播放器 -->
-  <div class="music-page-player" id="musicPagePlayer">
-    <div class="music-page-player-inner">
-      <div class="mp-cover" id="mpCover">
-        <i data-lucide="music"></i>
-      </div>
-      <div class="mp-info">
-        <div class="mp-title" id="mpTitle">选择一首歌</div>
-        <div class="mp-artist" id="mpArtist">点击播放</div>
-      </div>
-      <div class="mp-progress">
-        <span class="mp-time" id="mpCurrentTime">00:00</span>
-        <div class="mp-progress-bar" id="mpProgressBar">
-          <div class="mp-progress-fill" id="mpProgressFill"></div>
+      <!-- 歌曲海嵌入区域 -->
+      <div class="music-embed-wrap">
+        <div class="music-embed-loading" id="embedLoading">
+          <div class="spinner"></div>
+          <span>加载中...</span>
         </div>
-        <span class="mp-time" id="mpDuration">00:00</span>
+        <iframe class="music-embed" id="musicEmbed" src="https://www.gequhai.com/"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                loading="lazy"
+                onload="document.getElementById('embedLoading').classList.add('hide')"
+                title="歌曲海音乐搜索"></iframe>
       </div>
-      <div class="mp-controls">
-        <button class="mp-btn" id="mpPrev" title="上一首">
-          <i data-lucide="skip-back"></i>
-        </button>
-        <button class="mp-btn mp-play-btn" id="mpPlayBtn" title="播放/暂停">
-          <i data-lucide="play" id="mpPlayIcon"></i>
-        </button>
-        <button class="mp-btn" id="mpNext" title="下一首">
-          <i data-lucide="skip-forward"></i>
-        </button>
-      </div>
+      <p class="music-embed-info">数据来源：<a href="https://www.gequhai.com/" target="_blank" rel="noopener" style="color:var(--accent-primary)">歌曲海</a> · 点击歌曲进入详情页即可试听</p>
     </div>
   </div>
 
   <script>
-    // ==================== 播放器 ====================
-    const playlist = [
-      { title: '晴天', artist: '周杰伦', album: '叶惠美', url: 'https://music.163.com/song/media/outer/url?id=186016.mp3' },
-      { title: '稻香', artist: '周杰伦', album: '魔杰座', url: 'https://music.163.com/song/media/outer/url?id=185809.mp3' },
-      { title: '七里香', artist: '周杰伦', album: '七里香', url: 'https://music.163.com/song/media/outer/url?id=185798.mp3' },
-      { title: '夜曲', artist: '周杰伦', album: '十一月的萧邦', url: 'https://music.163.com/song/media/outer/url?id=185817.mp3' },
-      { title: '青花瓷', artist: '周杰伦', album: '我很忙', url: 'https://music.163.com/song/media/outer/url?id=185806.mp3' },
-      { title: '简单爱', artist: '周杰伦', album: '范特西', url: 'https://music.163.com/song/media/outer/url?id=185810.mp3' },
-      { title: '告白气球', artist: '周杰伦', album: '周杰伦的床边故事', url: 'https://music.163.com/song/media/outer/url?id=436346068.mp3' },
-      { title: '搁浅', artist: '周杰伦', album: '七里香', url: 'https://music.163.com/song/media/outer/url?id=185820.mp3' },
-      { title: '半岛铁盒', artist: '周杰伦', album: '八度空间', url: 'https://music.163.com/song/media/outer/url?id=185815.mp3' },
-      { title: '一路向北', artist: '周杰伦', album: '十一月的萧邦', url: 'https://music.163.com/song/media/outer/url?id=185821.mp3' },
-      { title: '枫', artist: '周杰伦', album: '十一月的萧邦', url: 'https://music.163.com/song/media/outer/url?id=185822.mp3' },
-      { title: '退后', artist: '周杰伦', album: '依然范特西', url: 'https://music.163.com/song/media/outer/url?id=185802.mp3' },
-      { title: '听妈妈的话', artist: '周杰伦', album: '依然范特西', url: 'https://music.163.com/song/media/outer/url?id=185803.mp3' },
-      { title: '菊花台', artist: '周杰伦', album: '依然范特西', url: 'https://music.163.com/song/media/outer/url?id=185804.mp3' },
-      { title: '不能说的秘密', artist: '周杰伦', album: '不能说的秘密', url: 'https://music.163.com/song/media/outer/url?id=185800.mp3' },
-      { title: '江南', artist: '林俊杰', album: '第二天堂', url: 'https://music.163.com/song/media/outer/url?id=185830.mp3' },
-      { title: '修炼爱情', artist: '林俊杰', album: '因你而在', url: 'https://music.163.com/song/media/outer/url?id=28563015.mp3' },
-      { title: '可惜没如果', artist: '林俊杰', album: '新地球', url: 'https://music.163.com/song/media/outer/url?id=32372676.mp3' },
-      { title: '不为谁而作的歌', artist: '林俊杰', album: '和自己对话', url: 'https://music.163.com/song/media/outer/url?id=37249091.mp3' },
-      { title: '她说', artist: '林俊杰', album: '她说', url: 'https://music.163.com/song/media/outer/url?id=32201136.mp3' },
-      { title: '小酒窝', artist: '林俊杰', album: 'JJ陆', url: 'https://music.163.com/song/media/outer/url?id=185831.mp3' },
-      { title: '一千年以后', artist: '林俊杰', album: '编号89757', url: 'https://music.163.com/song/media/outer/url?id=185833.mp3' },
-      { title: '演员', artist: '薛之谦', album: '绅士', url: 'https://music.163.com/song/media/outer/url?id=28186885.mp3' },
-      { title: '丑八怪', artist: '薛之谦', album: '意外', url: 'https://music.163.com/song/media/outer/url?id=28186884.mp3' },
-      { title: '你还要我怎样', artist: '薛之谦', album: '意外', url: 'https://music.163.com/song/media/outer/url?id=27955653.mp3' },
-      { title: '绅士', artist: '薛之谦', album: '绅士', url: 'https://music.163.com/song/media/outer/url?id=33850312.mp3' },
-      { title: '十年', artist: '陈奕迅', album: '黑白灰', url: 'https://music.163.com/song/media/outer/url?id=185838.mp3' },
-      { title: '好久不见', artist: '陈奕迅', album: '认了吧', url: 'https://music.163.com/song/media/outer/url?id=185843.mp3' },
-      { title: '浮夸', artist: '陈奕迅', album: 'U-87', url: 'https://music.163.com/song/media/outer/url?id=185842.mp3' },
-      { title: '富士山下', artist: '陈奕迅', album: 'What\'s Going On...?', url: 'https://music.163.com/song/media/outer/url?id=185844.mp3' },
-      { title: '光年之外', artist: '邓紫棋', album: '光年之外', url: 'https://music.163.com/song/media/outer/url?id=460087173.mp3' },
-      { title: '泡沫', artist: '邓紫棋', album: 'Xposed', url: 'https://music.163.com/song/media/outer/url?id=28562953.mp3' },
-      { title: '喜欢你', artist: '邓紫棋', album: '新的心跳', url: 'https://music.163.com/song/media/outer/url?id=28562949.mp3' },
-      { title: '消愁', artist: '毛不易', album: '平凡的一天', url: 'https://music.163.com/song/media/outer/url?id=495271480.mp3' },
-      { title: '像我这样的人', artist: '毛不易', album: '平凡的一天', url: 'https://music.163.com/song/media/outer/url?id=495271481.mp3' },
-      { title: '无名的人', artist: '毛不易', album: '无名的人', url: 'https://music.163.com/song/media/outer/url?id=1903149553.mp3' },
-      { title: '起风了', artist: '买辣椒也用券', album: '起风了', url: 'https://music.163.com/song/media/outer/url?id=1330348068.mp3' },
-      { title: '绿色', artist: '陈雪凝', album: '绿色', url: 'https://music.163.com/song/media/outer/url?id=1354786721.mp3' },
-      { title: '夜空中最亮的星', artist: '逃跑计划', album: '世界', url: 'https://music.163.com/song/media/outer/url?id=185858.mp3' },
-      { title: '飞鸟和蝉', artist: '任然', album: '飞鸟和蝉', url: 'https://music.163.com/song/media/outer/url?id=1447832119.mp3' },
-      { title: '踏山河', artist: '七叔', album: '踏山河', url: 'https://music.163.com/song/media/outer/url?id=1486741026.mp3' },
-      { title: '半生雪', artist: '七叔', album: '半生雪', url: 'https://music.163.com/song/media/outer/url?id=1817172485.mp3' },
-      { title: '胡广生', artist: '任素汐', album: '胡广生', url: 'https://music.163.com/song/media/outer/url?id=1325905246.mp3' },
-      { title: '错位时空', artist: '艾辰', album: '错位时空', url: 'https://music.163.com/song/media/outer/url?id=1491428739.mp3' },
-      { title: '无人之岛', artist: '任然', album: '无人之岛', url: 'https://music.163.com/song/media/outer/url?id=1330632552.mp3' },
-      { title: '想见你想见你想见你', artist: '八三夭', album: '想见你', url: 'https://music.163.com/song/media/outer/url?id=1416756148.mp3' },
-      { title: '我曾', artist: '隔壁老樊', album: '我曾', url: 'https://music.163.com/song/media/outer/url?id=1354472608.mp3' },
-      { title: '生僻字', artist: '陈柯宇', album: '生僻字', url: 'https://music.163.com/song/media/outer/url?id=1338211987.mp3' },
-      { title: '少年', artist: '梦然', album: '少年', url: 'https://music.163.com/song/media/outer/url?id=1426254238.mp3' },
-      { title: '你的答案', artist: '阿冗', album: '你的答案', url: 'https://music.163.com/song/media/outer/url?id=1403555314.mp3' }
+    const hotSearches = [
+      '晴天', '稻香', '七里香', '夜曲', '青花瓷', '告白气球',
+      '江南', '演员', '十年', '光年之外', '泡沫', '消愁',
+      '起风了', '绿色', '错位时空', '踏山河', '半生雪', '少年'
     ];
 
-    const musicList = document.getElementById('musicList');
-    const searchInput = document.getElementById('musicSearch');
-    const songCount = document.getElementById('songCount');
-    const coverEl = document.getElementById('mpCover');
-    const titleEl = document.getElementById('mpTitle');
-    const artistEl = document.getElementById('mpArtist');
-    const playBtn = document.getElementById('mpPlayBtn');
-    const playIcon = document.getElementById('mpPlayIcon');
-    const prevBtn = document.getElementById('mpPrev');
-    const nextBtn = document.getElementById('mpNext');
-    const progressFill = document.getElementById('mpProgressFill');
-    const progressBar = document.getElementById('mpProgressBar');
-    const currentTimeEl = document.getElementById('mpCurrentTime');
-    const durationEl = document.getElementById('mpDuration');
+    const hotArtists = [
+      '周杰伦', '林俊杰', '薛之谦', '陈奕迅', '邓紫棋',
+      '毛不易', '许嵩', '李荣浩', '刘德华', 'Beyond'
+    ];
 
-    let currentIndex = -1;
-    let isPlaying = false;
-    let audio = new Audio();
-    let currentSongId = null;
+    const hotTags = document.getElementById('hotTags');
+    const artistTags = document.getElementById('artistTags');
+    const searchInput = document.getElementById('musicSearchInput');
+    const musicEmbed = document.getElementById('musicEmbed');
 
-    function formatTime(s) {
-      if (!s || isNaN(s)) return '00:00';
-      const m = Math.floor(s / 60);
-      const sec = Math.floor(s % 60);
-      return String(m).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
-    }
+    // 热门搜索标签
+    hotSearches.forEach(song => {
+      const tag = document.createElement('a');
+      tag.className = 'music-tag hot';
+      tag.href = `https://www.gequhai.com/s/${encodeURIComponent(song)}`;
+      tag.target = '_blank';
+      tag.rel = 'noopener';
+      tag.innerHTML = `<i data-lucide="trending-up"></i><span>${song}</span>`;
+      hotTags.appendChild(tag);
+    });
 
-    function renderSongs(songs) {
-      if (songs.length === 0) {
-        musicList.innerHTML = '<div class="music-empty"><i data-lucide="music"></i><p>没有找到相关歌曲</p></div>';
-        lucide.createIcons();
-        return;
-      }
-      musicList.innerHTML = songs.map((song, i) => {
-        const idx = playlist.indexOf(song);
-        const isActive = idx === currentIndex;
-        return `
-          <div class="music-item${isActive ? ' playing' : ''}" data-index="${idx}">
-            <div class="music-item-cover">
-              <i data-lucide="music"></i>
-            </div>
-            <div class="music-item-info">
-              <div class="music-item-title">${escapeHtml(song.title)}</div>
-              <div class="music-item-artist">${escapeHtml(song.artist)}</div>
-            </div>
-            <span class="music-item-album">${escapeHtml(song.album || '')}</span>
-            <button class="music-item-play" title="播放">
-              <i data-lucide="${isActive && isPlaying ? 'pause' : 'play'}"></i>
-            </button>
-          </div>
-        `;
-      }).join('');
-      songCount.textContent = songs.length;
-      lucide.createIcons();
-      bindSongEvents();
-    }
+    // 歌手标签
+    hotArtists.forEach(artist => {
+      const tag = document.createElement('a');
+      tag.className = 'music-tag artist';
+      tag.href = `https://www.gequhai.com/s/${encodeURIComponent(artist)}`;
+      tag.target = '_blank';
+      tag.rel = 'noopener';
+      tag.innerHTML = `<i data-lucide="mic-2"></i><span>${artist}</span>`;
+      artistTags.appendChild(tag);
+    });
 
-    function bindSongEvents() {
-      musicList.querySelectorAll('.music-item').forEach(item => {
-        item.addEventListener('click', (e) => {
-          if (e.target.closest('.music-item-play')) return;
-          const idx = parseInt(item.getAttribute('data-index'));
-          playSong(idx);
-        });
-        const playBtn = item.querySelector('.music-item-play');
-        playBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const idx = parseInt(item.getAttribute('data-index'));
-          if (idx === currentIndex && isPlaying) {
-            pauseSong();
-          } else {
-            playSong(idx);
-          }
-        });
-      });
-    }
-
-    function playSong(index) {
-      if (index < 0 || index >= playlist.length) return;
-      currentIndex = index;
-      currentSongId = index;
-      const song = playlist[index];
-      
-      titleEl.textContent = song.title;
-      artistEl.textContent = song.artist;
-      coverEl.classList.add('playing');
-      
-      audio.src = song.url;
-      audio.play().catch(e => {
-        console.log('播放失败:', e);
-      });
-      isPlaying = true;
-      playIcon.setAttribute('data-lucide', 'pause');
-      lucide.createIcons();
-      updateRenderHighlight();
-      scrollToCurrent();
-    }
-
-    function pauseSong() {
-      audio.pause();
-      isPlaying = false;
-      playIcon.setAttribute('data-lucide', 'play');
-      coverEl.classList.remove('playing');
-      lucide.createIcons();
-      updateRenderHighlight();
-    }
-
-    function togglePlay() {
-      if (currentIndex === -1) {
-        playSong(0);
-        return;
-      }
-      if (isPlaying) {
-        pauseSong();
-      } else {
-        audio.play().catch(e => console.log(e));
-        isPlaying = true;
-        playIcon.setAttribute('data-lucide', 'pause');
-        coverEl.classList.add('playing');
-        lucide.createIcons();
-        updateRenderHighlight();
-      }
-    }
-
-    function playNext() {
-      const currentSongs = getFilteredSongs();
-      if (currentSongs.length === 0) return;
-      const currentFilteredIdx = currentSongs.findIndex(s => playlist.indexOf(s) === currentIndex);
-      const nextFilteredIdx = (currentFilteredIdx + 1) % currentSongs.length;
-      const nextSong = currentSongs[nextFilteredIdx];
-      playSong(playlist.indexOf(nextSong));
-    }
-
-    function playPrev() {
-      const currentSongs = getFilteredSongs();
-      if (currentSongs.length === 0) return;
-      const currentFilteredIdx = currentSongs.findIndex(s => playlist.indexOf(s) === currentIndex);
-      const prevFilteredIdx = (currentFilteredIdx - 1 + currentSongs.length) % currentSongs.length;
-      const prevSong = currentSongs[prevFilteredIdx];
-      playSong(playlist.indexOf(prevSong));
-    }
-
-    function getFilteredSongs() {
-      const query = searchInput.value.trim().toLowerCase();
-      if (!query) return playlist;
-      return playlist.filter(s => 
-        s.title.toLowerCase().includes(query) || 
-        s.artist.toLowerCase().includes(query)
-      );
-    }
-
-    function updateRenderHighlight() {
-      const items = musicList.querySelectorAll('.music-item');
-      items.forEach(item => {
-        const idx = parseInt(item.getAttribute('data-index'));
-        item.classList.toggle('playing', idx === currentIndex);
-        const btn = item.querySelector('.music-item-play i');
-        if (btn) {
-          if (idx === currentIndex && isPlaying) {
-            btn.setAttribute('data-lucide', 'pause');
-          } else {
-            btn.setAttribute('data-lucide', 'play');
-          }
-        }
-      });
-      lucide.createIcons();
-    }
-
-    function scrollToCurrent() {
-      const activeItem = musicList.querySelector('.music-item.playing');
-      if (activeItem) {
-        activeItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }
-
+    // 搜索函数
     function doSearch() {
-      const filtered = getFilteredSongs();
-      renderSongs(filtered);
-    }
-
-    function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
-    }
-
-    // Audio events
-    audio.addEventListener('ended', playNext);
-    audio.addEventListener('error', () => {
-      console.log('音频加载失败');
-    });
-    audio.addEventListener('timeupdate', () => {
-      if (audio.duration) {
-        const pct = (audio.currentTime / audio.duration) * 100;
-        progressFill.style.width = pct + '%';
-        currentTimeEl.textContent = formatTime(audio.currentTime);
+      const query = searchInput.value.trim();
+      if (!query) {
+        searchInput.focus();
+        return;
       }
-    });
-    audio.addEventListener('loadedmetadata', () => {
-      durationEl.textContent = formatTime(audio.duration);
-    });
+      musicEmbed.src = `https://www.gequhai.com/s/${encodeURIComponent(query)}`;
+      document.getElementById('embedLoading').classList.remove('hide');
+    }
 
-    // 进度条点击
-    progressBar.addEventListener('click', (e) => {
-      if (!audio.duration) return;
-      const rect = progressBar.getBoundingClientRect();
-      const pct = (e.clientX - rect.left) / rect.width;
-      audio.currentTime = pct * audio.duration;
-    });
-
-    // Search input
-    let searchTimer;
-    searchInput.addEventListener('input', () => {
-      clearTimeout(searchTimer);
-      searchTimer = setTimeout(doSearch, 200);
-    });
-
-    // Player buttons
-    playBtn.addEventListener('click', togglePlay);
-    prevBtn.addEventListener('click', playPrev);
-    nextBtn.addEventListener('click', playNext);
-
-    // 初始化
-    renderSongs(playlist);
     lucide.createIcons();
   </script>
 </body>
