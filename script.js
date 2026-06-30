@@ -375,27 +375,26 @@ function initGallery() {
 
   // 保存照片到 Gist
   async function savePhotos() {
-    try {
-      await fetch(`https://api.github.com/gists/${GIST_ID}`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${GITHUB_TOKEN}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/vnd.github.v3+json'
-        },
-        body: JSON.stringify({
-          files: {
-            [GIST_FILENAME]: {
-              content: JSON.stringify({
-                categories: { '默认相册': photos },
-                currentCategory: '默认相册'
-              })
-            }
+    const res = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${GITHUB_TOKEN}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/vnd.github.v3+json'
+      },
+      body: JSON.stringify({
+        files: {
+          [GIST_FILENAME]: {
+            content: JSON.stringify({
+              categories: { '默认相册': photos },
+              currentCategory: '默认相册'
+            })
           }
-        })
-      });
-    } catch (error) {
-      console.error('保存失败:', error);
+        }
+      })
+    });
+    if (!res.ok) {
+      throw new Error(`GitHub API 错误: ${res.status} ${res.statusText}`);
     }
   }
 
