@@ -5659,3 +5659,238 @@ textarea:focus-visible {
     height: 18px;
   }
 }
+
+/* ==================== Typing Test ==================== */
+.typing-container {
+  max-width: 100%;
+}
+
+.typing-source {
+  background: var(--bg-tertiary);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+  font-size: 1rem;
+  line-height: 1.8;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+  font-family: 'Noto Sans SC', sans-serif;
+  user-select: none;
+}
+
+.typing-char {
+  transition: color 0.1s;
+}
+
+.typing-char.correct {
+  color: var(--accent-primary, #6366f1);
+}
+
+.typing-char.wrong {
+  color: #ef4444;
+  text-decoration: underline;
+  text-decoration-color: #ef4444;
+}
+
+.typing-char.current {
+  background: rgba(99, 102, 241, 0.2);
+  border-radius: 2px;
+  animation: blink-cursor 1s infinite;
+}
+
+@keyframes blink-cursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.typing-input {
+  width: 100%;
+  min-height: 100px;
+  padding: 16px;
+  border: 1px solid var(--border-color, rgba(255,255,255,0.1));
+  border-radius: 12px;
+  background: var(--bg-tertiary);
+  color: transparent;
+  caret-color: var(--accent-primary);
+  font-size: 1rem;
+  line-height: 1.8;
+  resize: vertical;
+  font-family: 'Noto Sans SC', sans-serif;
+}
+
+.typing-input::placeholder {
+  color: var(--text-muted);
+}
+
+.typing-input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+.typing-stats {
+  display: flex;
+  gap: 16px;
+  margin: 16px 0;
+  flex-wrap: wrap;
+}
+
+.typing-stat {
+  flex: 1;
+  min-width: 80px;
+  text-align: center;
+  padding: 12px 8px;
+  background: var(--bg-tertiary);
+  border-radius: 10px;
+}
+
+.typing-stat-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.typing-stat-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.typing-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.typing-btn {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.typing-btn.primary {
+  background: var(--accent-primary);
+  color: #fff;
+}
+
+.typing-btn.primary:hover {
+  opacity: 0.85;
+}
+
+.typing-btn.secondary {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color, rgba(255,255,255,0.1));
+}
+
+.typing-btn.secondary:hover {
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+}
+
+.typing-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ==================== Random Quotes ==================== */
+.quote-container {
+  text-align: center;
+  max-width: 100%;
+}
+
+.quote-display {
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 36px 24px;
+  background: var(--bg-tertiary);
+  border-radius: 16px;
+  margin-bottom: 20px;
+}
+
+.quote-text {
+  font-size: 1.2rem;
+  line-height: 1.8;
+  color: var(--text-primary);
+  font-weight: 500;
+  margin-bottom: 12px;
+  max-width: 500px;
+}
+
+.quote-source {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.quote-btn {
+  padding: 12px 32px;
+  border: none;
+  border-radius: 12px;
+  background: var(--accent-primary);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quote-btn:hover {
+  opacity: 0.85;
+  transform: translateY(-1px);
+}
+
+.quote-btn i {
+  width: 18px;
+  height: 18px;
+}
+
+.quote-fade-in {
+  animation: quoteFadeIn 0.5s ease;
+}
+
+@keyframes quoteFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 640px) {
+  .quote-display {
+    padding: 28px 16px;
+    min-height: 150px;
+  }
+  .quote-text {
+    font-size: 1.1rem;
+    line-height: 1.7;
+  }
+  .quote-source {
+    font-size: 0.85rem;
+  }
+  .typing-stats {
+    gap: 8px;
+  }
+  .typing-stat {
+    padding: 8px 4px;
+  }
+  .typing-stat-value {
+    font-size: 1.1rem;
+  }
+}

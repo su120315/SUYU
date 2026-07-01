@@ -45,11 +45,18 @@ document.addEventListener('DOMContentLoaded', function() {
     color: { title: '颜色工具', render: renderColor },
     baseconv: { title: '进制转换', render: renderBaseConv },
     password: { title: '密码生成器', render: renderPassword },
-    qrcode: { title: '二维码生成', render: renderQrcode }
+    qrcode: { title: '二维码生成', render: renderQrcode },
+    typing: { title: '打字速度测试', render: renderTyping },
+    quote: { title: '随机名言', render: renderQuote },
+    encoding: { title: '编码转换', external: true }
   };
 
   function openTool(toolName) {
     const tool = tools[toolName];
+    if (tool && tool.external) {
+      window.open('https://utf8.bz6.top', '_blank');
+      return;
+    }
     if (!tool) return;
     modalTitle.textContent = tool.title;
     modalBody.innerHTML = '';
@@ -819,6 +826,247 @@ document.addEventListener('DOMContentLoaded', function() {
       } else {
         output.innerHTML = '<span style="color:#f59e0b;">QRCode 库加载中，请稍候再试...</span>';
       }
+    });
+  }
+
+  /* 打字速度测试 */
+  function renderTyping(container) {
+    const text = '君子曰：学不可以已。青，取之于蓝，而青于蓝；冰，水为之，而寒于水。木直中绳，輮以为轮，其曲中规。虽有槁暴，不复挺者，輮使之然也。故木受绳则直，金就砺则利，君子博学而日参省乎己，则知明而行无过矣。吾尝终日而思矣，不如须臾之所学也；吾尝跂而望矣，不如登高之博见也。';
+
+    container.innerHTML = `
+      <div class="typing-container">
+        <div class="typing-source" id="typingSource">${text.split('').map(function(c) {
+          if (c === '\n') return '<br>';
+          return '<span class="typing-char">' + c + '</span>';
+        }).join('')}</div>
+        <div class="typing-stats">
+          <div class="typing-stat">
+            <div class="typing-stat-value" id="typingTime">0s</div>
+            <div class="typing-stat-label">已用时间</div>
+          </div>
+          <div class="typing-stat">
+            <div class="typing-stat-value" id="typingSpeed">0</div>
+            <div class="typing-stat-label">字/分钟</div>
+          </div>
+          <div class="typing-stat">
+            <div class="typing-stat-value" id="typingAccuracy">100%</div>
+            <div class="typing-stat-label">准确率</div>
+          </div>
+          <div class="typing-stat">
+            <div class="typing-stat-value" id="typingProgress">0/${text.length}</div>
+            <div class="typing-stat-label">进度</div>
+          </div>
+        </div>
+        <textarea class="typing-input" id="typingInput" placeholder="在此处打字对照输入..." disabled></textarea>
+        <div class="typing-actions">
+          <button class="typing-btn primary" id="typingStart">开始</button>
+          <button class="typing-btn secondary" id="typingReset">重置</button>
+        </div>
+      </div>
+    `;
+
+    var chars = container.querySelectorAll('.typing-char');
+    var inputEl = container.querySelector('#typingInput');
+    var startBtn = container.querySelector('#typingStart');
+    var resetBtn = container.querySelector('#typingReset');
+    var timeEl = container.querySelector('#typingTime');
+    var speedEl = container.querySelector('#typingSpeed');
+    var accuracyEl = container.querySelector('#typingAccuracy');
+    var progressEl = container.querySelector('#typingProgress');
+
+    var started = false;
+    var finished = false;
+    var startTime = 0;
+    var timerInterval = null;
+    var currentIndex = 0;
+    var totalCorrect = 0;
+    var totalWrong = 0;
+
+    /* 更新统计 */
+    function updateStats() {
+      if (!started || finished) return;
+      var elapsed = Math.floor((Date.now() - startTime) / 1000);
+      timeEl.textContent = elapsed + 's';
+      var minutes = elapsed / 60;
+      if (minutes > 0) {
+        speedEl.textContent = Math.round(currentIndex / minutes);
+      }
+      var total = totalCorrect + totalWrong;
+      if (total > 0) {
+        accuracyEl.textContent = Math.round(totalCorrect / total * 100) + '%';
+      }
+      progressEl.textContent = currentIndex + '/' + text.length;
+    }
+
+    /* 停止计时 */
+    function stopTimer() {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+    }
+
+    /* 重置状态 */
+    function resetAll() {
+      stopTimer();
+      started = false;
+      finished = false;
+      currentIndex = 0;
+      totalCorrect = 0;
+      totalWrong = 0;
+      inputEl.value = '';
+      inputEl.disabled = true;
+      startBtn.textContent = '开始';
+      timeEl.textContent = '0s';
+      speedEl.textContent = '0';
+      accuracyEl.textContent = '100%';
+      progressEl.textContent = '0/' + text.length;
+      chars.forEach(function(c) {
+        c.className = 'typing-char';
+      });
+      if (chars.length > 0) {
+        chars[0].classList.add('current');
+      }
+    }
+
+    /* 检查输入 */
+    function checkInput() {
+      if (finished) return;
+      var val = inputEl.value;
+      var len = val.length;
+      /* 限制不能超过原文长度 */
+      if (len > text.length) {
+        inputEl.value = val.substring(0, text.length);
+        len = text.length;
+      }
+
+      var correct = 0;
+      var wrong = 0;
+
+      for (var i = 0; i < chars.length; i++) {
+        chars[i].classList.remove('correct', 'wrong', 'current');
+      }
+
+      for (var i = 0; i < len; i++) {
+        if (val[i] === text[i]) {
+          chars[i].classList.add('correct');
+          correct++;
+        } else {
+          chars[i].classList.add('wrong');
+          wrong++;
+        }
+      }
+
+      if (len < chars.length) {
+        chars[len].classList.add('current');
+      }
+
+      currentIndex = len;
+      totalCorrect = correct;
+      totalWrong = wrong;
+
+      /* 判断是否完成 */
+      if (len >= text.length) {
+        finished = true;
+        stopTimer();
+        inputEl.disabled = true;
+        startBtn.textContent = '完成 ✓';
+        /* 最终统计 */
+        var elapsed = Math.floor((Date.now() - startTime) / 1000);
+        if (elapsed > 0) {
+          speedEl.textContent = Math.round(text.length / (elapsed / 60));
+        }
+        var total = totalCorrect + totalWrong;
+        if (total > 0) {
+          accuracyEl.textContent = Math.round(totalCorrect / total * 100) + '%';
+        }
+        timeEl.textContent = elapsed + 's';
+        progressEl.textContent = text.length + '/' + text.length;
+      }
+
+      updateStats();
+    }
+
+    startBtn.addEventListener('click', function() {
+      if (finished) {
+        resetAll();
+        return;
+      }
+      if (!started) {
+        started = true;
+        inputEl.disabled = false;
+        inputEl.focus();
+        startBtn.textContent = '进行中...';
+        startTime = Date.now();
+        timerInterval = setInterval(updateStats, 500);
+      }
+    });
+
+    resetBtn.addEventListener('click', resetAll);
+
+    inputEl.addEventListener('input', checkInput);
+
+    /* 初始化高亮第一个字符 */
+    if (chars.length > 0) {
+      chars[0].classList.add('current');
+    }
+  }
+
+  /* 随机名言 */
+  function renderQuote(container) {
+    var quotes = [
+      { text: '学而不思则罔，思而不学则殆。', source: '《论语·为政》' },
+      { text: '千里之行，始于足下。', source: '《老子·第六十四章》' },
+      { text: '天行健，君子以自强不息。', source: '《周易·乾卦》' },
+      { text: '己所不欲，勿施于人。', source: '《论语·颜渊》' },
+      { text: '知之为知之，不知为不知，是知也。', source: '《论语·为政》' },
+      { text: '业精于勤，荒于嬉；行成于思，毁于随。', source: '韩愈《进学解》' },
+      { text: '路漫漫其修远兮，吾将上下而求索。', source: '屈原《离骚》' },
+      { text: '人生自古谁无死，留取丹心照汗青。', source: '文天祥《过零丁洋》' },
+      { text: '天生我材必有用，千金散尽还复来。', source: '李白《将进酒》' },
+      { text: '纸上得来终觉浅，绝知此事要躬行。', source: '陆游《冬夜读书示子聿》' },
+      { text: '海内存知己，天涯若比邻。', source: '王勃《送杜少府之任蜀州》' },
+      { text: '大鹏一日同风起，扶摇直上九万里。', source: '李白《上李邕》' },
+      { text: '山重水复疑无路，柳暗花明又一村。', source: '陆游《游山西村》' },
+      { text: '不畏浮云遮望眼，自缘身在最高层。', source: '王安石《登飞来峰》' },
+      { text: '宝剑锋从磨砺出，梅花香自苦寒来。', source: '《警世贤文》' },
+      { text: '书到用时方恨少，事非经过不知难。', source: '《增广贤文》' },
+      { text: '有志者，事竟成。', source: '《后汉书·耿弇传》' },
+      { text: '勿以恶小而为之，勿以善小而不为。', source: '《三国志·蜀书·先主传》' },
+      { text: '三人行，必有我师焉。', source: '《论语·述而》' },
+      { text: '温故而知新，可以为师矣。', source: '《论语·为政》' },
+      { text: '博学之，审问之，慎思之，明辨之，笃行之。', source: '《中庸·第二十章》' },
+      { text: '长风破浪会有时，直挂云帆济沧海。', source: '李白《行路难》' }
+    ];
+
+    container.innerHTML = `
+      <div class="quote-container">
+        <div class="quote-display" id="quoteDisplay">
+          <div class="quote-text" id="quoteText">点击下方按钮随机获取名言</div>
+          <div class="quote-source" id="quoteSource"></div>
+        </div>
+        <button class="quote-btn" id="quoteBtn">
+          <i data-lucide="shuffle"></i>
+          随机显示
+        </button>
+      </div>
+    `;
+
+    var quoteText = container.querySelector('#quoteText');
+    var quoteSource = container.querySelector('#quoteSource');
+    var quoteDisplay = container.querySelector('#quoteDisplay');
+
+    container.querySelector('#quoteBtn').addEventListener('click', function() {
+      var idx = Math.floor(Math.random() * quotes.length);
+      var q = quotes[idx];
+      quoteText.textContent = q.text;
+      quoteSource.textContent = '—— ' + q.source;
+
+      /* 淡入动画 */
+      quoteDisplay.classList.remove('quote-fade-in');
+      /* 触发回流以重新播放动画 */
+      void quoteDisplay.offsetWidth;
+      quoteDisplay.classList.add('quote-fade-in');
     });
   }
 });
