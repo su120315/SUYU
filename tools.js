@@ -1803,7 +1803,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize
     render();
   }
-}
+});
 
 // ============================================================
 // XTC校验码计算器 (来源: https://github.com/OnesoftQwQ/XTCADBCode-Web)
