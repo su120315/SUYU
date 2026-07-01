@@ -1287,7 +1287,7 @@ function initChat() {
           'Authorization': `Bearer ${API_KEY}`
         },
         body: JSON.stringify({
-          model: 'glm-4-flash',
+          model: 'glm-4.7-flash',
           messages: chatHistory,
           max_tokens: 1024,
           temperature: 0.8,
