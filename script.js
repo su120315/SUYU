@@ -4,7 +4,7 @@ lucide.createIcons();
 // ==================== 从 SUYU3 加载内容 ====================
 (async function loadContent() {
   try {
-    const res = await fetch('https://su120315.github.io/SUYU3/content.json');
+    const res = await fetch('https://su120315.github.io/SUYU3/content.json?t=' + Date.now());
     if (!res.ok) return;
     const c = await res.json();
 
