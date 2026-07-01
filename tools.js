@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', function() {
     qrcode: { title: '二维码生成', render: renderQrcode },
     typing: { title: '打字速度测试', render: renderTyping },
     quote: { title: '随机名言', render: renderQuote },
-    encoding: { title: '编码转换', external: true }
+    encoding: { title: '编码转换', render: renderEncoding }
   };
 
   function openTool(toolName) {
@@ -1068,5 +1068,742 @@ document.addEventListener('DOMContentLoaded', function() {
       void quoteDisplay.offsetWidth;
       quoteDisplay.classList.add('quote-fade-in');
     });
+  }
+
+  /* ==================== UTF-8 编码转换工具 ==================== */
+  function renderEncoding(modalBody) {
+    modalBody.innerHTML = '';
+    modalBody.className = 'modal-body enc-container';
+
+    // --- 编码表 ---
+    var ENCODINGS = [
+      ['auto', '自动识别'],
+      ['utf-8', 'UTF-8'],
+      ['utf-16le', 'UTF-16 LE'],
+      ['utf-16be', 'UTF-16 BE'],
+      ['gb18030', 'GB18030 / GBK / GB2312'],
+      ['big5', 'Big5'],
+      ['shift_jis', 'Shift-JIS'],
+      ['euc-jp', 'EUC-JP'],
+      ['euc-kr', 'EUC-KR'],
+      ['windows-1252', 'Windows-1252'],
+      ['iso-8859-1', 'ISO-8859-1']
+    ];
+
+    var ALIASES = {
+      'gbk': 'gb18030', 'gb2312': 'gb18030', 'cp936': 'gb18030',
+      'ansi': 'windows-1252', 'latin1': 'iso-8859-1', 'latin-1': 'iso-8859-1',
+      'sjis': 'shift_jis', 'shift-jis': 'shift_jis',
+      'utf16le': 'utf-16le', 'utf16be': 'utf-16be', 'utf8': 'utf-8'
+    };
+
+    var files = [];
+    var fileIdCounter = 0;
+
+    // --- 工具函数 ---
+    function normalizeEncoding(enc) {
+      if (!enc || enc === 'auto') return null;
+      var lower = enc.toLowerCase().replace(/[^a-z0-9]/g, '');
+      var alias = ALIASES[lower];
+      return alias || lower;
+    }
+
+    function detectBom(bytes) {
+      if (bytes.length >= 4 && bytes[0] === 0 && bytes[1] === 0 && bytes[2] === 0xFE && bytes[3] === 0xFF) return 'utf-32be';
+      if (bytes.length >= 4 && bytes[0] === 0xFF && bytes[1] === 0xFE && bytes[2] === 0 && bytes[3] === 0) return 'utf-32le';
+      if (bytes.length >= 2 && bytes[0] === 0xFE && bytes[1] === 0xFF) return 'utf-16be';
+      if (bytes.length >= 2 && bytes[0] === 0xFF && bytes[1] === 0xFE) return 'utf-16le';
+      if (bytes.length >= 3 && bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF) return 'utf-8';
+      return null;
+    }
+
+    // TextDecoder wrapper with iconv-lite-like fallback for GB/Big5/Shift-JIS
+    function decodeBytes(bytes, enc) {
+      if (!enc || enc === 'utf-8') {
+        // Try UTF-8 first
+        try {
+          return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+        } catch(e) {
+          return null;
+        }
+      }
+      if (enc === 'utf-16le' || enc === 'utf-16be') {
+        try {
+          return new TextDecoder(enc, { fatal: true }).decode(bytes);
+        } catch(e) {
+          return null;
+        }
+      }
+      // For CJK encodings, use a simple byte-table approach
+      // Try the encoding directly
+      try {
+        var dec = new TextDecoder(enc, { fatal: false });
+        var result = dec.decode(bytes);
+        // Check if result has too many replacement characters
+        var repCount = (result.match(/\uFFFD/g) || []).length;
+        if (repCount > bytes.length * 0.3) return null;
+        return result;
+      } catch(e) {
+        return null;
+      }
+    }
+
+    function decodeWith(bytes, enc) {
+      if (enc === 'auto' || !enc) {
+        // Auto-detect
+        var bom = detectBom(bytes);
+        if (bom) {
+          var bomLen = bom === 'utf-8' ? 3 : (bom === 'utf-16le' || bom === 'utf-16be' ? 2 : 4);
+          var result = decodeBytes(bytes.slice(bomLen), bom);
+          if (result !== null) return { text: result, encoding: bom, bom: true };
+        }
+        // Try UTF-8
+        var r = decodeBytes(bytes, 'utf-8');
+        if (r !== null) return { text: r, encoding: 'utf-8', bom: false };
+        // Try GB18030
+        r = decodeBytes(bytes, 'gb18030');
+        if (r !== null) return { text: r, encoding: 'gb18030', bom: false };
+        // Try Big5
+        r = decodeBytes(bytes, 'big5');
+        if (r !== null) return { text: r, encoding: 'big5', bom: false };
+        // Try Shift-JIS
+        r = decodeBytes(bytes, 'shift_jis');
+        if (r !== null) return { text: r, encoding: 'shift_jis', bom: false };
+        // Try UTF-16
+        r = decodeBytes(bytes, 'utf-16le');
+        if (r !== null) return { text: r, encoding: 'utf-16le', bom: false };
+        // Fallback: latin-1 (never fails)
+        r = decodeBytes(bytes, 'iso-8859-1');
+        return { text: r || '', encoding: 'iso-8859-1', bom: false };
+      }
+      var r = decodeBytes(bytes, enc);
+      if (r !== null) return { text: r, encoding: enc, bom: false };
+      return { text: '', encoding: enc, bom: false, error: '解码失败' };
+    }
+
+    function scoreText(text) {
+      if (!text || text.length === 0) return 0;
+      var score = 0;
+      var total = text.length;
+      var replacementCount = 0;
+      var cjkCount = 0;
+      var controlCount = 0;
+      for (var i = 0; i < text.length; i++) {
+        var code = text.charCodeAt(i);
+        if (code === 0xFFFD) replacementCount++;
+        else if ((code >= 0x4E00 && code <= 0x9FFF) || (code >= 0x3400 && code <= 0x4DBF) || (code >= 0x20000 && code <= 0x2A6DF)) cjkCount++;
+        else if (code < 0x20 && code !== 0x09 && code !== 0x0A && code !== 0x0D) controlCount++;
+      }
+      score += (total - replacementCount) / total * 60;
+      score += cjkCount / total * 30;
+      score -= controlCount / total * 50;
+      return Math.max(0, Math.min(100, score));
+    }
+
+    function isProbablyBinary(bytes) {
+      var control = 0;
+      var limit = Math.min(bytes.length, 512);
+      for (var i = 0; i < limit; i++) {
+        var b = bytes[i];
+        if (b === 0 || (b < 8) || (b > 13 && b < 32)) control++;
+      }
+      return control > limit * 0.3;
+    }
+
+    function encodeUtf8(text, addBom) {
+      var encoder = new TextEncoder();
+      var encoded = encoder.encode(text);
+      if (addBom) {
+        var bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+        var result = new Uint8Array(bom.length + encoded.length);
+        result.set(bom);
+        result.set(encoded, bom.length);
+        return result;
+      }
+      return encoded;
+    }
+
+    function buildOutputName(originalName) {
+      var lastDot = originalName.lastIndexOf('.');
+      var name = lastDot > 0 ? originalName.substring(0, lastDot) : originalName;
+      return name + '_utf8.txt';
+    }
+
+    function formatBytes(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / 1048576).toFixed(2) + ' MB';
+    }
+
+    function escapeHtml(str) {
+      var div = document.createElement('div');
+      div.appendChild(document.createTextNode(str));
+      return div.innerHTML;
+    }
+
+    function crc32(data) {
+      var table = crc32.table || (crc32.table = makeCrcTable());
+      var crc = 0xFFFFFFFF;
+      for (var i = 0; i < data.length; i++) {
+        crc = table[(crc ^ data[i]) & 0xFF] ^ (crc >>> 8);
+      }
+      return (crc ^ 0xFFFFFFFF) >>> 0;
+    }
+
+    function makeCrcTable() {
+      var table = new Uint32Array(256);
+      for (var n = 0; n < 256; n++) {
+        var c = n;
+        for (var k = 0; k < 8; k++) {
+          c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+        }
+        table[n] = c;
+      }
+      return table;
+    }
+
+    function dosTime(date) {
+      return (date.getHours() << 11) | (date.getMinutes() << 5) | (date.getSeconds() >> 1);
+    }
+
+    function dosDate(date) {
+      return ((date.getFullYear() - 1980) << 9) | ((date.getMonth() + 1) << 5) | date.getDate();
+    }
+
+    // --- Simple ZIP generation (store method, no compression) ---
+    function makeZip(entries) {
+      // entries: [{name, data: Uint8Array}]
+      var localHeaders = [];
+      var centralHeaders = [];
+      var offset = 0;
+      var outChunks = [];
+
+      for (var i = 0; i < entries.length; i++) {
+        var entry = entries[i];
+        var nameBytes = new TextEncoder().encode(entry.name);
+        var crc = crc32(entry.data);
+        var compSize = entry.data.length;
+        var uncompSize = entry.data.length;
+        var now = new Date();
+
+        // Local file header
+        var local = new Uint8Array(30 + nameBytes.length);
+        local.set([0x50, 0x4B, 0x03, 0x04], 0); // signature
+        local[4] = 20; local[5] = 0;  // version needed
+        local[6] = 0; local[7] = 0;   // flags
+        local[8] = 0; local[9] = 0;   // compression: store
+        local[10] = dosTime(now) & 0xFF; local[11] = (dosTime(now) >> 8) & 0xFF;
+        local[12] = dosDate(now) & 0xFF; local[13] = (dosDate(now) >> 8) & 0xFF;
+        local[14] = crc & 0xFF; local[15] = (crc >> 8) & 0xFF;
+        local[16] = (crc >> 16) & 0xFF; local[17] = (crc >> 24) & 0xFF;
+        local[18] = compSize & 0xFF; local[19] = (compSize >> 8) & 0xFF;
+        local[20] = (compSize >> 16) & 0xFF; local[21] = (compSize >> 24) & 0xFF;
+        local[22] = uncompSize & 0xFF; local[23] = (uncompSize >> 8) & 0xFF;
+        local[24] = (uncompSize >> 16) & 0xFF; local[25] = (uncompSize >> 24) & 0xFF;
+        local[26] = nameBytes.length & 0xFF; local[27] = (nameBytes.length >> 8) & 0xFF;
+        local.set(nameBytes, 30);
+
+        outChunks.push(local);
+        outChunks.push(entry.data);
+
+        // Central directory header
+        var central = new Uint8Array(46 + nameBytes.length);
+        central.set([0x50, 0x4B, 0x01, 0x02], 0);
+        central[4] = 20; central[5] = 0;  // version made by
+        central[6] = 20; central[7] = 0;  // version needed
+        central[8] = 0; central[9] = 0;   // flags
+        central[10] = 0; central[11] = 0;  // compression: store
+        central[12] = dosTime(now) & 0xFF; central[13] = (dosTime(now) >> 8) & 0xFF;
+        central[14] = dosDate(now) & 0xFF; central[15] = (dosDate(now) >> 8) & 0xFF;
+        central[16] = crc & 0xFF; central[17] = (crc >> 8) & 0xFF;
+        central[18] = (crc >> 16) & 0xFF; central[19] = (crc >> 24) & 0xFF;
+        central[20] = compSize & 0xFF; central[21] = (compSize >> 8) & 0xFF;
+        central[22] = (compSize >> 16) & 0xFF; central[23] = (compSize >> 24) & 0xFF;
+        central[24] = uncompSize & 0xFF; central[25] = (uncompSize >> 8) & 0xFF;
+        central[26] = (uncompSize >> 16) & 0xFF; central[27] = (uncompSize >> 24) & 0xFF;
+        central[28] = nameBytes.length & 0xFF; central[29] = (nameBytes.length >> 8) & 0xFF;
+        central[30] = 0; central[31] = 0; // extra field length
+        central[32] = 0; central[33] = 0; // file comment length
+        central[34] = 0; central[35] = 0; // disk number start
+        central[36] = 0; central[37] = 0; // internal attrs
+        central[38] = 0; central[39] = 0; central[40] = 0; central[41] = 0; // external attrs
+        central[42] = offset & 0xFF; central[43] = (offset >> 8) & 0xFF;
+        central[44] = (offset >> 16) & 0xFF; central[45] = (offset >> 24) & 0xFF;
+        central.set(nameBytes, 46);
+
+        centralHeaders.push(central);
+        offset += local.length + entry.data.length;
+      }
+
+      // End of central directory record
+      var totalEntries = entries.length;
+      var centralOffset = offset;
+      var centralSize = 0;
+      for (var i = 0; i < centralHeaders.length; i++) {
+        centralSize += centralHeaders[i].length;
+      }
+
+      var eocd = new Uint8Array(22);
+      eocd.set([0x50, 0x4B, 0x05, 0x06], 0);
+      eocd[4] = 0; eocd[5] = 0; // disk number
+      eocd[6] = 0; eocd[7] = 0; // disk with central
+      eocd[8] = totalEntries & 0xFF; eocd[9] = (totalEntries >> 8) & 0xFF; // entries on disk
+      eocd[10] = totalEntries & 0xFF; eocd[11] = (totalEntries >> 8) & 0xFF; // total entries
+      eocd[12] = centralSize & 0xFF; eocd[13] = (centralSize >> 8) & 0xFF;
+      eocd[14] = (centralSize >> 16) & 0xFF; eocd[15] = (centralSize >> 24) & 0xFF;
+      eocd[16] = centralOffset & 0xFF; eocd[17] = (centralOffset >> 8) & 0xFF;
+      eocd[18] = (centralOffset >> 16) & 0xFF; eocd[19] = (centralOffset >> 24) & 0xFF;
+      eocd[20] = 0; eocd[21] = 0; // comment length
+
+      // Concatenate all
+      var totalLength = offset + centralSize + 22;
+      var zip = new Uint8Array(totalLength);
+      var pos = 0;
+      for (var i = 0; i < outChunks.length; i++) {
+        zip.set(outChunks[i], pos);
+        pos += outChunks[i].length;
+      }
+      for (var i = 0; i < centralHeaders.length; i++) {
+        zip.set(centralHeaders[i], pos);
+        pos += centralHeaders[i].length;
+      }
+      zip.set(eocd, pos);
+
+      return zip;
+    }
+
+    function downloadBlob(data, filename, mime) {
+      var blob = new Blob([data], { type: mime || 'application/octet-stream' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function() { URL.revokeObjectURL(url); }, 5000);
+    }
+
+    // --- Toast ---
+    function showToast(message, type) {
+      var toast = document.createElement('div');
+      toast.className = 'enc-toast';
+      if (type === 'error') toast.style.borderLeftColor = '#ef4444';
+      else if (type === 'warning') toast.style.borderLeftColor = '#f59e0b';
+      else toast.style.borderLeftColor = '#22c55e';
+      toast.textContent = message;
+      var container = modalBody.querySelector('.enc-toast-container');
+      if (!container) {
+        container = document.createElement('div');
+        container.className = 'enc-toast-container';
+        modalBody.appendChild(container);
+      }
+      container.appendChild(toast);
+      setTimeout(function() {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 300);
+      }, 3000);
+    }
+
+    // --- Render UI ---
+    function render() {
+      modalBody.innerHTML = '';
+      modalBody.className = 'modal-body enc-container';
+
+      // Stats
+      var stats = document.createElement('div');
+      stats.className = 'enc-stats';
+      stats.id = 'encStats';
+      stats.innerHTML = '<span>已处理: <strong id="encCount">0</strong></span><span class="enc-stats-sep">|</span><span>总大小: <strong id="encSize">0 B</strong></span><span class="enc-stats-sep">|</span><span>警告: <strong id="encWarnings">0</strong></span>';
+      modalBody.appendChild(stats);
+
+      // Controls
+      var controls = document.createElement('div');
+      controls.className = 'enc-controls';
+
+      var encLabel = document.createElement('label');
+      encLabel.className = 'enc-label';
+      encLabel.textContent = '源编码:';
+      controls.appendChild(encLabel);
+
+      var select = document.createElement('select');
+      select.className = 'enc-select';
+      select.id = 'encSelect';
+      for (var i = 0; i < ENCODINGS.length; i++) {
+        var opt = document.createElement('option');
+        opt.value = ENCODINGS[i][0];
+        opt.textContent = ENCODINGS[i][1];
+        select.appendChild(opt);
+      }
+      controls.appendChild(select);
+
+      var bomLabel = document.createElement('label');
+      bomLabel.className = 'enc-bom-label';
+      var bomCheck = document.createElement('input');
+      bomCheck.type = 'checkbox';
+      bomCheck.id = 'encBom';
+      bomCheck.className = 'enc-bom-check';
+      bomLabel.appendChild(bomCheck);
+      bomLabel.appendChild(document.createTextNode(' 输出 UTF-8 BOM'));
+      controls.appendChild(bomLabel);
+
+      var clearBtn = document.createElement('button');
+      clearBtn.className = 'enc-btn secondary';
+      clearBtn.textContent = '清空';
+      clearBtn.style.marginLeft = 'auto';
+      clearBtn.addEventListener('click', function() {
+        files = [];
+        renderTable();
+        updateStats();
+      });
+      controls.appendChild(clearBtn);
+
+      modalBody.appendChild(controls);
+
+      // Drop zone
+      var dropzone = document.createElement('div');
+      dropzone.className = 'enc-dropzone';
+      dropzone.id = 'encDropzone';
+      dropzone.innerHTML = '<div class="enc-dropzone-content"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><p>拖拽文件到此处，或 <strong>点击选择文件</strong></p><p class="enc-dropzone-hint">支持 .txt .csv .json .xml .html .js .css .md 等文本文件</p></div>';
+      var fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.multiple = true;
+      fileInput.accept = '.txt,.csv,.json,.xml,.html,.htm,.js,.ts,.jsx,.tsx,.css,.scss,.less,.md,.yml,.yaml,.log,.ini,.cfg,.conf,.bat,.sh,.ps1,.sql,.php,.py,.java,.c,.cpp,.h,.hpp,.rb,.go,.rs,.swift,.kt,.gradle,.properties,.env,.gitignore,.dockerfile,.vue,.svelte,.astro,.svg';
+      fileInput.style.display = 'none';
+      fileInput.id = 'encFileInput';
+      dropzone.appendChild(fileInput);
+
+      dropzone.addEventListener('click', function(e) {
+        if (e.target.tagName !== 'INPUT') fileInput.click();
+      });
+
+      dropzone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.classList.add('enc-dragover');
+      });
+
+      dropzone.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.classList.remove('enc-dragover');
+      });
+
+      dropzone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.classList.remove('enc-dragover');
+        if (e.dataTransfer.files.length > 0) {
+          handleFiles(e.dataTransfer.files);
+        }
+      });
+
+      fileInput.addEventListener('change', function() {
+        if (this.files.length > 0) {
+          handleFiles(this.files);
+          this.value = '';
+        }
+      });
+
+      modalBody.appendChild(dropzone);
+
+      // Action buttons
+      var actions = document.createElement('div');
+      actions.className = 'enc-actions';
+
+      var zipBtn = document.createElement('button');
+      zipBtn.className = 'enc-btn primary';
+      zipBtn.id = 'encZipBtn';
+      zipBtn.textContent = '下载全部 ZIP';
+      zipBtn.addEventListener('click', downloadAllZip);
+      actions.appendChild(zipBtn);
+
+      var reportBtn = document.createElement('button');
+      reportBtn.className = 'enc-btn secondary';
+      reportBtn.textContent = '复制报告';
+      reportBtn.addEventListener('click', copyReport);
+      actions.appendChild(reportBtn);
+
+      modalBody.appendChild(actions);
+
+      // Table
+      var tableWrap = document.createElement('div');
+      tableWrap.className = 'enc-table-wrap';
+      var table = document.createElement('table');
+      table.className = 'enc-table';
+      table.id = 'encTable';
+      var thead = document.createElement('thead');
+      thead.innerHTML = '<tr><th>文件名</th><th>大小</th><th>识别编码</th><th>状态</th><th>操作</th></tr>';
+      table.appendChild(thead);
+      var tbody = document.createElement('tbody');
+      tbody.id = 'encTbody';
+      table.appendChild(tbody);
+      tableWrap.appendChild(table);
+      modalBody.appendChild(tableWrap);
+
+      // Preview area
+      var preview = document.createElement('div');
+      preview.className = 'enc-preview';
+      preview.id = 'encPreview';
+      preview.style.display = 'none';
+      var previewHeader = document.createElement('div');
+      previewHeader.className = 'enc-preview-header';
+      var previewTitle = document.createElement('span');
+      previewTitle.className = 'enc-preview-title';
+      previewTitle.id = 'encPreviewTitle';
+      previewHeader.appendChild(previewTitle);
+      var previewClose = document.createElement('button');
+      previewClose.className = 'enc-preview-close';
+      previewClose.innerHTML = '✕';
+      previewClose.addEventListener('click', function() { preview.style.display = 'none'; });
+      previewHeader.appendChild(previewClose);
+      preview.appendChild(previewHeader);
+      var previewBody = document.createElement('div');
+      previewBody.className = 'enc-preview-body';
+      previewBody.id = 'encPreviewBody';
+      preview.appendChild(previewBody);
+      modalBody.appendChild(preview);
+
+      // Toast container (appended last)
+      var toastContainer = document.createElement('div');
+      toastContainer.className = 'enc-toast-container';
+      modalBody.appendChild(toastContainer);
+
+      updateStats();
+    }
+
+    // --- Handle Files ---
+    function handleFiles(fileList) {
+      var pending = [];
+      for (var i = 0; i < fileList.length; i++) {
+        var file = fileList[i];
+        // Dedup by name
+        var exists = false;
+        for (var j = 0; j < files.length; j++) {
+          if (files[j].name === file.name) { exists = true; break; }
+        }
+        if (exists) {
+          showToast('跳过重复文件: ' + file.name, 'warning');
+          continue;
+        }
+        pending.push(file);
+      }
+
+      pending.forEach(function(file) {
+        var reader = new FileReader();
+        var myId = fileIdCounter++;
+        var entry = { id: myId, name: file.name, size: file.size, file: file, status: '处理中...', encoding: '-', error: null, data: null, text: null };
+        files.push(entry);
+        renderTable();
+        updateStats();
+
+        reader.onload = function(e) {
+          var bytes = new Uint8Array(e.target.result);
+          if (isProbablyBinary(bytes)) {
+            entry.status = '跳过 (二进制)';
+            entry.error = 'binary';
+            renderTable();
+            updateStats();
+            return;
+          }
+
+          var enc = document.getElementById('encSelect').value;
+          var result = decodeWith(bytes, enc);
+          entry.data = bytes;
+          entry.text = result.text;
+          entry.encoding = result.encoding;
+          if (result.error) {
+            entry.status = '失败';
+            entry.error = result.error;
+          } else {
+            entry.status = '就绪 ✓';
+          }
+          renderTable();
+          updateStats();
+        };
+        reader.onerror = function() {
+          entry.status = '读取失败';
+          entry.error = 'read_error';
+          renderTable();
+          updateStats();
+        };
+        reader.readAsArrayBuffer(file);
+      });
+
+      if (pending.length > 0) {
+        showToast('已添加 ' + pending.length + ' 个文件', 'success');
+      }
+    }
+
+    // --- Render Table ---
+    function renderTable() {
+      var tbody = document.getElementById('encTbody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      files.forEach(function(entry) {
+        var tr = document.createElement('tr');
+        tr.dataset.id = entry.id;
+
+        // Name
+        var tdName = document.createElement('td');
+        tdName.className = 'enc-td-name';
+        tdName.textContent = entry.name;
+        tr.appendChild(tdName);
+
+        // Size
+        var tdSize = document.createElement('td');
+        tdSize.textContent = formatBytes(entry.size);
+        tr.appendChild(tdSize);
+
+        // Encoding
+        var tdEnc = document.createElement('td');
+        tdEnc.textContent = entry.encoding || '-';
+        tr.appendChild(tdEnc);
+
+        // Status
+        var tdStatus = document.createElement('td');
+        tdStatus.className = entry.status === '就绪 ✓' ? 'enc-status-ok' : (entry.status === '跳过 (二进制)' ? 'enc-status-skip' : 'enc-status-err');
+        tdStatus.textContent = entry.status;
+        tr.appendChild(tdStatus);
+
+        // Actions
+        var tdActions = document.createElement('td');
+
+        if (entry.status === '就绪 ✓' && entry.text !== null) {
+          // Preview button
+          var previewBtn = document.createElement('button');
+          previewBtn.className = 'enc-btn small';
+          previewBtn.textContent = '预览';
+          previewBtn.addEventListener('click', function() {
+            previewText(entry);
+          });
+          tdActions.appendChild(previewBtn);
+
+          // Download button
+          var dlBtn = document.createElement('button');
+          dlBtn.className = 'enc-btn small secondary';
+          dlBtn.textContent = '下载';
+          dlBtn.style.marginLeft = '6px';
+          dlBtn.addEventListener('click', function() {
+            var addBom = document.getElementById('encBom').checked;
+            var utf8Bytes = encodeUtf8(entry.text, addBom);
+            var outName = buildOutputName(entry.name);
+            downloadBlob(utf8Bytes, outName, 'text/plain;charset=utf-8');
+            showToast('已下载: ' + outName, 'success');
+          });
+          tdActions.appendChild(dlBtn);
+        }
+
+        // Delete button
+        var delBtn = document.createElement('button');
+        delBtn.className = 'enc-btn small danger';
+        delBtn.textContent = '✕';
+        delBtn.style.marginLeft = '6px';
+        delBtn.addEventListener('click', function() {
+          var idx = -1;
+          for (var i = 0; i < files.length; i++) {
+            if (files[i].id === entry.id) { idx = i; break; }
+          }
+          if (idx >= 0) {
+            files.splice(idx, 1);
+            renderTable();
+            updateStats();
+          }
+        });
+        tdActions.appendChild(delBtn);
+
+        tr.appendChild(tdActions);
+        tbody.appendChild(tr);
+      });
+    }
+
+    // --- Update Stats ---
+    function updateStats() {
+      var countEl = document.getElementById('encCount');
+      var sizeEl = document.getElementById('encSize');
+      var warnEl = document.getElementById('encWarnings');
+      if (!countEl) return;
+
+      var totalSize = 0;
+      var warnings = 0;
+      var ready = 0;
+      files.forEach(function(f) {
+        totalSize += f.size;
+        if (f.status === '就绪 ✓') ready++;
+        if (f.error) warnings++;
+      });
+      countEl.textContent = ready + '/' + files.length;
+      sizeEl.textContent = formatBytes(totalSize);
+      warnEl.textContent = warnings;
+
+      var zipBtn = document.getElementById('encZipBtn');
+      if (zipBtn) {
+        zipBtn.disabled = ready === 0;
+        zipBtn.style.opacity = ready === 0 ? '0.5' : '1';
+        zipBtn.style.cursor = ready === 0 ? 'not-allowed' : 'pointer';
+      }
+    }
+
+    // --- Preview Text ---
+    function previewText(entry) {
+      var preview = document.getElementById('encPreview');
+      var title = document.getElementById('encPreviewTitle');
+      var body = document.getElementById('encPreviewBody');
+      if (!preview || !title || !body) return;
+      title.textContent = entry.name + ' (' + entry.encoding + ')';
+      body.textContent = entry.text;
+      preview.style.display = 'block';
+    }
+
+    // --- Download All ZIP ---
+    function downloadAllZip() {
+      var readyFiles = [];
+      for (var i = 0; i < files.length; i++) {
+        if (files[i].status === '就绪 ✓' && files[i].text !== null) {
+          readyFiles.push(files[i]);
+        }
+      }
+      if (readyFiles.length === 0) {
+        showToast('没有可下载的文件', 'error');
+        return;
+      }
+
+      var addBom = document.getElementById('encBom').checked;
+      var entries = [];
+      for (var i = 0; i < readyFiles.length; i++) {
+        var entry = readyFiles[i];
+        var utf8Bytes = encodeUtf8(entry.text, addBom);
+        var outName = buildOutputName(entry.name);
+        entries.push({ name: outName, data: utf8Bytes });
+      }
+
+      var zipData = makeZip(entries);
+      downloadBlob(zipData, 'converted_utf8.zip', 'application/zip');
+      showToast('已下载 ' + entries.length + ' 个文件 (ZIP)', 'success');
+    }
+
+    // --- Copy Report ---
+    function copyReport() {
+      if (files.length === 0) {
+        showToast('没有文件', 'error');
+        return;
+      }
+      var lines = ['编码转换报告', '============', '', '文件名 | 大小 | 识别编码 | 状态', '---|---|---|---'];
+      files.forEach(function(f) {
+        lines.push(f.name + ' | ' + formatBytes(f.size) + ' | ' + (f.encoding || '-') + ' | ' + f.status);
+      });
+      lines.push('', '---');
+      lines.push('总计: ' + files.length + ' 个文件');
+
+      navigator.clipboard.writeText(lines.join('\n')).then(function() {
+        showToast('报告已复制到剪贴板', 'success');
+      }).catch(function() {
+        showToast('复制失败', 'error');
+      });
+    }
+
+    // Initialize
+    render();
   }
 });

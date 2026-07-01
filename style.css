@@ -6027,3 +6027,450 @@ textarea:focus-visible {
   color: var(--accent-primary);
 }
 .gallery-cat-add i { width: 16px; height: 16px; }
+
+/* ==================== Encoding Tool (编码转换) ==================== */
+.enc-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.enc-stats {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-tertiary);
+  border-radius: 10px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+}
+
+.enc-stats strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.enc-stats-sep {
+  color: var(--text-muted);
+  opacity: 0.4;
+}
+
+.enc-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.enc-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.enc-select {
+  padding: 8px 12px;
+  border: 1px solid var(--border-color, rgba(99, 102, 241, 0.15));
+  border-radius: 8px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-family: var(--font-body);
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+  min-height: 38px;
+}
+
+.enc-select:focus {
+  border-color: var(--accent-primary);
+}
+
+.enc-bom-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.enc-bom-check {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent-primary);
+  cursor: pointer;
+}
+
+.enc-dropzone {
+  border: 2px dashed var(--border-color, rgba(99, 102, 241, 0.2));
+  border-radius: 14px;
+  padding: 32px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  background: var(--bg-tertiary);
+}
+
+.enc-dropzone:hover {
+  border-color: var(--accent-primary);
+  background: rgba(99, 102, 241, 0.05);
+}
+
+.enc-dropzone.enc-dragover {
+  border-color: var(--accent-primary);
+  background: rgba(99, 102, 241, 0.1);
+  transform: scale(1.01);
+}
+
+.enc-dropzone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-secondary);
+}
+
+.enc-dropzone-content svg {
+  color: var(--text-muted);
+  transition: color 0.2s ease;
+}
+
+.enc-dropzone:hover .enc-dropzone-content svg,
+.enc-dropzone.enc-dragover .enc-dropzone-content svg {
+  color: var(--accent-primary);
+}
+
+.enc-dropzone-content p {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.enc-dropzone-content p strong {
+  color: var(--accent-primary);
+}
+
+.enc-dropzone-hint {
+  font-size: 0.8rem !important;
+  color: var(--text-muted) !important;
+}
+
+.enc-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.enc-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-body);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.enc-btn:hover {
+  transform: translateY(-1px);
+}
+
+.enc-btn:active {
+  transform: scale(0.97);
+}
+
+.enc-btn.primary {
+  background: var(--gradient);
+  color: white;
+}
+
+.enc-btn.primary:hover {
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+}
+
+.enc-btn.primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.enc-btn.secondary {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.enc-btn.secondary:hover {
+  background: var(--accent-primary);
+  color: white;
+}
+
+.enc-btn.small {
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  border-radius: 6px;
+}
+
+.enc-btn.danger {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.enc-btn.danger:hover {
+  background: #ef4444;
+  color: white;
+}
+
+.enc-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.enc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  min-width: 480px;
+}
+
+.enc-table th {
+  text-align: left;
+  padding: 10px 12px;
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 0.8rem;
+  border-bottom: 1px solid var(--border-color, rgba(99, 102, 241, 0.1));
+  white-space: nowrap;
+}
+
+.enc-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-color, rgba(99, 102, 241, 0.06));
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+
+.enc-table tbody tr:hover {
+  background: rgba(99, 102, 241, 0.03);
+}
+
+.enc-td-name {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.enc-status-ok {
+  color: #22c55e;
+  font-weight: 500;
+}
+
+.enc-status-skip {
+  color: var(--text-muted);
+}
+
+.enc-status-err {
+  color: #ef4444;
+}
+
+.enc-preview {
+  border: 1px solid var(--border-color, rgba(99, 102, 241, 0.15));
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg-tertiary);
+  animation: encPreviewIn 0.25s ease;
+}
+
+@keyframes encPreviewIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.enc-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color, rgba(99, 102, 241, 0.1));
+}
+
+.enc-preview-title {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.enc-preview-close {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.enc-preview-close:hover {
+  background: #ef4444;
+  color: white;
+}
+
+.enc-preview-body {
+  padding: 14px;
+  max-height: 300px;
+  overflow-y: auto;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.enc-toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.enc-toast {
+  padding: 12px 20px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color, rgba(99, 102, 241, 0.15));
+  border-left: 4px solid #22c55e;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  animation: encToastIn 0.3s ease;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: auto;
+  max-width: 360px;
+}
+
+@keyframes encToastIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (max-width: 640px) {
+  .enc-dropzone {
+    padding: 24px 16px;
+  }
+
+  .enc-dropzone-content svg {
+    width: 36px;
+    height: 36px;
+  }
+
+  .enc-dropzone-content p {
+    font-size: 0.85rem;
+  }
+
+  .enc-controls {
+    gap: 8px;
+  }
+
+  .enc-select {
+    font-size: 0.82rem;
+    padding: 6px 10px;
+    min-height: 34px;
+  }
+
+  .enc-btn {
+    padding: 8px 16px;
+    font-size: 0.82rem;
+    min-height: 36px;
+  }
+
+  .enc-table {
+    font-size: 0.8rem;
+    min-width: 400px;
+  }
+
+  .enc-table th,
+  .enc-table td {
+    padding: 8px 10px;
+  }
+
+  .enc-td-name {
+    max-width: 120px;
+  }
+
+  .enc-preview-body {
+    max-height: 220px;
+    font-size: 0.8rem;
+    padding: 10px;
+  }
+
+  .enc-toast-container {
+    top: 12px;
+    right: 12px;
+    left: 12px;
+  }
+
+  .enc-toast {
+    max-width: 100%;
+    font-size: 0.85rem;
+    padding: 10px 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .enc-table {
+    min-width: 320px;
+    font-size: 0.75rem;
+  }
+
+  .enc-table th,
+  .enc-table td {
+    padding: 6px 8px;
+  }
+
+  .enc-btn.small {
+    padding: 3px 8px;
+    font-size: 0.72rem;
+  }
+
+  .enc-stats {
+    font-size: 0.78rem;
+    padding: 10px 12px;
+  }
+}
