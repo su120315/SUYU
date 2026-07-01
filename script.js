@@ -1,115 +1,143 @@
 // Initialize Lucide Icons
 lucide.createIcons();
 
-// ==================== 从 SUYU3 加载内容 ====================
+// ==================== 从 SUYU3 加载内容（带本地 fallback）====================
+async function applyContent(c) {
+  if (!c) return;
+
+  // 通用：按 data-content 路径填充文本/placeholder/title
+  function resolve(obj, path) {
+    return path.split('.').reduce((o, k) => (o && o[k] !== undefined ? o[k] : null), obj);
+  }
+  document.querySelectorAll('[data-content]').forEach(el => {
+    const val = resolve(c, el.dataset.content);
+    if (val === null || val === undefined) return;
+    if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+      el.placeholder = val;
+    } else if (el.hasAttribute('title')) {
+      el.title = val;
+    } else {
+      el.textContent = val;
+    }
+  });
+
+  // 英雄区标签
+  if (c.hero?.tags) {
+    const tagContainer = document.querySelector('.hero-tags');
+    if (tagContainer) {
+      tagContainer.innerHTML = c.hero.tags.map(t => `<span class="tag">${t}</span>`).join('');
+    }
+  }
+
+  // 技能卡片重建
+  if (c.skills?.items) {
+    const grid = document.querySelector('.skills-grid');
+    if (grid && !grid.dataset.built) {
+      grid.dataset.built = '1';
+      grid.innerHTML = c.skills.items.map((s, i) => `
+        <div class="skill-card" data-delay="${i * 100}">
+          <div class="skill-icon"><i data-lucide="${s.icon}"></i></div>
+          <h3 class="skill-name">${s.name}</h3>
+          <p class="skill-desc">${s.desc}</p>
+          <div class="skill-bar"><div class="skill-fill" data-width="${s.width}"></div></div>
+        </div>
+      `).join('');
+    }
+  }
+
+  // 作品卡片重建
+  if (c.projects?.items) {
+    const grid = document.querySelector('.projects-grid');
+    if (grid && !grid.dataset.built) {
+      grid.dataset.built = '1';
+      grid.innerHTML = c.projects.items.map(p => `
+        <article class="project-card">
+          <div class="project-image">
+            <div class="project-placeholder"><i data-lucide="${p.icon}"></i><span>${p.title}</span></div>
+          </div>
+          <div class="project-content">
+            <h3 class="project-title">${p.title}</h3>
+            <p class="project-desc">${p.desc}</p>
+            <div class="project-tags">${p.tags.map(t => `<span>${t}</span>`).join('')}</div>
+            <div class="project-links">${p.links.map(l => `<a href="${l.url}" target="_blank" rel="noopener" class="project-link" title="${l.title}"><i data-lucide="${l.icon}"></i></a>`).join('')}</div>
+          </div>
+        </article>
+      `).join('');
+    }
+  }
+
+  // 爱好卡片重建
+  if (c.hobbies?.items) {
+    const grid = document.querySelector('.hobbies-grid');
+    if (grid && !grid.dataset.built) {
+      grid.dataset.built = '1';
+      grid.innerHTML = c.hobbies.items.map(h => `
+        <div class="hobby-card">
+          <div class="hobby-emoji">${h.emoji}</div>
+          <h3>${h.name}</h3>
+          <p>${h.desc}</p>
+        </div>
+      `).join('');
+    }
+  }
+
+  // 实用网站重建
+  if (c.sites?.items) {
+    const grid = document.querySelector('.sites-grid');
+    if (grid && !grid.dataset.built) {
+      grid.dataset.built = '1';
+      grid.innerHTML = c.sites.items.map(s => `
+        <a href="${s.url}" target="_blank" rel="noopener" class="site-card">
+          <div class="site-icon">${s.icon}</div>
+          <div class="site-info"><h3>${s.name}</h3><p>${s.desc}</p></div>
+          <i data-lucide="external-link" class="site-arrow"></i>
+        </a>
+      `).join('');
+    }
+  }
+
+  // 重建 lucide 图标（新生成的 HTML 需要重新初始化）
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+
+  // 同步更新打字机 data-text 属性
+  const tw = document.querySelector('.typewriter');
+  if (tw) {
+    const text = tw.textContent;
+    if (text) tw.setAttribute('data-text', text);
+  }
+}
+
 (async function loadContent() {
-  try {
+  // 尝试从远程 SUYU3 加载
+  async function tryRemote() {
     const res = await fetch('https://su120315.github.io/SUYU3/content.json?t=' + Date.now());
-    if (!res.ok) return;
-    const c = await res.json();
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return await res.json();
+  }
 
-    // 通用：按 data-content 路径填充文本/placeholder/title
-    function resolve(obj, path) {
-      return path.split('.').reduce((o, k) => (o && o[k] !== undefined ? o[k] : null), obj);
-    }
-    document.querySelectorAll('[data-content]').forEach(el => {
-      const val = resolve(c, el.dataset.content);
-      if (val === null || val === undefined) return;
-      if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-        el.placeholder = val;
-      } else if (el.hasAttribute('title')) {
-        el.title = val;
-      } else {
-        el.textContent = val;
-      }
-    });
+  // 尝试从本地 content.json 加载（同一仓库内的备份）
+  async function tryLocal() {
+    const res = await fetch('./content.json?t=' + Date.now());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return await res.json();
+  }
 
-    // 英雄区标签
-    if (c.hero?.tags) {
-      const tagContainer = document.querySelector('.hero-tags');
-      if (tagContainer) {
-        tagContainer.innerHTML = c.hero.tags.map(t => `<span class="tag">${t}</span>`).join('');
-      }
-    }
-
-    // 技能卡片重建
-    if (c.skills?.items) {
-      const grid = document.querySelector('.skills-grid');
-      if (grid && !grid.dataset.built) {
-        grid.dataset.built = '1';
-        grid.innerHTML = c.skills.items.map((s, i) => `
-          <div class="skill-card" data-delay="${i * 100}">
-            <div class="skill-icon"><i data-lucide="${s.icon}"></i></div>
-            <h3 class="skill-name">${s.name}</h3>
-            <p class="skill-desc">${s.desc}</p>
-            <div class="skill-bar"><div class="skill-fill" data-width="${s.width}"></div></div>
-          </div>
-        `).join('');
-      }
-    }
-
-    // 作品卡片重建
-    if (c.projects?.items) {
-      const grid = document.querySelector('.projects-grid');
-      if (grid && !grid.dataset.built) {
-        grid.dataset.built = '1';
-        grid.innerHTML = c.projects.items.map(p => `
-          <article class="project-card">
-            <div class="project-image">
-              <div class="project-placeholder"><i data-lucide="${p.icon}"></i><span>${p.title}</span></div>
-            </div>
-            <div class="project-content">
-              <h3 class="project-title">${p.title}</h3>
-              <p class="project-desc">${p.desc}</p>
-              <div class="project-tags">${p.tags.map(t => `<span>${t}</span>`).join('')}</div>
-              <div class="project-links">${p.links.map(l => `<a href="${l.url}" target="_blank" rel="noopener" class="project-link" title="${l.title}"><i data-lucide="${l.icon}"></i></a>`).join('')}</div>
-            </div>
-          </article>
-        `).join('');
-      }
-    }
-
-    // 爱好卡片重建
-    if (c.hobbies?.items) {
-      const grid = document.querySelector('.hobbies-grid');
-      if (grid && !grid.dataset.built) {
-        grid.dataset.built = '1';
-        grid.innerHTML = c.hobbies.items.map(h => `
-          <div class="hobby-card">
-            <div class="hobby-emoji">${h.emoji}</div>
-            <h3>${h.name}</h3>
-            <p>${h.desc}</p>
-          </div>
-        `).join('');
-      }
-    }
-
-    // 实用网站重建
-    if (c.sites?.items) {
-      const grid = document.querySelector('.sites-grid');
-      if (grid && !grid.dataset.built) {
-        grid.dataset.built = '1';
-        grid.innerHTML = c.sites.items.map(s => `
-          <a href="${s.url}" target="_blank" rel="noopener" class="site-card">
-            <div class="site-icon">${s.icon}</div>
-            <div class="site-info"><h3>${s.name}</h3><p>${s.desc}</p></div>
-            <i data-lucide="external-link" class="site-arrow"></i>
-          </a>
-        `).join('');
-      }
-    }
-
-    // 重建 lucide 图标（新生成的 HTML 需要重新初始化）
-    if (typeof lucide !== 'undefined') lucide.createIcons();
-
-    // 同步更新打字机 data-text 属性
-    const tw = document.querySelector('.typewriter');
-    if (tw) {
-      const text = tw.textContent;
-      if (text) tw.setAttribute('data-text', text);
-    }
+  let c = null;
+  try {
+    c = await tryRemote();
+    console.log('✅ 从 SUYU3 远程加载内容成功');
   } catch (e) {
-    console.log('SUYU3 内容加载失败，使用默认内容', e);
+    console.warn('⚠️ 远程 SUYU3 加载失败，尝试本地备份:', e.message);
+    try {
+      c = await tryLocal();
+      console.log('✅ 从本地 content.json 加载内容成功');
+    } catch (e2) {
+      console.warn('⚠️ 本地备份也加载失败，使用默认内容:', e2.message);
+    }
+  }
+
+  if (c) {
+    applyContent(c);
   }
 })();
 
