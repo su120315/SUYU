@@ -48,7 +48,8 @@ document.addEventListener('DOMContentLoaded', function() {
     qrcode: { title: '二维码生成', render: renderQrcode },
     typing: { title: '打字速度测试', render: renderTyping },
     quote: { title: '随机名言', render: renderQuote },
-    encoding: { title: '编码转换', render: renderEncoding }
+    encoding: { title: '编码转换', render: renderEncoding },
+    xtc: { title: 'XTC校验码', render: renderXtc }
   };
 
   function openTool(toolName) {
@@ -1802,4 +1803,205 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize
     render();
   }
-});
+}
+
+// ============================================================
+// XTC校验码计算器 (来源: https://github.com/OnesoftQwQ/XTCADBCode-Web)
+// ============================================================
+function renderXtc(container) {
+  container.innerHTML = `
+    <div class="xtc-container">
+      <div class="xtc-header">
+        <p>输入校验码后，点击计算即可获取校验码</p>
+      </div>
+      <div class="xtc-input-group">
+        <label class="xtc-label">输入校验码：</label>
+        <input type="text" id="xtcCodeInput" class="xtc-input" placeholder="请输入校验码..." maxlength="20">
+      </div>
+      <div class="xtc-mode-selector">
+        <button type="button" class="xtc-mode-btn active" data-mode="adb">ADB</button>
+        <button type="button" class="xtc-mode-btn" data-mode="zj">自检</button>
+      </div>
+      <button type="button" class="xtc-calc-btn" id="xtcCalcBtn">计算</button>
+      <div id="xtcResult" class="xtc-result hidden">
+        <div class="xtc-result-title"></div>
+        <div class="xtc-result-value"></div>
+      </div>
+      <div class="xtc-tips">
+        <h4>提示</h4>
+        <p>如果你的手表在输入校验码后提示"验证中"，代表你的手表已经升级到V3版本校验码，V3校验码当前除了小天才官方外无法计算，请使用QMMI打开ADB。</p>
+        <p>请勿在群里问"为什么提示验证中"！</p>
+      </div>
+      <div class="xtc-footer">
+        <a href="https://github.com/OnesoftQwQ/XTCADBCode-Web" target="_blank" rel="noopener">源码: OnesoftQwQ/XTCADBCode-Web (GitHub)</a>
+      </div>
+    </div>
+  `;
+
+  const input = container.querySelector('#xtcCodeInput');
+  const calcBtn = container.querySelector('#xtcCalcBtn');
+  const resultDiv = container.querySelector('#xtcResult');
+  const resultTitle = resultDiv.querySelector('.xtc-result-title');
+  const resultValue = resultDiv.querySelector('.xtc-result-value');
+  const modeBtns = container.querySelectorAll('.xtc-mode-btn');
+  let currentMode = 'adb';
+
+  // Mode switching
+  modeBtns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      modeBtns.forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      currentMode = btn.dataset.mode;
+    });
+  });
+
+  // Enter key support
+  input.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') calcBtn.click();
+  });
+
+  calcBtn.addEventListener('click', function() {
+    const code = input.value.trim();
+    if (!code) {
+      showXtcError('请输入校验码');
+      return;
+    }
+    if (!/^\d+$/.test(code)) {
+      showXtcError('校验码必须为数字');
+      return;
+    }
+    const result = getXtcCode(code, currentMode);
+    if (result === '') {
+      showXtcError('计算失败，请检查输入格式');
+    } else {
+      showXtcSuccess(result);
+    }
+  });
+
+  function showXtcError(msg) {
+    resultDiv.className = 'xtc-result xtc-result-error';
+    resultTitle.textContent = '错误';
+    resultValue.textContent = msg;
+    resultDiv.classList.remove('hidden');
+  }
+
+  function showXtcSuccess(val) {
+    resultDiv.className = 'xtc-result xtc-result-success';
+    resultTitle.textContent = '计算结果';
+    resultValue.textContent = val;
+    resultDiv.classList.remove('hidden');
+  }
+}
+
+// XTC校验码计算核心算法 (移植自 OnesoftQwQ/XTCADBCode-Web)
+function getXtcCode(code, mode) {
+  if (code.length === 8) {
+    var result = null;
+    while (true) {
+      result = v2(code, mode);
+      if (result != null && result != code) break;
+    }
+    return result;
+  } else {
+    return v1(code, mode);
+  }
+}
+
+function v1(code, mode) {
+  try {
+    if (mode === 'adb') {
+      var i1 = parseInt(code.substring(0, 2));
+      var i2 = parseInt(code.substring(2, 4));
+      var i3 = parseInt(code.substring(4, 6));
+      var i4 = parseInt(code.substring(6, 8));
+      var i5 = parseInt(code.substring(8));
+      var i6 = i5 ^ (i3 + i4);
+      var i7 = i4 ^ i6;
+      var i8 = i3 ^ i6;
+      var i9 = i1 ^ i6;
+      var i10 = i2 ^ i6;
+      var i = '';
+      for (var _x = 0; _x < [i9, i10, i8, i7, i6].length; _x++) {
+        var x = [i9, i10, i8, i7, i6][_x];
+        i += x.toString().length === 1 ? '0' + x.toString() : x.toString();
+      }
+      var i1_2 = parseInt(i.substring(0, 2));
+      var i2_2 = parseInt(i.substring(2, 4));
+      var i3_2 = parseInt(i.substring(4, 6));
+      var i4_2 = parseInt(i.substring(6, 8));
+      var i5_2 = parseInt(i.substring(8));
+      var i6_2 = i4_2 ^ i3_2;
+      var i7_2 = i5_2 ^ i3_2;
+      var i8_2 = i3_2 ^ (i6_2 + i7_2);
+      var i9_2 = i1_2 ^ i7_2;
+      var i10_2 = i2_2 ^ i7_2;
+      var i2_result = '';
+      for (var _x2 = 0; _x2 < [i9_2, i10_2, i6_2, i7_2, i8_2].length; _x2++) {
+        var x2 = [i9_2, i10_2, i6_2, i7_2, i8_2][_x2];
+        i2_result += x2.toString().length === 1 ? '0' + x2.toString() : x2.toString();
+      }
+      return i2_result;
+    } else if (mode === 'zj') {
+      var j1 = parseInt(code.substring(0, 2));
+      var j2 = parseInt(code.substring(2, 4));
+      var j3 = parseInt(code.substring(4));
+      var j5 = j3 ^ (j1 + j2);
+      var j6 = j1 ^ j5;
+      var j4 = j2 ^ j5;
+      var j = '';
+      for (var _x3 = 0; _x3 < [j6, j4, j5].length; _x3++) {
+        var x3 = [j6, j4, j5][_x3];
+        j += x3.toString().length === 1 ? '0' + x3.toString() : x3.toString();
+      }
+      var j1_2 = parseInt(j.substring(0, 2));
+      var j2_2 = parseInt(j.substring(2, 4));
+      var j3_2 = parseInt(j.substring(4));
+      var j5_2 = j2_2 ^ j1_2;
+      var j6_2 = j3_2 ^ j1_2;
+      var j4_2 = j1_2 ^ (j5_2 + j6_2);
+      var j2_result = '';
+      for (var _x4 = 0; _x4 < [j5_2, j6_2, j4_2].length; _x4++) {
+        var x4 = [j5_2, j6_2, j4_2][_x4];
+        j2_result += x4.toString().length === 1 ? '0' + x4.toString() : x4.toString();
+      }
+      return j2_result;
+    }
+  } catch (e) {
+    return '';
+  }
+  return '';
+}
+
+function v2(code, mode) {
+  try {
+    var num = mode === 'adb' ? 2 : 1;
+    if (/^\d+$/.test(code)) {
+      var key = parseInt(code[7]) ^ num;
+      var v7 = (parseInt(code[key]) - key + 10) % 10;
+      var result1 = '';
+      for (var i = 0; i < 7; i++) {
+        var curKey = v7;
+        if (i === key) {
+          result1 += v7.toString();
+        } else {
+          var curInt = parseInt(code[i]);
+          result1 += ((curInt + 10 - curKey) % 10).toString();
+        }
+      }
+      var keyId = Math.floor(Math.random() * 7);
+      var keyValue = parseInt(result1[keyId]);
+      var result = '';
+      for (var _i = 0; _i < 7; _i++) {
+        var curK = _i === keyId ? keyId : keyValue;
+        var curInt2 = parseInt(result1[_i]);
+        result += ((curInt2 + curK) % 10).toString();
+      }
+      result += (num ^ keyId).toString();
+      return result;
+    } else {
+      return '';
+    }
+  } catch (e) {
+    return '';
+  }
+}
