@@ -5173,3 +5173,391 @@ textarea:focus-visible {
     padding-left: 12px;
   }
 }
+
+/* ==================== 打字速度测试 ==================== */
+.typing-passage {
+  font-size: 1.05rem;
+  line-height: 2;
+  color: var(--text-primary);
+  padding: 16px 20px;
+  background: var(--bg-tertiary);
+  border-radius: 12px;
+  margin-bottom: 16px;
+  letter-spacing: 0.5px;
+}
+
+.typing-char {
+  transition: color 0.15s ease, background 0.15s ease;
+  border-radius: 3px;
+  padding: 0 1px;
+}
+
+.typing-correct {
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.typing-wrong {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+  text-decoration: underline;
+  text-decoration-color: #ef4444;
+}
+
+.typing-input {
+  width: 100%;
+  min-height: 110px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-color, rgba(99, 102, 241, 0.15));
+  border-radius: 12px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  line-height: 1.8;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s ease;
+  margin-bottom: 16px;
+}
+
+.typing-input:focus {
+  border-color: var(--accent-primary);
+}
+
+.typing-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.typing-stats {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.typing-stat {
+  flex: 1;
+  background: var(--bg-tertiary);
+  border-radius: 10px;
+  padding: 12px;
+  text-align: center;
+}
+
+.typing-stat-label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.typing-stat-value {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 600;
+  background: var(--gradient-short);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.typing-btn {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  background: var(--gradient);
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.typing-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
+}
+
+.typing-btn:active {
+  transform: scale(0.97);
+}
+
+@media (max-width: 640px) {
+  .typing-stats {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .typing-passage {
+    font-size: 0.95rem;
+    padding: 12px 16px;
+    line-height: 1.8;
+  }
+
+  .typing-input {
+    min-height: 100px;
+    font-size: 0.9rem;
+    padding: 12px;
+  }
+
+  .typing-stat-value {
+    font-size: 1.1rem;
+  }
+}
+
+/* ==================== 随机名言 ==================== */
+.quote-display {
+  background: var(--bg-tertiary);
+  border-radius: 16px;
+  padding: 40px 24px;
+  text-align: center;
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  border: 1px solid var(--border-color, rgba(99, 102, 241, 0.1));
+}
+
+.quote-text {
+  font-size: 1.3rem;
+  line-height: 1.8;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  max-width: 420px;
+  font-weight: 500;
+}
+
+.quote-source {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.quote-btn {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  background: var(--gradient);
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quote-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
+}
+
+.quote-btn:active {
+  transform: scale(0.97);
+}
+
+/* 淡入动画 */
+.quote-fade-in {
+  animation: fadeInQuote 0.5s ease forwards;
+}
+
+@keyframes fadeInQuote {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 640px) {
+  .quote-display {
+    padding: 28px 16px;
+    min-height: 150px;
+  }
+
+  .quote-text {
+    font-size: 1.1rem;
+    line-height: 1.7;
+  }
+
+  .quote-source {
+    font-size: 0.85rem;
+  }
+}
+
+/* ==================== Weather ==================== */
+.weather-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color, rgba(255,255,255,0.06));
+  border-radius: 20px;
+  padding: 32px;
+  max-width: 480px;
+  margin: 0 auto;
+  backdrop-filter: blur(10px);
+}
+
+.weather-loading,
+.weather-error {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.weather-content {
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.weather-main {
+  text-align: center;
+}
+
+.weather-icon {
+  font-size: 4rem;
+  line-height: 1;
+  margin-bottom: 8px;
+  animation: weather-float 3s ease-in-out infinite;
+}
+
+@keyframes weather-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.weather-temp {
+  font-size: 2.8rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -1px;
+}
+
+.weather-desc {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.weather-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+  max-width: 360px;
+}
+
+.weather-detail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px;
+  background: var(--bg-tertiary);
+  border-radius: 12px;
+}
+
+.weather-detail-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.weather-detail-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.weather-location {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.weather-update {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+@media (max-width: 480px) {
+  .weather-card {
+    padding: 24px 16px;
+  }
+  .weather-icon {
+    font-size: 3rem;
+  }
+  .weather-temp {
+    font-size: 2.2rem;
+  }
+  .weather-details {
+    gap: 8px;
+  }
+  .weather-detail {
+    padding: 8px;
+  }
+}
+
+/* ==================== Gallery Categories ==================== */
+.gallery-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0;
+  justify-content: center;
+}
+
+.gallery-cat-tab {
+  padding: 6px 18px;
+  border: 1px solid var(--border-color, rgba(255,255,255,0.1));
+  border-radius: 20px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  font-family: inherit;
+}
+
+.gallery-cat-tab:hover {
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+}
+
+.gallery-cat-tab.active {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: #fff;
+}
+
+.gallery-cat-add {
+  width: 34px;
+  height: 34px;
+  border: 1px dashed var(--text-muted);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s ease;
+  padding: 0;
+}
+
+.gallery-cat-add:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.gallery-cat-add i {
+  width: 16px;
+  height: 16px;
+}

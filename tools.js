@@ -45,7 +45,9 @@ document.addEventListener('DOMContentLoaded', function() {
     color: { title: '颜色工具', render: renderColor },
     baseconv: { title: '进制转换', render: renderBaseConv },
     password: { title: '密码生成器', render: renderPassword },
-    qrcode: { title: '二维码生成', render: renderQrcode }
+    qrcode: { title: '二维码生成', render: renderQrcode },
+    typing: { title: '打字速度测试', render: renderTyping },
+    quote: { title: '随机名言', render: renderQuote }
   };
 
   function openTool(toolName) {
@@ -784,5 +786,204 @@ document.addEventListener('DOMContentLoaded', function() {
         output.innerHTML = '<span style="color:#f59e0b;">QRCode 库加载中，请稍候再试...</span>';
       }
     });
+  }
+
+  // ==================== 打字速度测试 ====================
+  function renderTyping(container) {
+    // 经典中文段落（约130字）
+    const passage = '君子曰：学不可以已。青，取之于蓝，而青于蓝；冰，水为之，而寒于水。木直中绳，輮以为轮，其曲中规。虽有槁暴，不复挺者，輮使之然也。故木受绳则直，金就砺则利，君子博学而日参省乎己，则知明而行无过矣。';
+
+    container.innerHTML = `
+      <div class="typing-passage" id="typingPassage">${passage}</div>
+      <textarea class="typing-input" id="typingInput" placeholder="在此输入上面的文字..." disabled></textarea>
+      <div class="typing-stats">
+        <div class="typing-stat">
+          <span class="typing-stat-label">已用时间</span>
+          <span class="typing-stat-value" id="typingTime">0s</span>
+        </div>
+        <div class="typing-stat">
+          <span class="typing-stat-label">速度</span>
+          <span class="typing-stat-value" id="typingSpeed">0 字/分</span>
+        </div>
+        <div class="typing-stat">
+          <span class="typing-stat-label">准确率</span>
+          <span class="typing-stat-value" id="typingAcc">100%</span>
+        </div>
+      </div>
+      <button class="typing-btn" id="typingStart">开始</button>
+    `;
+
+    const passageEl = container.querySelector('#typingPassage');
+    const inputEl = container.querySelector('#typingInput');
+    const timeEl = container.querySelector('#typingTime');
+    const speedEl = container.querySelector('#typingSpeed');
+    const accEl = container.querySelector('#typingAcc');
+    const startBtn = container.querySelector('#typingStart');
+
+    const original = passage.replace(/\s/g, '');
+    let startTime = null;
+    let timerId = null;
+    let started = false;
+
+    // 重置状态
+    function reset() {
+      started = false;
+      if (timerId) { clearInterval(timerId); timerId = null; }
+      startTime = null;
+      inputEl.value = '';
+      inputEl.disabled = true;
+      timeEl.textContent = '0s';
+      speedEl.textContent = '0 字/分';
+      accEl.textContent = '100%';
+      passageEl.querySelectorAll('.typing-correct, .typing-wrong').forEach(function(el) {
+        el.classList.remove('typing-correct', 'typing-wrong');
+      });
+      startBtn.textContent = '开始';
+    }
+
+    // 高亮已输入字符：正确/错误标记
+    function highlightInput() {
+      const typed = inputEl.value.replace(/\s/g, '');
+      const chars = passageEl.querySelectorAll('.typing-char');
+      chars.forEach(function(el, i) {
+        el.classList.remove('typing-correct', 'typing-wrong');
+        if (i < typed.length) {
+          el.classList.add(typed[i] === original[i] ? 'typing-correct' : 'typing-wrong');
+        }
+      });
+    }
+
+    // 更新统计面板
+    function updateStats() {
+      const typed = inputEl.value.replace(/\s/g, '');
+      const elapsed = (Date.now() - startTime) / 1000;
+      timeEl.textContent = Math.floor(elapsed) + 's';
+
+      // 打字速度：已正确输入字数 / 分钟
+      let correctCount = 0;
+      for (let i = 0; i < typed.length; i++) {
+        if (typed[i] === original[i]) correctCount++;
+      }
+      const speed = elapsed > 0 ? Math.round(correctCount / elapsed * 60) : 0;
+      speedEl.textContent = speed + ' 字/分';
+
+      // 准确率
+      const acc = typed.length > 0 ? Math.round(correctCount / typed.length * 100) : 100;
+      accEl.textContent = acc + '%';
+    }
+
+    // 将原文拆分为单个字符 span
+    function initPassageDisplay() {
+      passageEl.innerHTML = '';
+      for (const ch of original) {
+        const span = document.createElement('span');
+        span.className = 'typing-char';
+        span.textContent = ch;
+        passageEl.appendChild(span);
+      }
+    }
+    initPassageDisplay();
+
+    // 开始/重置按钮
+    startBtn.addEventListener('click', function() {
+      if (started) {
+        // 已完成或进行中点击重置
+        reset();
+        startBtn.textContent = '开始';
+        return;
+      }
+
+      // 开始打字
+      startBtn.textContent = '重置';
+      inputEl.disabled = false;
+      inputEl.focus();
+      started = true;
+      startTime = Date.now();
+
+      // 每秒更新统计
+      timerId = setInterval(function() {
+        if (startTime) updateStats();
+      }, 200);
+    });
+
+    // 输入事件：高亮 + 判断完成
+    inputEl.addEventListener('input', function() {
+      if (!started) return;
+      highlightInput();
+      if (startTime) updateStats();
+
+      // 判断是否全部输入完成
+      const typed = inputEl.value.replace(/\s/g, '');
+      if (typed.length >= original.length) {
+        if (timerId) { clearInterval(timerId); timerId = null; }
+        inputEl.disabled = true;
+        startBtn.textContent = '完成 ✓';
+        // 最终统计
+        updateStats();
+      }
+    });
+  }
+
+  // ==================== 随机名言 ====================
+  function renderQuote(container) {
+    // 中文名言数组（至少20条，带出处）
+    const quotes = [
+      { text: '学而不思则罔，思而不学则殆。', source: '《论语·为政》' },
+      { text: '温故而知新，可以为师矣。', source: '《论语·为政》' },
+      { text: '三人行，必有我师焉。择其善者而从之，其不善者而改之。', source: '《论语·述而》' },
+      { text: '知之为知之，不知为不知，是知也。', source: '《论语·为政》' },
+      { text: '己所不欲，勿施于人。', source: '《论语·颜渊》' },
+      { text: '千里之行，始于足下。', source: '《老子》' },
+      { text: '天行健，君子以自强不息。', source: '《周易》' },
+      { text: '地势坤，君子以厚德载物。', source: '《周易》' },
+      { text: '路漫漫其修远兮，吾将上下而求索。', source: '屈原《离骚》' },
+      { text: '生于忧患，死于安乐。', source: '《孟子·告子下》' },
+      { text: '老吾老以及人之老，幼吾幼以及人之幼。', source: '《孟子·梁惠王上》' },
+      { text: '纸上得来终觉浅，绝知此事要躬行。', source: '陆游《冬夜读书示子聿》' },
+      { text: '书山有路勤为径，学海无涯苦作舟。', source: '韩愈《古今贤文》' },
+      { text: '业精于勤，荒于嬉；行成于思，毁于随。', source: '韩愈《进学解》' },
+      { text: '山重水复疑无路，柳暗花明又一村。', source: '陆游《游山西村》' },
+      { text: '长风破浪会有时，直挂云帆济沧海。', source: '李白《行路难》' },
+      { text: '人生自古谁无死？留取丹心照汗青。', source: '文天祥《过零丁洋》' },
+      { text: '先天下之忧而忧，后天下之乐而乐。', source: '范仲淹《岳阳楼记》' },
+      { text: '但愿人长久，千里共婵娟。', source: '苏轼《水调歌头》' },
+      { text: '问渠那得清如许？为有源头活水来。', source: '朱熹《观书有感》' },
+      { text: '锲而不舍，金石可镂；锲而舍之，朽木不折。', source: '《荀子·劝学》' },
+      { text: '不积跬步，无以至千里；不积小流，无以成江海。', source: '《荀子·劝学》' },
+      { text: '宝剑锋从磨砺出，梅花香自苦寒来。', source: '《警世贤文》' }
+    ];
+
+    container.innerHTML = `
+      <div class="quote-display" id="quoteDisplay">
+        <div class="quote-text" id="quoteText">点击下方按钮，获取一句名言</div>
+        <div class="quote-source" id="quoteSource"></div>
+      </div>
+      <button class="quote-btn" id="quoteBtn">随机显示</button>
+    `;
+
+    const textEl = container.querySelector('#quoteText');
+    const sourceEl = container.querySelector('#quoteSource');
+    const btnEl = container.querySelector('#quoteBtn');
+
+    // 随机获取一条名言
+    function showRandomQuote() {
+      const idx = Math.floor(Math.random() * quotes.length);
+      const quote = quotes[idx];
+
+      // 淡入动画：移除再添加类以重新触发
+      textEl.classList.remove('quote-fade-in');
+      sourceEl.classList.remove('quote-fade-in');
+
+      // 使用 setTimeout 触发 reflow 使动画重新生效
+      void textEl.offsetWidth;
+
+      textEl.textContent = '「' + quote.text + '」';
+      sourceEl.textContent = '—— ' + quote.source;
+
+      textEl.classList.add('quote-fade-in');
+      sourceEl.classList.add('quote-fade-in');
+    }
+
+    btnEl.addEventListener('click', showRandomQuote);
   }
 });

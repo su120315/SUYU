@@ -221,6 +221,7 @@ function initGallery() {
   const galleryGrid = document.getElementById('galleryGrid');
   const galleryEmpty = document.getElementById('galleryEmpty');
   const galleryLoading = document.getElementById('galleryLoading');
+  const catContainer = document.getElementById('galleryCategories');
 
   // GitHub Token - 用于保存照片
   const TOKEN_PART1 = 'ghp_GMiHyZUI5RkF';
@@ -230,9 +231,9 @@ function initGallery() {
   // Gist ID 和直链
   const GIST_ID = '070c70e1da8ce50d80a1e805a3e5491d';
   const GIST_FILENAME = 'gallery-photos.json';
-  // 添加时间戳避免缓存
-  const GIST_RAW_URL = `https://gist.githubusercontent.com/su120315/${GIST_ID}/raw/${GIST_FILENAME}?t=${Date.now()}`;
   
+  let categories = { '默认相册': [] };
+  let currentCategory = '默认相册';
   let photos = [];
   let isUploading = false;
   let isExpanded = false;
@@ -328,46 +329,104 @@ function initGallery() {
     if (e.key === 'ArrowRight') showNext();
   });
 
-  // 加载照片 - 使用直链，不需要认证
+  // 保存分类结构到 Gist
+  async function saveCategoryStructure() {
+    const res = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${GITHUB_TOKEN}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/vnd.github.v3+json'
+      },
+      body: JSON.stringify({
+        files: {
+          [GIST_FILENAME]: {
+            content: JSON.stringify({
+              categories: categories,
+              currentCategory: currentCategory
+            })
+          }
+        }
+      })
+    });
+    if (!res.ok) {
+      throw new Error(`GitHub API 错误: ${res.status} ${res.statusText}`);
+    }
+  }
+
+  // 渲染分类标签
+  function renderCategoryTabs() {
+    if (!catContainer) return;
+    catContainer.innerHTML = '';
+    const catNames = Object.keys(categories);
+    catNames.forEach(name => {
+      const tab = document.createElement('button');
+      tab.className = 'gallery-cat-tab' + (name === currentCategory ? ' active' : '');
+      tab.textContent = name;
+      tab.addEventListener('click', () => switchCategory(name));
+      catContainer.appendChild(tab);
+    });
+    // 新建相册按钮
+    const addBtn = document.createElement('button');
+    addBtn.className = 'gallery-cat-add';
+    addBtn.innerHTML = '<i data-lucide="plus"></i>';
+    addBtn.title = '新建相册';
+    addBtn.addEventListener('click', () => {
+      const name = prompt('请输入新相册名称：');
+      if (name && name.trim()) {
+        const trimmed = name.trim();
+        if (categories[trimmed]) {
+          alert('该相册已存在！');
+          return;
+        }
+        categories[trimmed] = [];
+        switchCategory(trimmed);
+        saveCategoryStructure().catch(e => console.error('保存分类失败:', e));
+      }
+    });
+    catContainer.appendChild(addBtn);
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  }
+
+  // 切换分类
+  function switchCategory(name) {
+    currentCategory = name;
+    photos = categories[currentCategory] || [];
+    isExpanded = false;
+    renderCategoryTabs();
+    renderPhotos();
+  }
+
+  // 加载照片
   async function loadPhotos() {
     try {
       const url = `https://gist.githubusercontent.com/su120315/${GIST_ID}/raw/${GIST_FILENAME}?t=${Date.now()}`;
       const response = await fetch(url, { cache: 'no-store' });
       if (response.ok) {
         const data = await response.text();
-        photos = JSON.parse(data);
+        const parsed = JSON.parse(data);
+        if (parsed && parsed.categories) {
+          categories = parsed.categories;
+          currentCategory = parsed.currentCategory || '默认相册';
+        } else if (Array.isArray(parsed)) {
+          categories = { '默认相册': parsed };
+          currentCategory = '默认相册';
+        } else {
+          categories = { '默认相册': [] };
+          currentCategory = '默认相册';
+        }
       }
     } catch (e) {
       console.log('加载照片失败:', e);
+      categories = { '默认相册': [] };
+      currentCategory = '默认相册';
     }
-    // 加载完成，隐藏加载状态
+    photos = categories[currentCategory] || [];
     if (galleryLoading) {
       galleryLoading.style.display = 'none';
     }
+    renderCategoryTabs();
     renderPhotos();
-  }
-
-  // 保存照片到 Gist
-  async function savePhotos() {
-    try {
-      await fetch(`https://api.github.com/gists/${GIST_ID}`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${GITHUB_TOKEN}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/vnd.github.v3+json'
-        },
-        body: JSON.stringify({
-          files: {
-            [GIST_FILENAME]: {
-              content: JSON.stringify(photos)
-            }
-          }
-        })
-      });
-    } catch (error) {
-      console.error('保存失败:', error);
-    }
   }
 
   function renderPhotos() {
@@ -428,7 +487,6 @@ function initGallery() {
       collapseCard.addEventListener('click', () => {
         isExpanded = false;
         renderPhotos();
-        // 滚动回相册顶部
         document.getElementById('gallery').scrollIntoView({ behavior: 'smooth' });
       });
       galleryGrid.appendChild(collapseCard);
@@ -440,8 +498,9 @@ function initGallery() {
         const password = prompt('请输入删除密码：');
         if (password === '120315') {
           const idx = parseInt(btn.getAttribute('data-index'));
-          photos.splice(isExpanded ? idx : idx, 1);
-          savePhotos();
+          photos.splice(idx, 1);
+          categories[currentCategory] = photos;
+          saveCategoryStructure().catch(e => console.error('保存失败:', e));
           renderPhotos();
         } else if (password !== null) {
           alert('密码错误！');
@@ -484,7 +543,8 @@ function initGallery() {
 
         const compressedBase64 = await compressImage(base64);
         photos.push(compressedBase64);
-        await savePhotos();
+        categories[currentCategory] = photos;
+        await saveCategoryStructure();
         
         loadingItem.remove();
         renderPhotos();
@@ -506,9 +566,10 @@ function initGallery() {
     if (photos.length === 0) return;
     const password = prompt('请输入清空密码：');
     if (password === '120315') {
-      if (confirm('确定要清空所有照片吗？此操作不可恢复！')) {
+      if (confirm('确定要清空当前相册的所有照片吗？此操作不可恢复！')) {
         photos = [];
-        savePhotos();
+        categories[currentCategory] = [];
+        saveCategoryStructure().catch(e => console.error('保存失败:', e));
         renderPhotos();
       }
     } else if (password !== null) {
@@ -1041,113 +1102,79 @@ function initVisitorCounter() {
 
 initVisitorCounter();
 
-// ==================== Music Player ====================
-function initMusicPlayer() {
-  const player = document.getElementById('musicPlayer');
-  const miniPlayer = document.getElementById('musicMini');
-  const playBtn = document.getElementById('musicPlayBtn');
-  const playIcon = document.getElementById('musicPlayIcon');
-  const prevBtn = document.getElementById('musicPrev');
-  const nextBtn = document.getElementById('musicNext');
-  const toggleBtn = document.getElementById('musicToggle');
-  const titleEl = document.getElementById('musicTitle');
-  const artistEl = document.getElementById('musicArtist');
-  const coverEl = document.getElementById('musicCover');
+// ==================== Weather ====================
+function initWeather() {
+  const loading = document.getElementById('weatherLoading');
+  const content = document.getElementById('weatherContent');
+  const error = document.getElementById('weatherError');
+  const icon = document.getElementById('weatherIcon');
+  const temp = document.getElementById('weatherTemp');
+  const desc = document.getElementById('weatherDesc');
+  const feels = document.getElementById('weatherFeels');
+  const humidity = document.getElementById('weatherHumidity');
+  const wind = document.getElementById('weatherWind');
+  const uv = document.getElementById('weatherUV');
+  const time = document.getElementById('weatherTime');
   
-  if (!player || !playBtn) return;
+  if (!loading) return;
   
-  const playlist = [
-    { title: '晴天', artist: '周杰伦', url: 'https://music.163.com/song/media/outer/url?id=186016.mp3' },
-    { title: '稻香', artist: '周杰伦', url: 'https://music.163.com/song/media/outer/url?id=185809.mp3' },
-    { title: '七里香', artist: '周杰伦', url: 'https://music.163.com/song/media/outer/url?id=185798.mp3' },
-    { title: '夜曲', artist: '周杰伦', url: 'https://music.163.com/song/media/outer/url?id=185817.mp3' }
-  ];
-  
-  let currentIndex = 0;
-  let isPlaying = false;
-  let audio = null;
-  
-  function updateUI() {
-    const song = playlist[currentIndex];
-    titleEl.textContent = song.title;
-    artistEl.textContent = song.artist;
-    
-    if (isPlaying) {
-      playIcon.setAttribute('data-lucide', 'pause');
-      coverEl.classList.add('playing');
-      miniPlayer.classList.add('playing');
-    } else {
-      playIcon.setAttribute('data-lucide', 'play');
-      coverEl.classList.remove('playing');
-      miniPlayer.classList.remove('playing');
-    }
-    lucide.createIcons();
-  }
-  
-  function ensureAudio() {
-    if (!audio) {
-      audio = new Audio();
-      audio.addEventListener('ended', () => {
-        playNext();
+  async function fetchWeather() {
+    try {
+      loading.style.display = 'block';
+      content.style.display = 'none';
+      error.style.display = 'none';
+      
+      const res = await fetch('https://wttr.in/Lu%27an?format=j1', {
+        cache: 'no-store'
       });
-      audio.addEventListener('error', () => {
-        console.log('音频加载失败，尝试下一首');
-        playNext();
-      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      
+      const current = data.current_condition[0];
+      const area = data.nearest_area[0].areaName[0].value;
+      
+      // 天气图标映射
+      const code = parseInt(current.weatherCode);
+      const iconMap = {
+        113: '☀️', 116: '⛅', 119: '☁️', 122: '☁️',
+        143: '🌫️', 176: '🌦️', 179: '🌧️', 182: '🌧️',
+        185: '🌧️', 200: '⛈️', 227: '🌨️', 230: '🌨️',
+        248: '🌫️', 260: '🌫️', 263: '🌦️', 266: '🌦️',
+        281: '🌧️', 284: '🌧️', 293: '🌦️', 296: '🌦️',
+        299: '🌧️', 302: '🌧️', 305: '🌧️', 308: '🌧️',
+        311: '🌧️', 314: '🌧️', 317: '🌧️', 320: '🌧️',
+        323: '🌨️', 326: '🌨️', 329: '🌨️', 332: '🌨️',
+        335: '🌨️', 338: '🌨️', 350: '🌧️', 353: '🌦️',
+        356: '🌧️', 359: '🌧️', 362: '🌧️', 365: '🌧️',
+        368: '🌨️', 371: '🌨️', 374: '🌧️', 377: '🌧️',
+        386: '⛈️', 389: '⛈️', 392: '⛈️', 395: '⛈️'
+      };
+      
+      icon.textContent = iconMap[code] || '🌤️';
+      temp.textContent = current.temp_C + '°C';
+      desc.textContent = current.weatherDesc[0].value;
+      feels.textContent = current.FeelsLikeC + '°C';
+      humidity.textContent = current.humidity + '%';
+      wind.textContent = current.windspeedKmph + ' km/h';
+      uv.textContent = current.uvIndex;
+      
+      document.getElementById('weatherLocation').textContent = '📍 ' + area;
+      time.textContent = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+      
+      loading.style.display = 'none';
+      content.style.display = 'flex';
+    } catch (e) {
+      console.log('天气加载失败:', e);
+      loading.style.display = 'none';
+      error.style.display = 'block';
     }
   }
   
-  function togglePlay() {
-    ensureAudio();
-    if (isPlaying) {
-      audio.pause();
-      isPlaying = false;
-    } else {
-      audio.src = playlist[currentIndex].url;
-      audio.play().catch(e => {
-        console.log('播放失败:', e);
-        alert('由于浏览器限制，请手动点击播放，或歌曲链接可能失效');
-      });
-      isPlaying = true;
-    }
-    updateUI();
-  }
-  
-  function playPrev() {
-    ensureAudio();
-    currentIndex = (currentIndex - 1 + playlist.length) % playlist.length;
-    if (isPlaying) {
-      audio.src = playlist[currentIndex].url;
-      audio.play().catch(e => console.log(e));
-    }
-    updateUI();
-  }
-  
-  function playNext() {
-    ensureAudio();
-    currentIndex = (currentIndex + 1) % playlist.length;
-    if (isPlaying) {
-      audio.src = playlist[currentIndex].url;
-      audio.play().catch(e => console.log(e));
-    }
-    updateUI();
-  }
-  
-  playBtn.addEventListener('click', togglePlay);
-  prevBtn.addEventListener('click', playPrev);
-  nextBtn.addEventListener('click', playNext);
-  
-  toggleBtn.addEventListener('click', () => {
-    player.classList.add('collapsed');
-    miniPlayer.style.display = 'flex';
-  });
-  
-  miniPlayer.addEventListener('click', () => {
-    player.classList.remove('collapsed');
-    miniPlayer.style.display = 'none';
-  });
-  
-  updateUI();
+  fetchWeather();
+  // 每30分钟刷新一次
+  setInterval(fetchWeather, 30 * 60 * 1000);
 }
 
-initMusicPlayer();
+initWeather();
+
+
