@@ -138,10 +138,8 @@ if (!isMobile && window.matchMedia('(prefers-reduced-motion: no-preference)').ma
   if (themeToggles.length === 0) return;
 
   const savedTheme = localStorage.getItem('theme');
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
 
-  // 无手动保存时，跟随系统
-  if (savedTheme === 'dark' || (!savedTheme && prefersDark.matches)) {
+  if (savedTheme === 'dark') {
     document.body.classList.add('dark-mode');
     updateThemeIcons(true);
   }
@@ -159,19 +157,6 @@ if (!isMobile && window.matchMedia('(prefers-reduced-motion: no-preference)').ma
       localStorage.setItem('theme', isDark ? 'dark' : 'light');
       updateThemeIcons(isDark);
     });
-  });
-
-  // 系统主题变化时自动跟随（仅当用户没有手动设置过）
-  prefersDark.addEventListener('change', (e) => {
-    if (!localStorage.getItem('theme')) {
-      if (e.matches) {
-        document.body.classList.add('dark-mode');
-        updateThemeIcons(true);
-      } else {
-        document.body.classList.remove('dark-mode');
-        updateThemeIcons(false);
-      }
-    }
   });
 })();
 
@@ -238,9 +223,12 @@ function initGallery() {
   const galleryLoading = document.getElementById('galleryLoading');
   const catContainer = document.getElementById('galleryCategories');
 
+  // GitHub Token - 用于保存照片
   const TOKEN_PART1 = 'ghp_GMiHyZUI5RkF';
   const TOKEN_PART2 = 'DIFadXOlohhXN9nvl63RzsQM';
   const GITHUB_TOKEN = TOKEN_PART1 + TOKEN_PART2;
+  
+  // Gist ID 和直链
   const GIST_ID = '070c70e1da8ce50d80a1e805a3e5491d';
   const GIST_FILENAME = 'gallery-photos.json';
   
@@ -254,20 +242,36 @@ function initGallery() {
     return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
-        let width = img.width, height = img.height;
-        if (width > maxWidth) { height = (height * maxWidth) / width; width = maxWidth; }
-        if (height > maxHeight) { width = (width * maxHeight) / height; height = maxHeight; }
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+        if (height > maxHeight) {
+          width = (width * maxHeight) / height;
+          height = maxHeight;
+        }
+
         const canvas = document.createElement('canvas');
-        canvas.width = width; canvas.height = height;
-        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
         resolve(canvas.toDataURL('image/jpeg', quality));
       };
-      img.onerror = () => resolve(base64Str);
+      img.onerror = () => {
+        resolve(base64Str);
+      };
       img.src = base64Str;
     });
   }
 
   let currentLightboxIndex = 0;
+
   const lightbox = document.getElementById('lightbox');
   const lightboxImage = document.getElementById('lightboxImage');
   const lightboxClose = document.getElementById('lightboxClose');
@@ -283,21 +287,33 @@ function initGallery() {
     document.body.style.overflow = 'hidden';
     lucide.createIcons();
   }
+
   function closeLightbox() {
     lightbox.classList.remove('active');
     document.body.style.overflow = '';
   }
+
   function showPrev() {
-    if (currentLightboxIndex > 0) { currentLightboxIndex--; lightboxImage.src = photos[currentLightboxIndex]; }
+    if (currentLightboxIndex > 0) {
+      currentLightboxIndex--;
+      lightboxImage.src = photos[currentLightboxIndex];
+    }
   }
+
   function showNext() {
-    if (currentLightboxIndex < photos.length - 1) { currentLightboxIndex++; lightboxImage.src = photos[currentLightboxIndex]; }
+    if (currentLightboxIndex < photos.length - 1) {
+      currentLightboxIndex++;
+      lightboxImage.src = photos[currentLightboxIndex];
+    }
   }
+
   function downloadPhoto() {
     const link = document.createElement('a');
     link.href = photos[currentLightboxIndex];
     link.download = `photo-${currentLightboxIndex + 1}.jpg`;
-    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
   lightboxClose.addEventListener('click', closeLightbox);
@@ -305,6 +321,7 @@ function initGallery() {
   lightboxPrev.addEventListener('click', showPrev);
   lightboxNext.addEventListener('click', showNext);
   lightboxDownload.addEventListener('click', downloadPhoto);
+
   document.addEventListener('keydown', (e) => {
     if (!lightbox.classList.contains('active')) return;
     if (e.key === 'Escape') closeLightbox();
@@ -324,25 +341,32 @@ function initGallery() {
       body: JSON.stringify({
         files: {
           [GIST_FILENAME]: {
-            content: JSON.stringify({ categories, currentCategory })
+            content: JSON.stringify({
+              categories: categories,
+              currentCategory: currentCategory
+            })
           }
         }
       })
     });
-    if (!res.ok) throw new Error(`GitHub API 错误: ${res.status} ${res.statusText}`);
+    if (!res.ok) {
+      throw new Error(`GitHub API 错误: ${res.status} ${res.statusText}`);
+    }
   }
 
   // 渲染分类标签
   function renderCategoryTabs() {
     if (!catContainer) return;
     catContainer.innerHTML = '';
-    Object.keys(categories).forEach(name => {
+    const catNames = Object.keys(categories);
+    catNames.forEach(name => {
       const tab = document.createElement('button');
       tab.className = 'gallery-cat-tab' + (name === currentCategory ? ' active' : '');
       tab.textContent = name;
       tab.addEventListener('click', () => switchCategory(name));
       catContainer.appendChild(tab);
     });
+    // 新建相册按钮
     const addBtn = document.createElement('button');
     addBtn.className = 'gallery-cat-add';
     addBtn.innerHTML = '<i data-lucide="plus"></i>';
@@ -351,7 +375,10 @@ function initGallery() {
       const name = prompt('请输入新相册名称：');
       if (name && name.trim()) {
         const trimmed = name.trim();
-        if (categories[trimmed]) { alert('该相册已存在！'); return; }
+        if (categories[trimmed]) {
+          alert('该相册已存在！');
+          return;
+        }
         categories[trimmed] = [];
         switchCategory(trimmed);
         saveCategoryStructure().catch(e => console.error('保存分类失败:', e));
@@ -361,6 +388,7 @@ function initGallery() {
     if (typeof lucide !== 'undefined') lucide.createIcons();
   }
 
+  // 切换分类
   function switchCategory(name) {
     currentCategory = name;
     photos = categories[currentCategory] || [];
@@ -369,6 +397,7 @@ function initGallery() {
     renderPhotos();
   }
 
+  // 加载照片
   async function loadPhotos() {
     try {
       const url = `https://gist.githubusercontent.com/su120315/${GIST_ID}/raw/${GIST_FILENAME}?t=${Date.now()}`;
@@ -393,7 +422,9 @@ function initGallery() {
       currentCategory = '默认相册';
     }
     photos = categories[currentCategory] || [];
-    if (galleryLoading) galleryLoading.style.display = 'none';
+    if (galleryLoading) {
+      galleryLoading.style.display = 'none';
+    }
     renderCategoryTabs();
     renderPhotos();
   }
@@ -404,38 +435,63 @@ function initGallery() {
       galleryGrid.querySelectorAll('.gallery-item, .gallery-more').forEach(el => el.remove());
       return;
     }
+
     galleryEmpty.style.display = 'none';
     galleryGrid.querySelectorAll('.gallery-item, .gallery-more').forEach(el => el.remove());
+
     const displayPhotos = isExpanded ? photos : photos.slice(0, 3);
+
     displayPhotos.forEach((photoData, index) => {
       const item = document.createElement('div');
       item.className = 'gallery-item';
       item.style.animationDelay = `${index * 0.05}s`;
       item.innerHTML = `
-        <img src="${photoData}" alt="照片 ${index + 1}" loading="lazy"
+        <img src="${photoData}" alt="照片 ${index + 1}" loading="lazy" 
              onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect fill=%22%23ddd%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2255%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2240%22>🖼️</text></svg>'">
         <button class="gallery-delete" data-index="${index}" title="删除">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-        </button>`;
-      item.querySelector('img').addEventListener('click', () => openLightbox(index));
+        </button>
+      `;
+      item.querySelector('img').addEventListener('click', () => {
+        openLightbox(index);
+      });
       galleryGrid.appendChild(item);
     });
+
+    // 如果照片超过3张且没展开，显示"更多"卡片
     if (photos.length > 3 && !isExpanded) {
+      const moreCount = photos.length - 3;
       const moreCard = document.createElement('div');
       moreCard.className = 'gallery-more';
       moreCard.style.animationDelay = `${3 * 0.05}s`;
-      moreCard.innerHTML = `<span class="gallery-more-count">+${photos.length - 3}</span><span class="gallery-more-text">查看更多</span>`;
-      moreCard.addEventListener('click', () => { isExpanded = true; renderPhotos(); });
+      moreCard.innerHTML = `
+        <span class="gallery-more-count">+${moreCount}</span>
+        <span class="gallery-more-text">查看更多</span>
+      `;
+      moreCard.addEventListener('click', () => {
+        isExpanded = true;
+        renderPhotos();
+      });
       galleryGrid.appendChild(moreCard);
     }
+
+    // 如果展开了，显示"收起"按钮
     if (isExpanded && photos.length > 3) {
       const collapseCard = document.createElement('div');
       collapseCard.className = 'gallery-more';
       collapseCard.style.animationDelay = `${photos.length * 0.05}s`;
-      collapseCard.innerHTML = `<span class="gallery-more-count">↑</span><span class="gallery-more-text">收起</span>`;
-      collapseCard.addEventListener('click', () => { isExpanded = false; renderPhotos(); document.getElementById('gallery').scrollIntoView({ behavior: 'smooth' }); });
+      collapseCard.innerHTML = `
+        <span class="gallery-more-count">↑</span>
+        <span class="gallery-more-text">收起</span>
+      `;
+      collapseCard.addEventListener('click', () => {
+        isExpanded = false;
+        renderPhotos();
+        document.getElementById('gallery').scrollIntoView({ behavior: 'smooth' });
+      });
       galleryGrid.appendChild(collapseCard);
     }
+
     galleryGrid.querySelectorAll('.gallery-delete').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -446,38 +502,63 @@ function initGallery() {
           categories[currentCategory] = photos;
           saveCategoryStructure().catch(e => console.error('保存失败:', e));
           renderPhotos();
-        } else if (password !== null) alert('密码错误！');
+        } else if (password !== null) {
+          alert('密码错误！');
+        }
       });
     });
   }
 
   photoInput.addEventListener('change', async (e) => {
     if (isUploading) return;
+    
     const files = Array.from(e.target.files);
+    
     for (const file of files) {
-      if (file.size > 5 * 1024 * 1024) { alert('图片太大了，请选择 5MB 以下的图片'); continue; }
+      if (file.size > 5 * 1024 * 1024) {
+        alert('图片太大了，请选择 5MB 以下的图片');
+        continue;
+      }
+
       isUploading = true;
+      
       try {
         const loadingItem = document.createElement('div');
         loadingItem.className = 'gallery-item loading';
-        loadingItem.innerHTML = `<div class="gallery-loading"><div class="loading-spinner"></div><span>上传中...</span></div>`;
+        loadingItem.innerHTML = `
+          <div class="gallery-loading">
+            <div class="loading-spinner"></div>
+            <span>上传中...</span>
+          </div>
+        `;
         galleryEmpty.style.display = 'none';
         galleryGrid.appendChild(loadingItem);
-        const base64 = await new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(r.result); r.onerror = reject; r.readAsDataURL(file); });
+
+        const base64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
         const compressedBase64 = await compressImage(base64);
         photos.push(compressedBase64);
         categories[currentCategory] = photos;
         await saveCategoryStructure();
+        
         loadingItem.remove();
         renderPhotos();
         showConfetti();
+        
       } catch (error) {
         console.error('上传失败:', error);
         alert('上传失败，请稍后重试');
         galleryGrid.querySelector('.gallery-item.loading')?.remove();
       }
+      
       isUploading = false;
     }
+    
     photoInput.value = '';
   });
 
@@ -491,7 +572,9 @@ function initGallery() {
         saveCategoryStructure().catch(e => console.error('保存失败:', e));
         renderPhotos();
       }
-    } else if (password !== null) alert('密码错误！');
+    } else if (password !== null) {
+      alert('密码错误！');
+    }
   });
 
   loadPhotos();
@@ -1032,6 +1115,7 @@ function initWeather() {
   const wind = document.getElementById('weatherWind');
   const uv = document.getElementById('weatherUV');
   const time = document.getElementById('weatherTime');
+  
   if (!loading) return;
   
   async function fetchWeather() {
@@ -1039,24 +1123,33 @@ function initWeather() {
       loading.style.display = 'block';
       content.style.display = 'none';
       error.style.display = 'none';
-      const res = await fetch('https://wttr.in/Lu%27an?format=j1', { cache: 'no-store' });
+      
+      const res = await fetch('https://wttr.in/Lu%27an?format=j1', {
+        cache: 'no-store'
+      });
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
+      
       const current = data.current_condition[0];
       const area = data.nearest_area[0].areaName[0].value;
+      
+      // 天气图标映射
       const code = parseInt(current.weatherCode);
       const iconMap = {
-        113: '☀️', 116: '⛅', 119: '☁️', 122: '☁️', 143: '🌫️',
-        176: '🌦️', 179: '🌧️', 182: '🌧️', 185: '🌧️', 200: '⛈️',
-        227: '🌨️', 230: '🌨️', 248: '🌫️', 260: '🌫️', 263: '🌦️',
-        266: '🌦️', 281: '🌧️', 284: '🌧️', 293: '🌦️', 296: '🌦️',
-        299: '🌧️', 302: '🌧️', 305: '🌧️', 308: '🌧️', 311: '🌧️',
-        314: '🌧️', 317: '🌧️', 320: '🌧️', 323: '🌨️', 326: '🌨️',
-        329: '🌨️', 332: '🌨️', 335: '🌨️', 338: '🌨️', 350: '🌧️',
-        353: '🌦️', 356: '🌧️', 359: '🌧️', 362: '🌧️', 365: '🌧️',
-        368: '🌨️', 371: '🌨️', 374: '🌧️', 377: '🌧️', 386: '⛈️',
-        389: '⛈️', 392: '⛈️', 395: '⛈️'
+        113: '☀️', 116: '⛅', 119: '☁️', 122: '☁️',
+        143: '🌫️', 176: '🌦️', 179: '🌧️', 182: '🌧️',
+        185: '🌧️', 200: '⛈️', 227: '🌨️', 230: '🌨️',
+        248: '🌫️', 260: '🌫️', 263: '🌦️', 266: '🌦️',
+        281: '🌧️', 284: '🌧️', 293: '🌦️', 296: '🌦️',
+        299: '🌧️', 302: '🌧️', 305: '🌧️', 308: '🌧️',
+        311: '🌧️', 314: '🌧️', 317: '🌧️', 320: '🌧️',
+        323: '🌨️', 326: '🌨️', 329: '🌨️', 332: '🌨️',
+        335: '🌨️', 338: '🌨️', 350: '🌧️', 353: '🌦️',
+        356: '🌧️', 359: '🌧️', 362: '🌧️', 365: '🌧️',
+        368: '🌨️', 371: '🌨️', 374: '🌧️', 377: '🌧️',
+        386: '⛈️', 389: '⛈️', 392: '⛈️', 395: '⛈️'
       };
+      
       icon.textContent = iconMap[code] || '🌤️';
       temp.textContent = current.temp_C + '°C';
       desc.textContent = current.weatherDesc[0].value;
@@ -1064,8 +1157,10 @@ function initWeather() {
       humidity.textContent = current.humidity + '%';
       wind.textContent = current.windspeedKmph + ' km/h';
       uv.textContent = current.uvIndex;
+      
       document.getElementById('weatherLocation').textContent = '📍 ' + area;
       time.textContent = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+      
       loading.style.display = 'none';
       content.style.display = 'flex';
     } catch (e) {
@@ -1074,7 +1169,117 @@ function initWeather() {
       error.style.display = 'block';
     }
   }
+  
   fetchWeather();
+  // 每30分钟刷新一次
   setInterval(fetchWeather, 30 * 60 * 1000);
 }
+
 initWeather();
+
+// ==================== AI 对话小窗 ====================
+function initChat() {
+  const bubble = document.getElementById('chatBubble');
+  const dialog = document.getElementById('chatDialog');
+  const close = document.getElementById('chatClose');
+  const input = document.getElementById('chatInput');
+  const send = document.getElementById('chatSend');
+  const messages = document.getElementById('chatMessages');
+  if (!bubble || !dialog) return;
+
+  const API_KEY = '9be075e9e33940e5b27b287fdf7df184.TJaWcWDHWOKzIMWw';
+  const API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+
+  let chatHistory = [
+    { role: 'system', content: '你是蘇魚的AI分身。蘇魚是一个初二学生，来自六安汇文中学，热爱编程、AI、游戏（三角洲行动、极品飞车：集结、MC）、骑公路自行车。回答要简短亲切、有活力，用中文，像朋友聊天一样。你不知道的事情就说“这个我也不太清楚呢～”。' }
+  ];
+
+  bubble.addEventListener('click', () => {
+    dialog.classList.toggle('open');
+    if (dialog.classList.contains('open')) {
+      input.focus();
+      setTimeout(() => messages.scrollTop = messages.scrollHeight, 100);
+    }
+  });
+
+  close.addEventListener('click', () => dialog.classList.remove('open'));
+
+  async function sendMessage() {
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    send.disabled = true;
+
+    // 显示用户消息
+    const userDiv = document.createElement('div');
+    userDiv.className = 'chat-msg chat-msg-user';
+    userDiv.innerHTML = `<div class="chat-msg-content">${escapeHtml(text)}</div>`;
+    messages.appendChild(userDiv);
+    messages.scrollTop = messages.scrollHeight;
+
+    // 显示加载中
+    const aiDiv = document.createElement('div');
+    aiDiv.className = 'chat-msg chat-msg-ai loading';
+    aiDiv.innerHTML = '<div class="chat-msg-content">思考中</div>';
+    messages.appendChild(aiDiv);
+    messages.scrollTop = messages.scrollHeight;
+
+    chatHistory.push({ role: 'user', content: text });
+
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${API_KEY}`
+        },
+        body: JSON.stringify({
+          model: 'glm-4-flash',
+          messages: chatHistory,
+          max_tokens: 1024,
+          temperature: 0.8,
+          stream: false
+        })
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const data = await res.json();
+      const reply = data.choices[0].message.content;
+
+      aiDiv.className = 'chat-msg chat-msg-ai';
+      aiDiv.innerHTML = `<div class="chat-msg-content">${escapeHtml(reply)}</div>`;
+      chatHistory.push({ role: 'assistant', content: reply });
+
+      // 只保留最近的20条对话
+      const sysMsg = chatHistory[0];
+      const rest = chatHistory.slice(1);
+      if (rest.length > 40) {
+        chatHistory = [sysMsg, ...rest.slice(-40)];
+      }
+    } catch (e) {
+      aiDiv.className = 'chat-msg chat-msg-ai';
+      aiDiv.innerHTML = '<div class="chat-msg-content">哎呀，脑子卡住了… 稍后再试试吧 😅</div>';
+      console.error('AI对话出错:', e);
+    }
+
+    send.disabled = false;
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function escapeHtml(text) {
+    const d = document.createElement('div');
+    d.textContent = text;
+    return d.innerHTML;
+  }
+
+  send.addEventListener('click', sendMessage);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') sendMessage();
+  });
+}
+
+// 等 lucide 加载完再初始化
+setTimeout(initChat, 500);
+
+

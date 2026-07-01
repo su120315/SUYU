@@ -22,6 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://unpkg.com">
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@0.460.0"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -35,7 +36,7 @@
         <li><a href="#projects">作品</a></li>
         <li><a href="#hobbies">爱好</a></li>
         <li><a href="novel.html">小说</a></li>
-        <li><a href="https://su120315.github.io/SUYU2/" target="_blank" rel="noopener">工具</a></li>
+        <li><a href="tools.html">工具</a></li>
         <li><a href="#gallery">相册</a></li>
         <li><a href="#comments">留言</a></li>
         <li><a href="#contact">联系</a></li>
@@ -323,6 +324,11 @@
           <p>追番是日常快乐源泉，有好看的推荐吗？</p>
         </div>
         <div class="hobby-card">
+          <div class="hobby-emoji">🎵</div>
+          <h3>听音乐</h3>
+          <p>写作业、骑车、打游戏都要有BGM！</p>
+        </div>
+        <div class="hobby-card">
           <div class="hobby-emoji">🍜</div>
           <h3>吃好吃的</h3>
           <p>没有什么是一顿美食解决不了的～</p>
@@ -443,7 +449,7 @@
   <section class="contact" id="contact">
     <div class="container">
       <div class="section-header">
-        <span class="section-label">08</span>
+        <span class="section-label">07</span>
         <h2 class="section-title">联系我</h2>
       </div>
       <div class="contact-content">
@@ -478,7 +484,7 @@
   <section class="comments" id="comments">
     <div class="container">
       <div class="section-header">
-        <span class="section-label">07</span>
+        <span class="section-label">08</span>
         <h2 class="section-title">留言板</h2>
       </div>
       <p class="comments-desc">想说点什么？留个言吧～ 💬</p>
@@ -552,7 +558,15 @@
           </div>
           <i data-lucide="external-link" class="site-arrow"></i>
         </a>
-        <a href="https://www.bilibili.com" target="_blank" rel="noopener" class="site-card">
+        <a href="https://www.163.com" target="_blank" rel="noopener" class="site-card">
+          <div class="site-icon">🎵</div>
+          <div class="site-info">
+            <h3>网易云音乐</h3>
+            <p>听歌必备</p>
+          </div>
+          <i data-lucide="external-link" class="site-arrow"></i>
+        </a>
+        <a href="https://www.taobao.com" target="_blank" rel="noopener" class="site-card">
           <div class="site-icon">🛒</div>
           <div class="site-info">
             <h3>淘宝</h3>
@@ -614,7 +628,30 @@
     </div>
   </footer>
 
-  <script src="https://unpkg.com/lucide@0.460.0"></script>
-  <script src="script.js" defer></script>
+  <!-- AI 对话小窗 -->
+  <div class="chat-bubble" id="chatBubble" title="和我聊天">
+    <i data-lucide="message-circle"></i>
+  </div>
+
+  <div class="chat-dialog" id="chatDialog">
+    <div class="chat-header">
+      <span class="chat-header-title">
+        <span class="chat-avatar">🐟</span>
+        蘇魚 AI 分身
+      </span>
+      <button class="chat-close" id="chatClose"><i data-lucide="x"></i></button>
+    </div>
+    <div class="chat-messages" id="chatMessages">
+      <div class="chat-msg chat-msg-ai">
+        <div class="chat-msg-content">嗨～我是蘇魚的 AI 分身，你可以问我关于蘇魚的任何问题！😊</div>
+      </div>
+    </div>
+    <div class="chat-input-area">
+      <input type="text" class="chat-input" id="chatInput" placeholder="输入消息..." maxlength="500">
+      <button class="chat-send" id="chatSend"><i data-lucide="send"></i></button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
 </body>
 </html>

@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="preconnect" href="https://unpkg.com">
+  <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="stylesheet" href="style.css">
   <style>
     .container-novel {
@@ -185,7 +186,9 @@
         html += `<div class="novel-text">${text.replace(/\n/g, '<br>')}</div>`;
       }
 
-      html += `<div class="novel-word-count">全文共 ${charCount} 字</div>`;
+      if (charCount > 1000) {
+        html += `<div class="novel-word-count">全文约 ${charCount} 字</div>`;
+      }
 
       novelContent.innerHTML = html;
     }
@@ -295,16 +298,8 @@
       window.location.href = 'index.html';
     });
 
+    lucide.createIcons();
     loadNovel();
-  </script>
-  <script src="https://unpkg.com/lucide@0.460.0"></script>
-  <script>
-    if (typeof lucide !== 'undefined') lucide.createIcons();
-    document.querySelectorAll('.btn-icon').forEach(b => {
-      const icon = b.querySelector('i');
-      if (icon) icon.setAttribute('data-lucide', icon.getAttribute('data-lucide') || icon.className);
-    });
-    setTimeout(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); }, 100);
   </script>
 </body>
 </html>
