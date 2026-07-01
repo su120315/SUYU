@@ -1177,4 +1177,109 @@ function initWeather() {
 
 initWeather();
 
+// ==================== AI 对话小窗 ====================
+function initChat() {
+  const bubble = document.getElementById('chatBubble');
+  const dialog = document.getElementById('chatDialog');
+  const close = document.getElementById('chatClose');
+  const input = document.getElementById('chatInput');
+  const send = document.getElementById('chatSend');
+  const messages = document.getElementById('chatMessages');
+  if (!bubble || !dialog) return;
+
+  const API_KEY = '9be075e9e33940e5b27b287fdf7df184.TJaWcWDHWOKzIMWw';
+  const API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+
+  let chatHistory = [
+    { role: 'system', content: '你是蘇魚的AI分身。蘇魚是一个初二学生，来自六安汇文中学，热爱编程、AI、游戏（三角洲行动、极品飞车：集结、MC）、骑公路自行车。回答要简短亲切、有活力，用中文，像朋友聊天一样。你不知道的事情就说“这个我也不太清楚呢～”。' }
+  ];
+
+  bubble.addEventListener('click', () => {
+    dialog.classList.toggle('open');
+    if (dialog.classList.contains('open')) {
+      input.focus();
+      setTimeout(() => messages.scrollTop = messages.scrollHeight, 100);
+    }
+  });
+
+  close.addEventListener('click', () => dialog.classList.remove('open'));
+
+  async function sendMessage() {
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    send.disabled = true;
+
+    // 显示用户消息
+    const userDiv = document.createElement('div');
+    userDiv.className = 'chat-msg chat-msg-user';
+    userDiv.innerHTML = `<div class="chat-msg-content">${escapeHtml(text)}</div>`;
+    messages.appendChild(userDiv);
+    messages.scrollTop = messages.scrollHeight;
+
+    // 显示加载中
+    const aiDiv = document.createElement('div');
+    aiDiv.className = 'chat-msg chat-msg-ai loading';
+    aiDiv.innerHTML = '<div class="chat-msg-content">思考中</div>';
+    messages.appendChild(aiDiv);
+    messages.scrollTop = messages.scrollHeight;
+
+    chatHistory.push({ role: 'user', content: text });
+
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${API_KEY}`
+        },
+        body: JSON.stringify({
+          model: 'glm-4-flash',
+          messages: chatHistory,
+          max_tokens: 1024,
+          temperature: 0.8,
+          stream: false
+        })
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const data = await res.json();
+      const reply = data.choices[0].message.content;
+
+      aiDiv.className = 'chat-msg chat-msg-ai';
+      aiDiv.innerHTML = `<div class="chat-msg-content">${escapeHtml(reply)}</div>`;
+      chatHistory.push({ role: 'assistant', content: reply });
+
+      // 只保留最近的20条对话
+      const sysMsg = chatHistory[0];
+      const rest = chatHistory.slice(1);
+      if (rest.length > 40) {
+        chatHistory = [sysMsg, ...rest.slice(-40)];
+      }
+    } catch (e) {
+      aiDiv.className = 'chat-msg chat-msg-ai';
+      aiDiv.innerHTML = '<div class="chat-msg-content">哎呀，脑子卡住了… 稍后再试试吧 😅</div>';
+      console.error('AI对话出错:', e);
+    }
+
+    send.disabled = false;
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function escapeHtml(text) {
+    const d = document.createElement('div');
+    d.textContent = text;
+    return d.innerHTML;
+  }
+
+  send.addEventListener('click', sendMessage);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') sendMessage();
+  });
+}
+
+// 等 lucide 加载完再初始化
+setTimeout(initChat, 500);
+
 
