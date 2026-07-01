@@ -1194,32 +1194,35 @@ function initChat() {
     { role: 'system', content: '你是蘇魚的AI分身。蘇魚是一个初二学生，来自六安汇文中学，热爱编程、AI、游戏（三角洲行动、极品飞车：集结、MC）、骑公路自行车。回答要简短亲切、有活力，用中文，像朋友聊天一样。你不知道的事情就说“这个我也不太清楚呢～”。' }
   ];
 
-  // ---- 气泡拖拽 ----
+  // ---- 气泡拖拽（动态监听，不拖时不占开销）----
   let isDragging = false;
-  let dragStartX, dragStartY;
-  let didDrag = false; // 区分拖拽和点击
+  let dragOffsetX, dragOffsetY;
+  let didDrag = false;
 
   function onDragStart(e) {
     const touch = e.touches ? e.touches[0] : e;
     const rect = bubble.getBoundingClientRect();
-    // 把 CSS bottom/right 转成 left/top 以便拖拽过程中平滑移动
     bubble.style.left = rect.left + 'px';
     bubble.style.top = rect.top + 'px';
     bubble.style.bottom = 'auto';
     bubble.style.right = 'auto';
-    dragStartX = touch.clientX - rect.left;
-    dragStartY = touch.clientY - rect.top;
+    dragOffsetX = touch.clientX - rect.left;
+    dragOffsetY = touch.clientY - rect.top;
     isDragging = true;
     didDrag = false;
-    e.preventDefault();
+    // 拖拽开始时才挂载全局监听，结束后移除
+    document.addEventListener('mousemove', onDragMove);
+    document.addEventListener('mouseup', onDragEnd);
+    document.addEventListener('touchmove', onDragMove, { passive: false });
+    document.addEventListener('touchend', onDragEnd);
+    // 注意：不调 preventDefault，让 click 事件能正常触发
   }
 
   function onDragMove(e) {
     if (!isDragging) return;
     const touch = e.touches ? e.touches[0] : e;
-    const newLeft = touch.clientX - dragStartX;
-    const newTop = touch.clientY - dragStartY;
-    // 限制在视口内
+    const newLeft = touch.clientX - dragOffsetX;
+    const newTop = touch.clientY - dragOffsetY;
     bubble.style.left = Math.max(0, Math.min(newLeft, window.innerWidth - bubble.offsetWidth)) + 'px';
     bubble.style.top = Math.max(0, Math.min(newTop, window.innerHeight - bubble.offsetHeight)) + 'px';
     didDrag = true;
@@ -1228,14 +1231,14 @@ function initChat() {
 
   function onDragEnd() {
     isDragging = false;
+    document.removeEventListener('mousemove', onDragMove);
+    document.removeEventListener('mouseup', onDragEnd);
+    document.removeEventListener('touchmove', onDragMove);
+    document.removeEventListener('touchend', onDragEnd);
   }
 
   bubble.addEventListener('mousedown', onDragStart);
-  document.addEventListener('mousemove', onDragMove);
-  document.addEventListener('mouseup', onDragEnd);
-  bubble.addEventListener('touchstart', onDragStart, { passive: false });
-  document.addEventListener('touchmove', onDragMove, { passive: false });
-  document.addEventListener('touchend', onDragEnd);
+  bubble.addEventListener('touchstart', onDragStart, { passive: true });
 
   // 点击气泡切换对话框（只有非拖拽时才切换）
   bubble.addEventListener('click', (e) => {
