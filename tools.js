@@ -788,43 +788,39 @@ document.addEventListener('DOMContentLoaded', function() {
     `;
 
     const output = container.querySelector('#qrOutput');
-    const text = container.querySelector('#qrText');
 
     container.querySelector('#qrGen').addEventListener('click', function() {
-      const t = text.value.trim();
-      if (!t) { alert('请输入内容'); return; }
+      const text = container.querySelector('#qrText').value.trim();
+      if (!text) { alert('请输入内容'); return; }
       output.innerHTML = '';
-      const canvas = document.createElement('canvas');
-      output.appendChild(canvas);
-
-      if (window.QRCode) {
-        window.QRCode.toCanvas(canvas, t, {
+      const qrContainer = document.createElement('div');
+      qrContainer.style.cssText = 'display:flex;justify-content:center;';
+      output.appendChild(qrContainer);
+      try {
+        new QRCode(qrContainer, {
+          text: text,
           width: 220,
-          margin: 2,
-          color: {
-            dark: '#0f172a',
-            light: '#ffffff'
-          }
-        }, function(err) {
-          if (err) {
-            output.innerHTML = '<span style="color:#ef4444;">生成失败，请重试</span>';
-          } else {
-            // 生成成功后添加下载按钮
-            const dlBtn = document.createElement('button');
-            dlBtn.className = 'text-tool-btn';
-            dlBtn.style.marginTop = '12px';
-            dlBtn.textContent = '⬇ 下载二维码';
-            dlBtn.addEventListener('click', () => {
-              const link = document.createElement('a');
-              link.download = 'qrcode.png';
-              link.href = canvas.toDataURL('image/png');
-              link.click();
-            });
-            output.appendChild(dlBtn);
+          height: 220,
+          colorDark: '#0f172a',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.H
+        });
+        const dlBtn = document.createElement('button');
+        dlBtn.className = 'text-tool-btn';
+        dlBtn.style.marginTop = '12px';
+        dlBtn.textContent = '⬇ 下载二维码';
+        dlBtn.addEventListener('click', () => {
+          const img = qrContainer.querySelector('img');
+          if (img) {
+            const link = document.createElement('a');
+            link.download = 'qrcode.png';
+            link.href = img.src;
+            link.click();
           }
         });
-      } else {
-        output.innerHTML = '<span style="color:#f59e0b;">QRCode 库加载中，请稍候再试...</span>';
+        output.appendChild(dlBtn);
+      } catch(e) {
+        output.innerHTML = '<span style="color:#ef4444;">生成失败，请重试</span>';
       }
     });
   }
