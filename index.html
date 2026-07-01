@@ -628,6 +628,30 @@
     </div>
   </footer>
 
+  <!-- AI 对话小窗 -->
+  <div class="chat-bubble" id="chatBubble" title="和我聊天">
+    <i data-lucide="message-circle"></i>
+  </div>
+
+  <div class="chat-dialog" id="chatDialog">
+    <div class="chat-header">
+      <span class="chat-header-title">
+        <span class="chat-avatar">🐟</span>
+        蘇魚 AI 分身
+      </span>
+      <button class="chat-close" id="chatClose"><i data-lucide="x"></i></button>
+    </div>
+    <div class="chat-messages" id="chatMessages">
+      <div class="chat-msg chat-msg-ai">
+        <div class="chat-msg-content">嗨～我是蘇魚的 AI 分身，你可以问我关于蘇魚的任何问题！😊</div>
+      </div>
+    </div>
+    <div class="chat-input-area">
+      <input type="text" class="chat-input" id="chatInput" placeholder="输入消息..." maxlength="500">
+      <button class="chat-send" id="chatSend"><i data-lucide="send"></i></button>
+    </div>
+  </div>
+
   <script src="script.js"></script>
 </body>
 </html>
