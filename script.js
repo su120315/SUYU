@@ -236,18 +236,16 @@ function initGallery() {
   const galleryGrid = document.getElementById('galleryGrid');
   const galleryEmpty = document.getElementById('galleryEmpty');
   const galleryLoading = document.getElementById('galleryLoading');
+  const catContainer = document.getElementById('galleryCategories');
 
-  // GitHub Token - 用于保存照片
   const TOKEN_PART1 = 'ghp_GMiHyZUI5RkF';
   const TOKEN_PART2 = 'DIFadXOlohhXN9nvl63RzsQM';
   const GITHUB_TOKEN = TOKEN_PART1 + TOKEN_PART2;
-  
-  // Gist ID 和直链
   const GIST_ID = '070c70e1da8ce50d80a1e805a3e5491d';
   const GIST_FILENAME = 'gallery-photos.json';
-  // 添加时间戳避免缓存
-  const GIST_RAW_URL = `https://gist.githubusercontent.com/su120315/${GIST_ID}/raw/${GIST_FILENAME}?t=${Date.now()}`;
   
+  let categories = { '默认相册': [] };
+  let currentCategory = '默认相册';
   let photos = [];
   let isUploading = false;
   let isExpanded = false;
@@ -256,36 +254,20 @@ function initGallery() {
     return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
-        let width = img.width;
-        let height = img.height;
-
-        if (width > maxWidth) {
-          height = (height * maxWidth) / width;
-          width = maxWidth;
-        }
-        if (height > maxHeight) {
-          width = (width * maxHeight) / height;
-          height = maxHeight;
-        }
-
+        let width = img.width, height = img.height;
+        if (width > maxWidth) { height = (height * maxWidth) / width; width = maxWidth; }
+        if (height > maxHeight) { width = (width * maxHeight) / height; height = maxHeight; }
         const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
         resolve(canvas.toDataURL('image/jpeg', quality));
       };
-      img.onerror = () => {
-        resolve(base64Str);
-      };
+      img.onerror = () => resolve(base64Str);
       img.src = base64Str;
     });
   }
 
   let currentLightboxIndex = 0;
-
   const lightbox = document.getElementById('lightbox');
   const lightboxImage = document.getElementById('lightboxImage');
   const lightboxClose = document.getElementById('lightboxClose');
@@ -301,33 +283,21 @@ function initGallery() {
     document.body.style.overflow = 'hidden';
     lucide.createIcons();
   }
-
   function closeLightbox() {
     lightbox.classList.remove('active');
     document.body.style.overflow = '';
   }
-
   function showPrev() {
-    if (currentLightboxIndex > 0) {
-      currentLightboxIndex--;
-      lightboxImage.src = photos[currentLightboxIndex];
-    }
+    if (currentLightboxIndex > 0) { currentLightboxIndex--; lightboxImage.src = photos[currentLightboxIndex]; }
   }
-
   function showNext() {
-    if (currentLightboxIndex < photos.length - 1) {
-      currentLightboxIndex++;
-      lightboxImage.src = photos[currentLightboxIndex];
-    }
+    if (currentLightboxIndex < photos.length - 1) { currentLightboxIndex++; lightboxImage.src = photos[currentLightboxIndex]; }
   }
-
   function downloadPhoto() {
     const link = document.createElement('a');
     link.href = photos[currentLightboxIndex];
     link.download = `photo-${currentLightboxIndex + 1}.jpg`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    document.body.appendChild(link); link.click(); document.body.removeChild(link);
   }
 
   lightboxClose.addEventListener('click', closeLightbox);
@@ -335,7 +305,6 @@ function initGallery() {
   lightboxPrev.addEventListener('click', showPrev);
   lightboxNext.addEventListener('click', showNext);
   lightboxDownload.addEventListener('click', downloadPhoto);
-
   document.addEventListener('keydown', (e) => {
     if (!lightbox.classList.contains('active')) return;
     if (e.key === 'Escape') closeLightbox();
@@ -343,38 +312,8 @@ function initGallery() {
     if (e.key === 'ArrowRight') showNext();
   });
 
-  // 加载照片 - 使用直链，不需要认证
-  async function loadPhotos() {
-    try {
-      const url = `https://gist.githubusercontent.com/su120315/${GIST_ID}/raw/${GIST_FILENAME}?t=${Date.now()}`;
-      const response = await fetch(url, { cache: 'no-store' });
-      if (response.ok) {
-        const data = await response.text();
-        const parsed = JSON.parse(data);
-        // 支持新旧两种数据格式
-        if (parsed && parsed.categories) {
-          // 新格式: {categories: {"默认相册": [...], ...}, currentCategory: "默认相册"}
-          const cat = parsed.currentCategory || '默认相册';
-          photos = parsed.categories[cat] || [];
-        } else if (Array.isArray(parsed)) {
-          // 旧格式: ["url1", "url2", ...]
-          photos = parsed;
-        } else {
-          photos = [];
-        }
-      }
-    } catch (e) {
-      console.log('加载照片失败:', e);
-    }
-    // 加载完成，隐藏加载状态
-    if (galleryLoading) {
-      galleryLoading.style.display = 'none';
-    }
-    renderPhotos();
-  }
-
-  // 保存照片到 Gist
-  async function savePhotos() {
+  // 保存分类结构到 Gist
+  async function saveCategoryStructure() {
     const res = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
       method: 'PATCH',
       headers: {
@@ -385,17 +324,78 @@ function initGallery() {
       body: JSON.stringify({
         files: {
           [GIST_FILENAME]: {
-            content: JSON.stringify({
-              categories: { '默认相册': photos },
-              currentCategory: '默认相册'
-            })
+            content: JSON.stringify({ categories, currentCategory })
           }
         }
       })
     });
-    if (!res.ok) {
-      throw new Error(`GitHub API 错误: ${res.status} ${res.statusText}`);
+    if (!res.ok) throw new Error(`GitHub API 错误: ${res.status} ${res.statusText}`);
+  }
+
+  // 渲染分类标签
+  function renderCategoryTabs() {
+    if (!catContainer) return;
+    catContainer.innerHTML = '';
+    Object.keys(categories).forEach(name => {
+      const tab = document.createElement('button');
+      tab.className = 'gallery-cat-tab' + (name === currentCategory ? ' active' : '');
+      tab.textContent = name;
+      tab.addEventListener('click', () => switchCategory(name));
+      catContainer.appendChild(tab);
+    });
+    const addBtn = document.createElement('button');
+    addBtn.className = 'gallery-cat-add';
+    addBtn.innerHTML = '<i data-lucide="plus"></i>';
+    addBtn.title = '新建相册';
+    addBtn.addEventListener('click', () => {
+      const name = prompt('请输入新相册名称：');
+      if (name && name.trim()) {
+        const trimmed = name.trim();
+        if (categories[trimmed]) { alert('该相册已存在！'); return; }
+        categories[trimmed] = [];
+        switchCategory(trimmed);
+        saveCategoryStructure().catch(e => console.error('保存分类失败:', e));
+      }
+    });
+    catContainer.appendChild(addBtn);
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  }
+
+  function switchCategory(name) {
+    currentCategory = name;
+    photos = categories[currentCategory] || [];
+    isExpanded = false;
+    renderCategoryTabs();
+    renderPhotos();
+  }
+
+  async function loadPhotos() {
+    try {
+      const url = `https://gist.githubusercontent.com/su120315/${GIST_ID}/raw/${GIST_FILENAME}?t=${Date.now()}`;
+      const response = await fetch(url, { cache: 'no-store' });
+      if (response.ok) {
+        const data = await response.text();
+        const parsed = JSON.parse(data);
+        if (parsed && parsed.categories) {
+          categories = parsed.categories;
+          currentCategory = parsed.currentCategory || '默认相册';
+        } else if (Array.isArray(parsed)) {
+          categories = { '默认相册': parsed };
+          currentCategory = '默认相册';
+        } else {
+          categories = { '默认相册': [] };
+          currentCategory = '默认相册';
+        }
+      }
+    } catch (e) {
+      console.log('加载照片失败:', e);
+      categories = { '默认相册': [] };
+      currentCategory = '默认相册';
     }
+    photos = categories[currentCategory] || [];
+    if (galleryLoading) galleryLoading.style.display = 'none';
+    renderCategoryTabs();
+    renderPhotos();
   }
 
   function renderPhotos() {
@@ -404,129 +404,80 @@ function initGallery() {
       galleryGrid.querySelectorAll('.gallery-item, .gallery-more').forEach(el => el.remove());
       return;
     }
-
     galleryEmpty.style.display = 'none';
     galleryGrid.querySelectorAll('.gallery-item, .gallery-more').forEach(el => el.remove());
-
     const displayPhotos = isExpanded ? photos : photos.slice(0, 3);
-
     displayPhotos.forEach((photoData, index) => {
       const item = document.createElement('div');
       item.className = 'gallery-item';
       item.style.animationDelay = `${index * 0.05}s`;
       item.innerHTML = `
-        <img src="${photoData}" alt="照片 ${index + 1}" loading="lazy" 
+        <img src="${photoData}" alt="照片 ${index + 1}" loading="lazy"
              onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect fill=%22%23ddd%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2255%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2240%22>🖼️</text></svg>'">
         <button class="gallery-delete" data-index="${index}" title="删除">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-        </button>
-      `;
-      item.querySelector('img').addEventListener('click', () => {
-        openLightbox(index);
-      });
+        </button>`;
+      item.querySelector('img').addEventListener('click', () => openLightbox(index));
       galleryGrid.appendChild(item);
     });
-
-    // 如果照片超过3张且没展开，显示"更多"卡片
     if (photos.length > 3 && !isExpanded) {
-      const moreCount = photos.length - 3;
       const moreCard = document.createElement('div');
       moreCard.className = 'gallery-more';
       moreCard.style.animationDelay = `${3 * 0.05}s`;
-      moreCard.innerHTML = `
-        <span class="gallery-more-count">+${moreCount}</span>
-        <span class="gallery-more-text">查看更多</span>
-      `;
-      moreCard.addEventListener('click', () => {
-        isExpanded = true;
-        renderPhotos();
-      });
+      moreCard.innerHTML = `<span class="gallery-more-count">+${photos.length - 3}</span><span class="gallery-more-text">查看更多</span>`;
+      moreCard.addEventListener('click', () => { isExpanded = true; renderPhotos(); });
       galleryGrid.appendChild(moreCard);
     }
-
-    // 如果展开了，显示"收起"按钮
     if (isExpanded && photos.length > 3) {
       const collapseCard = document.createElement('div');
       collapseCard.className = 'gallery-more';
       collapseCard.style.animationDelay = `${photos.length * 0.05}s`;
-      collapseCard.innerHTML = `
-        <span class="gallery-more-count">↑</span>
-        <span class="gallery-more-text">收起</span>
-      `;
-      collapseCard.addEventListener('click', () => {
-        isExpanded = false;
-        renderPhotos();
-        // 滚动回相册顶部
-        document.getElementById('gallery').scrollIntoView({ behavior: 'smooth' });
-      });
+      collapseCard.innerHTML = `<span class="gallery-more-count">↑</span><span class="gallery-more-text">收起</span>`;
+      collapseCard.addEventListener('click', () => { isExpanded = false; renderPhotos(); document.getElementById('gallery').scrollIntoView({ behavior: 'smooth' }); });
       galleryGrid.appendChild(collapseCard);
     }
-
     galleryGrid.querySelectorAll('.gallery-delete').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         const password = prompt('请输入删除密码：');
         if (password === '120315') {
           const idx = parseInt(btn.getAttribute('data-index'));
-          photos.splice(isExpanded ? idx : idx, 1);
-          savePhotos();
+          photos.splice(idx, 1);
+          categories[currentCategory] = photos;
+          saveCategoryStructure().catch(e => console.error('保存失败:', e));
           renderPhotos();
-        } else if (password !== null) {
-          alert('密码错误！');
-        }
+        } else if (password !== null) alert('密码错误！');
       });
     });
   }
 
   photoInput.addEventListener('change', async (e) => {
     if (isUploading) return;
-    
     const files = Array.from(e.target.files);
-    
     for (const file of files) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert('图片太大了，请选择 5MB 以下的图片');
-        continue;
-      }
-
+      if (file.size > 5 * 1024 * 1024) { alert('图片太大了，请选择 5MB 以下的图片'); continue; }
       isUploading = true;
-      
       try {
         const loadingItem = document.createElement('div');
         loadingItem.className = 'gallery-item loading';
-        loadingItem.innerHTML = `
-          <div class="gallery-loading">
-            <div class="loading-spinner"></div>
-            <span>上传中...</span>
-          </div>
-        `;
+        loadingItem.innerHTML = `<div class="gallery-loading"><div class="loading-spinner"></div><span>上传中...</span></div>`;
         galleryEmpty.style.display = 'none';
         galleryGrid.appendChild(loadingItem);
-
-        const base64 = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
-
+        const base64 = await new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(r.result); r.onerror = reject; r.readAsDataURL(file); });
         const compressedBase64 = await compressImage(base64);
         photos.push(compressedBase64);
-        await savePhotos();
-        
+        categories[currentCategory] = photos;
+        await saveCategoryStructure();
         loadingItem.remove();
         renderPhotos();
         showConfetti();
-        
       } catch (error) {
         console.error('上传失败:', error);
         alert('上传失败，请稍后重试');
         galleryGrid.querySelector('.gallery-item.loading')?.remove();
       }
-      
       isUploading = false;
     }
-    
     photoInput.value = '';
   });
 
@@ -534,14 +485,13 @@ function initGallery() {
     if (photos.length === 0) return;
     const password = prompt('请输入清空密码：');
     if (password === '120315') {
-      if (confirm('确定要清空所有照片吗？此操作不可恢复！')) {
+      if (confirm('确定要清空当前相册的所有照片吗？此操作不可恢复！')) {
         photos = [];
-        savePhotos();
+        categories[currentCategory] = [];
+        saveCategoryStructure().catch(e => console.error('保存失败:', e));
         renderPhotos();
       }
-    } else if (password !== null) {
-      alert('密码错误！');
-    }
+    } else if (password !== null) alert('密码错误！');
   });
 
   loadPhotos();
@@ -1069,113 +1019,62 @@ function initVisitorCounter() {
 
 initVisitorCounter();
 
-// ==================== Music Player ====================
-function initMusicPlayer() {
-  const player = document.getElementById('musicPlayer');
-  const miniPlayer = document.getElementById('musicMini');
-  const playBtn = document.getElementById('musicPlayBtn');
-  const playIcon = document.getElementById('musicPlayIcon');
-  const prevBtn = document.getElementById('musicPrev');
-  const nextBtn = document.getElementById('musicNext');
-  const toggleBtn = document.getElementById('musicToggle');
-  const titleEl = document.getElementById('musicTitle');
-  const artistEl = document.getElementById('musicArtist');
-  const coverEl = document.getElementById('musicCover');
+// ==================== Weather ====================
+function initWeather() {
+  const loading = document.getElementById('weatherLoading');
+  const content = document.getElementById('weatherContent');
+  const error = document.getElementById('weatherError');
+  const icon = document.getElementById('weatherIcon');
+  const temp = document.getElementById('weatherTemp');
+  const desc = document.getElementById('weatherDesc');
+  const feels = document.getElementById('weatherFeels');
+  const humidity = document.getElementById('weatherHumidity');
+  const wind = document.getElementById('weatherWind');
+  const uv = document.getElementById('weatherUV');
+  const time = document.getElementById('weatherTime');
+  if (!loading) return;
   
-  if (!player || !playBtn) return;
-  
-  const playlist = [
-    { title: '晴天', artist: '周杰伦', url: 'https://music.163.com/song/media/outer/url?id=186016.mp3' },
-    { title: '稻香', artist: '周杰伦', url: 'https://music.163.com/song/media/outer/url?id=185809.mp3' },
-    { title: '七里香', artist: '周杰伦', url: 'https://music.163.com/song/media/outer/url?id=185798.mp3' },
-    { title: '夜曲', artist: '周杰伦', url: 'https://music.163.com/song/media/outer/url?id=185817.mp3' }
-  ];
-  
-  let currentIndex = 0;
-  let isPlaying = false;
-  let audio = null;
-  
-  function updateUI() {
-    const song = playlist[currentIndex];
-    titleEl.textContent = song.title;
-    artistEl.textContent = song.artist;
-    
-    if (isPlaying) {
-      playIcon.setAttribute('data-lucide', 'pause');
-      coverEl.classList.add('playing');
-      miniPlayer.classList.add('playing');
-    } else {
-      playIcon.setAttribute('data-lucide', 'play');
-      coverEl.classList.remove('playing');
-      miniPlayer.classList.remove('playing');
+  async function fetchWeather() {
+    try {
+      loading.style.display = 'block';
+      content.style.display = 'none';
+      error.style.display = 'none';
+      const res = await fetch('https://wttr.in/Lu%27an?format=j1', { cache: 'no-store' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      const current = data.current_condition[0];
+      const area = data.nearest_area[0].areaName[0].value;
+      const code = parseInt(current.weatherCode);
+      const iconMap = {
+        113: '☀️', 116: '⛅', 119: '☁️', 122: '☁️', 143: '🌫️',
+        176: '🌦️', 179: '🌧️', 182: '🌧️', 185: '🌧️', 200: '⛈️',
+        227: '🌨️', 230: '🌨️', 248: '🌫️', 260: '🌫️', 263: '🌦️',
+        266: '🌦️', 281: '🌧️', 284: '🌧️', 293: '🌦️', 296: '🌦️',
+        299: '🌧️', 302: '🌧️', 305: '🌧️', 308: '🌧️', 311: '🌧️',
+        314: '🌧️', 317: '🌧️', 320: '🌧️', 323: '🌨️', 326: '🌨️',
+        329: '🌨️', 332: '🌨️', 335: '🌨️', 338: '🌨️', 350: '🌧️',
+        353: '🌦️', 356: '🌧️', 359: '🌧️', 362: '🌧️', 365: '🌧️',
+        368: '🌨️', 371: '🌨️', 374: '🌧️', 377: '🌧️', 386: '⛈️',
+        389: '⛈️', 392: '⛈️', 395: '⛈️'
+      };
+      icon.textContent = iconMap[code] || '🌤️';
+      temp.textContent = current.temp_C + '°C';
+      desc.textContent = current.weatherDesc[0].value;
+      feels.textContent = current.FeelsLikeC + '°C';
+      humidity.textContent = current.humidity + '%';
+      wind.textContent = current.windspeedKmph + ' km/h';
+      uv.textContent = current.uvIndex;
+      document.getElementById('weatherLocation').textContent = '📍 ' + area;
+      time.textContent = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+      loading.style.display = 'none';
+      content.style.display = 'flex';
+    } catch (e) {
+      console.log('天气加载失败:', e);
+      loading.style.display = 'none';
+      error.style.display = 'block';
     }
-    lucide.createIcons();
   }
-  
-  function ensureAudio() {
-    if (!audio) {
-      audio = new Audio();
-      audio.addEventListener('ended', () => {
-        playNext();
-      });
-      audio.addEventListener('error', () => {
-        console.log('音频加载失败，尝试下一首');
-        playNext();
-      });
-    }
-  }
-  
-  function togglePlay() {
-    ensureAudio();
-    if (isPlaying) {
-      audio.pause();
-      isPlaying = false;
-    } else {
-      audio.src = playlist[currentIndex].url;
-      audio.play().catch(e => {
-        console.log('播放失败:', e);
-        alert('由于浏览器限制，请手动点击播放，或歌曲链接可能失效');
-      });
-      isPlaying = true;
-    }
-    updateUI();
-  }
-  
-  function playPrev() {
-    ensureAudio();
-    currentIndex = (currentIndex - 1 + playlist.length) % playlist.length;
-    if (isPlaying) {
-      audio.src = playlist[currentIndex].url;
-      audio.play().catch(e => console.log(e));
-    }
-    updateUI();
-  }
-  
-  function playNext() {
-    ensureAudio();
-    currentIndex = (currentIndex + 1) % playlist.length;
-    if (isPlaying) {
-      audio.src = playlist[currentIndex].url;
-      audio.play().catch(e => console.log(e));
-    }
-    updateUI();
-  }
-  
-  playBtn.addEventListener('click', togglePlay);
-  prevBtn.addEventListener('click', playPrev);
-  nextBtn.addEventListener('click', playNext);
-  
-  toggleBtn.addEventListener('click', () => {
-    player.classList.add('collapsed');
-    miniPlayer.style.display = 'flex';
-  });
-  
-  miniPlayer.addEventListener('click', () => {
-    player.classList.remove('collapsed');
-    miniPlayer.style.display = 'none';
-  });
-  
-  updateUI();
+  fetchWeather();
+  setInterval(fetchWeather, 30 * 60 * 1000);
 }
-
-initMusicPlayer();
+initWeather();

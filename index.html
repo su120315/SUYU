@@ -79,36 +79,6 @@
     </button>
   </div>
 
-  <!-- Music Player -->
-  <div class="music-player" id="musicPlayer">
-    <div class="music-info">
-      <div class="music-cover" id="musicCover">
-        <i data-lucide="music"></i>
-      </div>
-      <div class="music-text">
-        <div class="music-title" id="musicTitle">未播放</div>
-        <div class="music-artist" id="musicArtist">点击播放</div>
-      </div>
-    </div>
-    <div class="music-controls">
-      <button class="music-btn" id="musicPrev" title="上一首">
-        <i data-lucide="skip-back"></i>
-      </button>
-      <button class="music-btn music-play" id="musicPlayBtn" title="播放/暂停">
-        <i data-lucide="play" id="musicPlayIcon"></i>
-      </button>
-      <button class="music-btn" id="musicNext" title="下一首">
-        <i data-lucide="skip-forward"></i>
-      </button>
-    </div>
-    <div class="music-toggle" id="musicToggle" title="收起播放器">
-      <i data-lucide="chevron-down"></i>
-    </div>
-  </div>
-  <div class="music-mini" id="musicMini" style="display:none;">
-    <i data-lucide="music"></i>
-  </div>
-
   <!-- Hero Section -->
   <section class="hero" id="hero">
     <div class="hero-bg">
@@ -367,11 +337,54 @@
     </div>
   </section>
 
+  <!-- Weather Section -->
+  <section class="weather" id="weather">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-label">05</span>
+        <h2 class="section-title">天气</h2>
+      </div>
+      <div class="weather-card" id="weatherCard">
+        <div class="weather-loading" id="weatherLoading">加载天气中...</div>
+        <div class="weather-content" id="weatherContent" style="display:none;">
+          <div class="weather-main">
+            <div class="weather-icon" id="weatherIcon">☀️</div>
+            <div class="weather-temp" id="weatherTemp">--°C</div>
+            <div class="weather-desc" id="weatherDesc">--</div>
+          </div>
+          <div class="weather-details">
+            <div class="weather-detail">
+              <span class="weather-detail-label">🌡️ 体感</span>
+              <span class="weather-detail-value" id="weatherFeels">--°C</span>
+            </div>
+            <div class="weather-detail">
+              <span class="weather-detail-label">💧 湿度</span>
+              <span class="weather-detail-value" id="weatherHumidity">--%</span>
+            </div>
+            <div class="weather-detail">
+              <span class="weather-detail-label">💨 风速</span>
+              <span class="weather-detail-value" id="weatherWind">-- km/h</span>
+            </div>
+            <div class="weather-detail">
+              <span class="weather-detail-label">🌅 紫外线</span>
+              <span class="weather-detail-value" id="weatherUV">--</span>
+            </div>
+          </div>
+          <div class="weather-location" id="weatherLocation">📍 六安</div>
+          <div class="weather-update">最近更新: <span id="weatherTime">--</span></div>
+        </div>
+        <div class="weather-error" id="weatherError" style="display:none;">
+          ⚠️ 天气加载失败，请稍后重试
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- Gallery Section -->
   <section class="gallery" id="gallery">
     <div class="container">
       <div class="section-header">
-        <span class="section-label">05</span>
+        <span class="section-label">06</span>
         <h2 class="section-title">我的相册</h2>
       </div>
       <p class="gallery-desc">记录生活中的美好瞬间 📸 照片来自仓库的 gallery 文件夹</p>
@@ -386,6 +399,7 @@
           <span>清空相册</span>
         </button>
       </div>
+      <div class="gallery-categories" id="galleryCategories"></div>
       <div class="gallery-notice">
         <p>⚠️ 上传即表示你同意以下规则：</p>
         <ul>
@@ -435,7 +449,7 @@
   <section class="contact" id="contact">
     <div class="container">
       <div class="section-header">
-        <span class="section-label">06</span>
+        <span class="section-label">07</span>
         <h2 class="section-title">联系我</h2>
       </div>
       <div class="contact-content">
@@ -492,7 +506,7 @@
   <section class="useful-sites" id="sites">
     <div class="container">
       <div class="section-header">
-        <span class="section-label">07</span>
+        <span class="section-label">08</span>
         <h2 class="section-title">实用网站</h2>
       </div>
       <div class="sites-grid">
