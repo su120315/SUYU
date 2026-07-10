@@ -164,24 +164,33 @@ if (!isMobile && window.matchMedia('(prefers-reduced-motion: no-preference)').ma
 (function initMobileNav() {
   const navToggle = document.getElementById('navToggle');
   const navLinks = document.querySelector('.nav-links');
+  const navOverlay = document.getElementById('navOverlay');
   if (!navToggle || !navLinks) return;
 
-  navToggle.addEventListener('click', () => {
+  function toggleNav() {
     navToggle.classList.toggle('active');
     navLinks.classList.toggle('active');
-  });
+    if (navOverlay) navOverlay.classList.toggle('active');
+  }
+  function closeNav() {
+    navToggle.classList.remove('active');
+    navLinks.classList.remove('active');
+    if (navOverlay) navOverlay.classList.remove('active');
+  }
+
+  navToggle.addEventListener('click', toggleNav);
 
   navLinks.querySelectorAll('a').forEach(link => {
-    link.addEventListener('click', () => {
-      navToggle.classList.remove('active');
-      navLinks.classList.remove('active');
-    });
+    link.addEventListener('click', closeNav);
   });
 
+  if (navOverlay) {
+    navOverlay.addEventListener('click', closeNav);
+  }
+
   document.addEventListener('click', (e) => {
-    if (!navLinks.contains(e.target) && !navToggle.contains(e.target)) {
-      navToggle.classList.remove('active');
-      navLinks.classList.remove('active');
+    if (!navLinks.contains(e.target) && !navToggle.contains(e.target) && (!navOverlay || !navOverlay.contains(e.target))) {
+      closeNav();
     }
   });
 })();

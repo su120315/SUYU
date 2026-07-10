@@ -766,22 +766,22 @@ document.addEventListener('DOMContentLoaded', function() {
       const t = text.value.trim();
       if (!t) { alert('请输入内容'); return; }
       output.innerHTML = '';
-      const canvas = document.createElement('canvas');
-      output.appendChild(canvas);
 
-      if (window.QRCode) {
-        window.QRCode.toCanvas(canvas, t, {
-          width: 220,
-          margin: 2,
-          color: {
-            dark: '#0f172a',
-            light: '#ffffff'
-          }
-        }, function(err) {
-          if (err) {
-            output.innerHTML = '<span style="color:#ef4444;">生成失败，请重试</span>';
-          }
-        });
+      if (typeof QRCode !== 'undefined') {
+        const qrDiv = document.createElement('div');
+        output.appendChild(qrDiv);
+        try {
+          new QRCode(qrDiv, {
+            text: t,
+            width: 220,
+            height: 220,
+            colorDark: '#0f172a',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.H
+          });
+        } catch (err) {
+          output.innerHTML = '<span style="color:#ef4444;">生成失败，请重试</span>';
+        }
       } else {
         output.innerHTML = '<span style="color:#f59e0b;">QRCode 库加载中，请稍候再试...</span>';
       }

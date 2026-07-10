@@ -40,8 +40,12 @@
         <li><a href="index.html#comments">留言</a></li>
         <li><a href="index.html#contact">联系</a></li>
       </ul>
+      <button class="nav-toggle" id="navToggle" aria-label="菜单">
+        <span></span><span></span><span></span>
+      </button>
     </div>
   </nav>
+  <div class="nav-overlay" id="navOverlay"></div>
 
   <div class="container-novel">
     <button class="back-btn" id="backBtn">
@@ -88,6 +92,28 @@
   </div>
 
   <script>
+    // 移动端导航
+    (function() {
+      const navToggle = document.getElementById('navToggle');
+      const navLinks = document.querySelector('.nav-links');
+      const navOverlay = document.getElementById('navOverlay');
+      if (!navToggle || !navLinks) return;
+      function closeNav() {
+        navToggle.classList.remove('active');
+        navLinks.classList.remove('active');
+        if (navOverlay) navOverlay.classList.remove('active');
+      }
+      navToggle.addEventListener('click', function() {
+        navToggle.classList.toggle('active');
+        navLinks.classList.toggle('active');
+        if (navOverlay) navOverlay.classList.toggle('active');
+      });
+      navLinks.querySelectorAll('a').forEach(function(link) {
+        link.addEventListener('click', closeNav);
+      });
+      if (navOverlay) navOverlay.addEventListener('click', closeNav);
+    })();
+
     const novelInput = document.getElementById('novelInput');
     const novelContent = document.getElementById('novelContent');
     const refreshBtn = document.getElementById('refreshBtn');

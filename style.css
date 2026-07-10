@@ -196,6 +196,9 @@ body {
   .site-card:active {
     transform: translateX(4px);
   }
+
+  /* 触屏设备隐藏鼠标跟随光效 */
+  .cursor-glow { display: none !important; }
 }
 
 a {
@@ -832,10 +835,15 @@ section {
   margin-top: 4px;
 }
 
+/* 导航遮罩层（默认隐藏，移动端通过媒体查询显示） */
+.nav-overlay {
+  display: none;
+}
+
 /* ==================== Skills Section ==================== */
 .skills-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 24px;
 }
 
@@ -1674,6 +1682,21 @@ section {
 
   .nav-links.active {
     right: 0;
+  }
+
+  /* 导航遮罩层 */
+  .nav-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .nav-overlay.active {
+    display: block;
+    opacity: 1;
   }
 
   .nav-links li {
@@ -4981,6 +5004,13 @@ textarea:focus-visible {
   }
   .novel-text {
     font-size: 1rem;
+  }
+  .upload-section {
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .container-novel {
+    padding: 90px 12px 40px;
   }
 }
 
