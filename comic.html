@@ -624,12 +624,10 @@
   </div>
 
   <script>
-    // ==================== 数据源配置 ====================
     var BAOZI_DOMAINS = [
       'https://www.baozimh.com',
       'https://cn.baozimh.com',
-      'https://www.baozimh.com',
-      'http://www.baozimh.com'
+      'https://baozimh.com'
     ];
 
     var CORS_PROXIES = [
@@ -637,10 +635,12 @@
       function(url) { return 'https://corsproxy.io/?url=' + encodeURIComponent(url); },
       function(url) { return 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(url); },
       function(url) { return 'https://api.allorigins.win/get?url=' + encodeURIComponent(url); },
-      function(url) { return 'https://gembed.com/' + url; }
+      function(url) { return 'https://gembed.com/' + url; },
+      function(url) { return 'https://noembed.com/embed?url=' + encodeURIComponent(url); },
+      function(url) { return 'https://api.whateverorigin.org/get?url=' + encodeURIComponent(url); },
+      function(url) { return 'https://cors-anywhere.herokuapp.com/' + url; }
     ];
 
-    // ==================== 状态 ====================
     var currentDomainIndex = 0;
     var currentProxyIndex = 0;
     var currentView = 'list';
@@ -650,7 +650,6 @@
     var currentChapterIndex = 0;
     var debugLogs = [];
 
-    // ==================== 工具函数 ====================
     function log(msg) {
       debugLogs.push(msg);
       if (debugLogs.length > 50) debugLogs.shift();
@@ -670,13 +669,11 @@
 
     function getImgSrc(el) {
       if (!el) return '';
-      return el.getAttribute('src') || el.getAttribute('data-src') || el.getAttribute('data-original') || '';
+      return el.getAttribute('src') || el.getAttribute('data-src') || el.getAttribute('data-original') || el.getAttribute('data-lazy-src') || '';
     }
 
-    // 修复代理重写的URL：allorigins会把所有链接改写为 api.allorigins.win/...
     function fixProxyUrl(url) {
       if (!url) return '';
-      // 去除代理前缀
       url = url.replace(/https?:\/\/api\.allorigins\.win/g, '');
       url = url.replace(/https?:\/\/corsproxy\.io\/?\?url=[^&]*/g, function(m) {
         try {
@@ -685,7 +682,10 @@
         } catch(e) { return ''; }
       });
       url = url.replace(/https?:\/\/api\.codetabs\.com\/v1\/proxy\/\?quest=/g, '');
-      // 如果是相对路径，补全域名
+      url = url.replace(/https?:\/\/api\.whateverorigin\.org\/get\?url=/g, '');
+      url = url.replace(/https?:\/\/noembed\.com\/embed\?url=/g, '');
+      url = url.replace(/https?:\/\/cors-anywhere\.herokuapp\.com\//g, '');
+      url = url.replace(/https?:\/\/gembed\.com\//g, '');
       if (url && url.indexOf('http') !== 0 && url.charAt(0) === '/') {
         url = BAOZI_DOMAINS[currentDomainIndex] + url;
       }
@@ -707,13 +707,127 @@
       document.getElementById('sourceInfo').style.display = 'none';
     }
 
-    // ==================== 核心请求：多域名 + 多代理 ====================
+    function getDefaultHeaders() {
+      return {
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1',
+        'Referer': 'https://www.baozimh.com/',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      };
+    }
+
+    async function fetchDirect(url, timeout = 10000) {
+      log('尝试直接请求: ' + url.substring(0, 60));
+      var controller = createTimeoutController(timeout);
+      try {
+        var resp = await fetch(url, {
+          signal: controller.signal,
+          headers: getDefaultHeaders(),
+          mode: 'cors',
+          credentials: 'omit'
+        });
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        return await resp.text();
+      } catch (e) {
+        log('直接请求失败: ' + e.message);
+        throw e;
+      }
+    }
+
+    function extractImagesFromScript(html) {
+      var images = [];
+      var patterns = [
+        /window\.__NUXT__\s*=\s*({[\s\S]*?});/,
+        /window\.__INITIAL_STATE__\s*=\s*({[\s\S]*?});/,
+        /window\.__DATA__\s*=\s*({[\s\S]*?});/,
+        /window\.comicData\s*=\s*({[\s\S]*?});/,
+        /window\.chapterData\s*=\s*({[\s\S]*?});/,
+        /window\.__PAGE_DATA__\s*=\s*({[\s\S]*?});/,
+        /"images"\s*:\s*\[([^\]]+)\]/gi,
+        /"image_urls"\s*:\s*\[([^\]]+)\]/gi,
+        /"chapter_images"\s*:\s*\[([^\]]+)\]/gi,
+        /"page_urls"\s*:\s*\[([^\]]+)\]/gi,
+        /"imgList"\s*:\s*\[([^\]]+)\]/gi,
+        /"page_list"\s*:\s*\[([^\]]+)\]/gi,
+        /"content"\s*:\s*\[([^\]]+)\]/gi
+      ];
+
+      for (var i = 0; i < patterns.length; i++) {
+        var matches = html.match(patterns[i]);
+        if (matches && matches.length > 0) {
+          log('找到匹配模式: ' + patterns[i].toString().substring(0, 40));
+          try {
+            for (var j = 0; j < matches.length; j++) {
+              var str = matches[j];
+              if (str.startsWith('window.')) {
+                var jsonStr = str.substring(str.indexOf('{'), str.lastIndexOf('}') + 1);
+                try {
+                  var data = JSON.parse(jsonStr);
+                  images = images.concat(extractImagesFromJSON(data));
+                } catch (e) {}
+              } else {
+                var urlMatches = str.match(/"(https?:\/\/[^"]+\.(jpg|jpeg|png|webp|gif))"/gi);
+                if (urlMatches) {
+                  for (var km = 0; km < urlMatches.length; km++) {
+                    var u = urlMatches[km].replace(/^"|"$/g, '');
+                    if (u && u.length > 30) {
+                      images.push(u);
+                    }
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            log('解析JSON失败: ' + e.message);
+          }
+        }
+      }
+
+      var base64Pattern = /data:image\/(jpg|jpeg|png|webp);base64,([a-zA-Z0-9+/=]{100,})/gi;
+      var base64Matches = html.match(base64Pattern);
+      if (base64Matches) {
+        images = images.concat(base64Matches);
+      }
+
+      return images.filter(function(img, index, self) {
+        return self.indexOf(img) === index && img.length > 30;
+      });
+    }
+
+    function extractImagesFromJSON(obj) {
+      var images = [];
+      function traverse(o) {
+        if (typeof o === 'object') {
+          for (var key in o) {
+            if (o.hasOwnProperty(key)) {
+              var val = o[key];
+              if (typeof val === 'string') {
+                if (val.indexOf('http') === 0 && (val.match(/\.(jpg|jpeg|png|webp)$/i) || val.indexOf('image') !== -1)) {
+                  images.push(val);
+                } else if (val.indexOf('data:image') === 0) {
+                  images.push(val);
+                }
+              } else if (typeof val === 'object') {
+                traverse(val);
+              }
+            }
+          }
+        }
+      }
+      traverse(obj);
+      return images;
+    }
+
     async function fetchComicHTML(pathOrUrl) {
       var url = pathOrUrl;
       var isFullUrl = pathOrUrl.indexOf('http') === 0;
 
       var attempts = [];
       for (var d = 0; d < BAOZI_DOMAINS.length; d++) {
+        attempts.push({ domainIdx: d, proxyIdx: -1 });
         for (var p = 0; p < CORS_PROXIES.length; p++) {
           attempts.push({ domainIdx: d, proxyIdx: p });
         }
@@ -724,16 +838,24 @@
         var attempt = attempts[i];
         var baseUrl = BAOZI_DOMAINS[attempt.domainIdx];
         var targetUrl = isFullUrl ? url : (baseUrl + pathOrUrl);
-        var proxyUrl = CORS_PROXIES[attempt.proxyIdx](targetUrl);
+        var useProxy = attempt.proxyIdx >= 0;
+        var requestUrl = useProxy ? CORS_PROXIES[attempt.proxyIdx](targetUrl) : targetUrl;
 
-        log('尝试: 域名' + attempt.domainIdx + ' + 代理' + attempt.proxyIdx + ' -> ' + targetUrl.substring(0, 60));
+        log('尝试: ' + (useProxy ? '代理' + attempt.proxyIdx : '直连') + ' -> ' + targetUrl.substring(0, 60));
         showSourceInfo('正在尝试连接... (' + (i + 1) + '/' + attempts.length + ')', 'loading');
 
         try {
-          var controller = createTimeoutController(12000);
-          var resp = await fetch(proxyUrl, { signal: controller.signal });
+          var controller = createTimeoutController(useProxy ? 15000 : 10000);
+          var fetchOptions = { signal: controller.signal };
+          if (!useProxy) {
+            fetchOptions.headers = getDefaultHeaders();
+            fetchOptions.mode = 'cors';
+            fetchOptions.credentials = 'omit';
+          }
+
+          var resp = await fetch(requestUrl, fetchOptions);
           if (!resp.ok) {
-            errors.push('代理' + attempt.proxyIdx + ': HTTP ' + resp.status);
+            errors.push((useProxy ? '代理' + attempt.proxyIdx : '直连') + ': HTTP ' + resp.status);
             continue;
           }
 
@@ -748,20 +870,23 @@
             } else if (json && json.data) {
               text = typeof json.data === 'string' ? json.data : '';
               isJson = true;
+            } else if (json && json.html) {
+              text = json.html;
+              isJson = true;
             }
           } catch (e) {}
 
           if (text && text.length > 200 && text.indexOf('<') !== -1) {
-            log('成功! 域名' + attempt.domainIdx + ' 代理' + attempt.proxyIdx);
+            log('成功! ' + (useProxy ? '代理' + attempt.proxyIdx : '直连'));
             currentDomainIndex = attempt.domainIdx;
             currentProxyIndex = attempt.proxyIdx;
             hideSourceInfo();
             return text;
           } else {
-            errors.push('代理' + attempt.proxyIdx + ': 返回内容无效(' + (text ? text.length : 0) + '字节)');
+            errors.push((useProxy ? '代理' + attempt.proxyIdx : '直连') + ': 返回内容无效(' + (text ? text.length : 0) + '字节)');
           }
         } catch (e) {
-          errors.push('代理' + attempt.proxyIdx + ': ' + e.message);
+          errors.push((useProxy ? '代理' + attempt.proxyIdx : '直连') + ': ' + e.message);
         }
       }
 
@@ -1196,36 +1321,43 @@
         var doc = parseHTML(html);
 
         var images = [];
-        var containerSelectors = ['.comic-contain', '.comic-images', '.comic-content', '[class*="comic"][class*="content"]', '.main-content', 'article', '[class*="read"]', '[class*="viewer"]'];
-        for (var cs = 0; cs < containerSelectors.length; cs++) {
-          var container = doc.querySelector(containerSelectors[cs]);
-          if (container) {
-            var imgs = container.querySelectorAll('amp-img, img');
-            for (var i = 0; i < imgs.length; i++) {
-              var src = getImgSrc(imgs[i]);
-              src = src ? fixProxyUrl(src) : '';
-              if (src && src.indexOf('http') === 0 && !src.match(/\.(js|css|ico|svg)$/i) && src.indexOf('placeholder') === -1 && src.indexOf('avatar') === -1 && src.indexOf('logo') === -1 && src.indexOf('icon') === -1 && src.length > 30) {
-                images.push(src);
+
+        var scriptImages = extractImagesFromScript(html);
+        if (scriptImages.length >= 3) {
+          log('从脚本数据提取到 ' + scriptImages.length + ' 张图片');
+          images = scriptImages;
+        } else {
+          var containerSelectors = ['.comic-contain', '.comic-images', '.comic-content', '[class*="comic"][class*="content"]', '.main-content', 'article', '[class*="read"]', '[class*="viewer"]'];
+          for (var cs = 0; cs < containerSelectors.length; cs++) {
+            var container = doc.querySelector(containerSelectors[cs]);
+            if (container) {
+              var imgs = container.querySelectorAll('amp-img, img');
+              for (var i = 0; i < imgs.length; i++) {
+                var src = getImgSrc(imgs[i]);
+                src = src ? fixProxyUrl(src) : '';
+                if (src && src.indexOf('http') === 0 && !src.match(/\.(js|css|ico|svg)$/i) && src.indexOf('placeholder') === -1 && src.indexOf('avatar') === -1 && src.indexOf('logo') === -1 && src.indexOf('icon') === -1 && src.length > 30) {
+                  images.push(src);
+                }
               }
-            }
-            if (images.length >= 3) {
-              log('图片容器: ' + containerSelectors[cs] + ' (' + images.length + '张)');
-              break;
+              if (images.length >= 3) {
+                log('图片容器: ' + containerSelectors[cs] + ' (' + images.length + '张)');
+                break;
+              }
             }
           }
-        }
 
-        if (images.length < 3) {
-          var allImgs = doc.querySelectorAll('amp-img[src*="http"], img[src*="http"], amp-img[src*="/"], img[src*="/"]');
-          for (var ai = 0; ai < allImgs.length; ai++) {
-            var asrc = getImgSrc(allImgs[ai]);
-            asrc = asrc ? fixProxyUrl(asrc) : '';
-            if (asrc && asrc.indexOf('http') === 0 && !asrc.match(/\.(js|css|ico|svg)$/i) && asrc.indexOf('placeholder') === -1 && asrc.indexOf('avatar') === -1 && asrc.indexOf('logo') === -1 && asrc.indexOf('icon') === -1 && asrc.indexOf('cover/default') === -1 && asrc.length > 30) {
-              var dup = false;
-              for (var di = 0; di < images.length; di++) {
-                if (images[di] === asrc) { dup = true; break; }
+          if (images.length < 3) {
+            var allImgs = doc.querySelectorAll('amp-img[src*="http"], img[src*="http"], amp-img[src*="/"], img[src*="/"]');
+            for (var ai = 0; ai < allImgs.length; ai++) {
+              var asrc = getImgSrc(allImgs[ai]);
+              asrc = asrc ? fixProxyUrl(asrc) : '';
+              if (asrc && asrc.indexOf('http') === 0 && !asrc.match(/\.(js|css|ico|svg)$/i) && asrc.indexOf('placeholder') === -1 && asrc.indexOf('avatar') === -1 && asrc.indexOf('logo') === -1 && asrc.indexOf('icon') === -1 && asrc.indexOf('cover/default') === -1 && asrc.length > 30) {
+                var dup = false;
+                for (var di = 0; di < images.length; di++) {
+                  if (images[di] === asrc) { dup = true; break; }
+                }
+                if (!dup) images.push(asrc);
               }
-              if (!dup) images.push(asrc);
             }
           }
         }
@@ -1237,9 +1369,38 @@
           ? '<button onclick="loadChapter(' + (index + 1) + ')">下一话<i data-lucide="chevron-right" style="width:16px;height:16px;"></i></button>'
           : '<button disabled>下一话<i data-lucide="chevron-right" style="width:16px;height:16px;"></i></button>';
 
+        function getImageVariants(url) {
+          var variants = [url];
+          if (url.indexOf('baozimh.com') !== -1) {
+            variants.push(url.replace('baozimh.com', 'baozimh.net'));
+            variants.push(url.replace('baozimh.com', 'baozimh.org'));
+          }
+          var cdnPatterns = [
+            [/\/\/[^\.]+\.baozimh\.com\//, '//images.baozimh.com/'],
+            [/\/\/[^\.]+\.baozimh\.net\//, '//images.baozimh.net/'],
+            [/\/\/[^\.]+\.manhuaren\.com\//, '//images.manhuaren.com/'],
+            [/\/\/[^\.]+\.mhcdn\.net\//, '//mhcdn.net/'],
+            [/\/\/[^\.]+\.cdndata\.net\//, '//cdndata.net/'],
+            [/\/\/[^\.]+\.manhua\.cc\//, '//manhua.cc/'],
+            [/\/\/[^\.]+\.dmzj\.com\//, '//dmzj.com/'],
+            [/\/\/[^\.]+\.bilibili\.com\//, '//i0.hdslb.com/'],
+            [/\/\/[^\.]+\.gtimg\.com\//, '//p.gtimg.com/'],
+            [/\/\/[^\.]+\.qq\.com\//, '//imgcache.qq.com/']
+          ];
+          for (var vp = 0; vp < cdnPatterns.length; vp++) {
+            var replaced = url.replace(cdnPatterns[vp][0], cdnPatterns[vp][1]);
+            if (replaced !== url) variants.push(replaced);
+          }
+          return variants.filter(function(v, i, self) { return self.indexOf(v) === i; });
+        }
+
         var imagesHtml = '';
         for (var img = 0; img < images.length; img++) {
-          imagesHtml += '<img src="' + images[img] + '" alt="第' + (img + 1) + '页" referrerpolicy="no-referrer" loading="lazy" onerror="this.style.display=\'none\'">';
+          var variants = getImageVariants(images[img]);
+          var imgTag = '<img data-src="' + images[img] + '" data-variants="' + encodeURIComponent(JSON.stringify(variants)) + '" ' +
+                       'alt="第' + (img + 1) + '页" referrerpolicy="no-referrer" loading="lazy" ' +
+                       'class="comic-image" onerror="tryImageVariant(this)" style="width:100%;display:block;background:var(--bg-tertiary);min-height:100px;">';
+          imagesHtml += imgTag;
         }
 
         content.innerHTML =
@@ -1311,6 +1472,37 @@
       lucide.createIcons();
     }
 
+    // ==================== 图片备用链接重试 ====================
+    function tryImageVariant(img) {
+      var variantsStr = img.getAttribute('data-variants');
+      if (!variantsStr) return;
+      try {
+        var variants = JSON.parse(decodeURIComponent(variantsStr));
+        var currentSrc = img.getAttribute('src');
+        var currentIndex = variants.indexOf(currentSrc);
+        if (currentIndex < variants.length - 1) {
+          var nextVariant = variants[currentIndex + 1];
+          log('图片加载失败，尝试备用链接: ' + nextVariant.substring(0, 50));
+          img.setAttribute('src', nextVariant);
+        } else {
+          log('所有备用链接均失败');
+          img.style.display = 'none';
+        }
+      } catch (e) {
+        img.style.display = 'none';
+      }
+    }
+
+    function initComicImages() {
+      var images = document.querySelectorAll('.comic-image');
+      images.forEach(function(img) {
+        var src = img.getAttribute('data-src');
+        if (src) {
+          img.setAttribute('src', src);
+        }
+      });
+    }
+
     // ==================== 导航 ====================
     function goBackToList() {
       currentView = 'list';
@@ -1334,6 +1526,10 @@
     lucide.createIcons();
     log('页面初始化，开始加载...');
     loadComicList('recommend');
+
+    document.addEventListener('DOMContentLoaded', function() {
+      initComicImages();
+    });
   </script>
 </body>
 </html>
