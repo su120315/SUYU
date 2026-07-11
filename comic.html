@@ -1540,6 +1540,7 @@
     // 离线下载：存储在浏览器内存中的漫画 { comicUrl: { title, author, desc, tags, cover, sourceName, chapters: [{title, url, images:[blobUrl]}], totalImages, downloadedAt } }
     var offlineLibrary = {};
     var downloadCancelled = false;
+    var downloadAbortController = null;
 
     // ==================== IndexedDB 持久化 ====================
     var DB_NAME = 'suyu-comic-db';
@@ -1761,14 +1762,20 @@
       };
     }
 
-    async function fetchWithProxies(targetUrl, referer) {
+    async function fetchWithProxies(targetUrl, referer, timeoutMs, cancelSignal) {
+      timeoutMs = timeoutMs || 12000;
       showSourceInfo('正在加载... (竞速模式)', 'loading');
 
       // 竞速模式：同时发起所有代理请求，取第一个成功的
       var controllers = [];
       var promises = CORS_PROXIES.map(function(proxyFn, proxyIdx) {
-        var controller = createTimeoutController(12000);
+        var controller = createTimeoutController(timeoutMs);
         controllers.push(controller);
+        // 监听外部取消信号
+        if (cancelSignal) {
+          if (cancelSignal.aborted) controller.abort();
+          else cancelSignal.addEventListener('abort', function() { controller.abort(); });
+        }
         return fetch(proxyFn(targetUrl), { signal: controller.signal })
           .then(function(resp) {
             if (!resp.ok) throw new Error('HTTP ' + resp.status);
@@ -2019,7 +2026,9 @@
       // 优先使用缓存的HTML
       var html = chapterHtmlCache[chapter.url];
       if (!html) {
-        html = await fetchWithProxies(chapter.url, src.domains[0]);
+        // 下载模式下用更短超时(6s) + 支持取消
+        var timeout = downloadCancelled ? 6000 : 10000;
+        html = await fetchWithProxies(chapter.url, src.domains[0], timeout, downloadAbortController ? downloadAbortController.signal : null);
         chapterHtmlCache[chapter.url] = html;
       }
       var doc = parseHTML(html);
@@ -2090,8 +2099,13 @@
       // 同时发起所有代理请求，取第一个成功的
       var controllers = [];
       var promises = proxies.map(function(proxyFn, i) {
-        var controller = createTimeoutController(10000);
+        var controller = createTimeoutController(8000);
         controllers.push(controller);
+        // 监听下载取消信号
+        if (downloadAbortController) {
+          if (downloadAbortController.signal.aborted) controller.abort();
+          else downloadAbortController.signal.addEventListener('abort', function() { controller.abort(); });
+        }
         return fetch(proxyFn(url), { signal: controller.signal })
           .then(function(resp) {
             if (!resp.ok) throw new Error('HTTP ' + resp.status);
@@ -2135,6 +2149,7 @@
           } catch(e) {
             results[idx] = null;
           }
+          if (downloadCancelled) break;
           completed++;
           if (onProgress) onProgress(completed, urls.length);
         }
@@ -2254,6 +2269,7 @@
       }
 
       downloadCancelled = false;
+      downloadAbortController = new AbortController();
       var totalToDownload = selectedIndices.length;
       showDownloadProgress(totalToDownload, currentComicTitle);
 
@@ -3444,10 +3460,12 @@
     var touchStartX = 0;
     var touchStartY = 0;
     var lastTapTime = 0;
+    var touchStartTime = 0;
 
     document.addEventListener('touchstart', function(e) {
       touchStartX = e.touches[0].clientX;
       touchStartY = e.touches[0].clientY;
+      touchStartTime = Date.now();
 
       var now = Date.now();
       if (now - lastTapTime < 300) {
@@ -3471,13 +3489,76 @@
       var touchEndY = e.changedTouches[0].clientY;
       var diffX = touchEndX - touchStartX;
       var diffY = touchEndY - touchStartY;
+      var duration = Date.now() - touchStartTime;
 
+      // 水平滑动切章
       if (Math.abs(diffX) > 50 && Math.abs(diffX) > Math.abs(diffY)) {
         if (diffX > 0 && currentChapterIndex > 0) {
           loadChapter(currentChapterIndex - 1);
         } else if (diffX < 0 && currentChapterIndex < currentChapters.length - 1) {
           loadChapter(currentChapterIndex + 1);
         }
+        return;
+      }
+
+      // 点击翻页：移动距离小 + 时间短 = 点击
+      if (Math.abs(diffX) < 10 && Math.abs(diffY) < 10 && duration < 300) {
+        var target = e.target;
+        // 跳过点击按钮、链接等交互元素
+        while (target && target !== document.body) {
+          if (target.tagName === 'BUTTON' || target.tagName === 'A' || target.tagName === 'INPUT') return;
+          target = target.parentElement;
+        }
+        handleReaderTap(touchEndY);
+      }
+    });
+
+    // 点击翻页逻辑（哔哩哔哩漫画式）
+    function handleReaderTap(clickY) {
+      var screenHeight = window.innerHeight;
+      var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      var scrollHeight = document.documentElement.scrollHeight;
+      var remaining = scrollHeight - scrollTop - screenHeight;
+
+      if (clickY > screenHeight * 0.5) {
+        // 点击下半屏：向下滚动一段（约80%屏幕高度）
+        var scrollDist = Math.min(screenHeight * 0.8, remaining + 50);
+        if (remaining > 50) {
+          window.scrollBy({ top: scrollDist, behavior: 'smooth' });
+        } else if (currentChapterIndex < currentChapters.length - 1) {
+          // 到底了，进入下一章
+          loadChapter(currentChapterIndex + 1);
+        }
+      } else {
+        // 点击上半屏：向上滚动一段
+        var upDist = Math.min(screenHeight * 0.8, scrollTop + 50);
+        if (scrollTop > 50) {
+          window.scrollBy({ top: -upDist, behavior: 'smooth' });
+        } else if (currentChapterIndex > 0) {
+          // 到顶了，回到上一章末尾
+          loadChapter(currentChapterIndex - 1);
+        }
+      }
+    }
+
+    // 桌面端点击翻页
+    document.addEventListener('click', function(e) {
+      if (currentView !== 'reader') return;
+      // 只处理图片区域的点击
+      var imagesContainer = e.target.closest('.comic-reader-images');
+      if (!imagesContainer) {
+        // 也允许点击阅读器其他空白区域
+        if (!e.target.closest('.comic-reader-nav') && !e.target.closest('.comic-back-btn') && !e.target.closest('button')) {
+          handleReaderTap(e.clientY);
+        }
+        return;
+      }
+      // 点击图片区域：跳过双击放大检测
+      if (e.detail === 1) {
+        // 单击 - 延迟执行以等待可能的双击
+        setTimeout(function() {
+          handleReaderTap(e.clientY);
+        }, 250);
       }
     });
 
@@ -3578,9 +3659,13 @@
     document.getElementById('offlineLibraryBtn').addEventListener('click', function() {
       showOfflineLibrary();
     });
-    // 取消下载按钮
+    // 取消下载按钮 - 立即中断所有进行中的请求
     document.getElementById('downloadCancelBtn').addEventListener('click', function() {
       downloadCancelled = true;
+      if (downloadAbortController) {
+        try { downloadAbortController.abort(); } catch(e) {}
+      }
+      hideDownloadProgress();
     });
   </script>
 </body>
