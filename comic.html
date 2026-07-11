@@ -1762,52 +1762,48 @@
     }
 
     async function fetchWithProxies(targetUrl, referer) {
-      var errors = [];
-      var proxyOrder = [];
-      if (lastWorkingProxy >= 0) {
-        proxyOrder.push(lastWorkingProxy);
-        for (var p = 0; p < CORS_PROXIES.length; p++) {
-          if (p !== lastWorkingProxy) proxyOrder.push(p);
+      showSourceInfo('正在加载... (竞速模式)', 'loading');
+
+      // 竞速模式：同时发起所有代理请求，取第一个成功的
+      var controllers = [];
+      var promises = CORS_PROXIES.map(function(proxyFn, proxyIdx) {
+        var controller = createTimeoutController(12000);
+        controllers.push(controller);
+        return fetch(proxyFn(targetUrl), { signal: controller.signal })
+          .then(function(resp) {
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            return resp.text();
+          })
+          .then(function(text) {
+            // 解析 JSON 包裹
+            try {
+              var json = JSON.parse(text);
+              if (json && json.contents) text = json.contents;
+              else if (json && json.data) text = typeof json.data === 'string' ? json.data : text;
+              else if (json && json.html) text = json.html;
+            } catch (e) {}
+
+            if (text && text.length > 200 && (text.indexOf('<') !== -1 || text.indexOf('http') !== -1)) {
+              return { text: text, proxyIdx: proxyIdx };
+            }
+            throw new Error('内容无效');
+          });
+      });
+
+      try {
+        var result = await Promise.any(promises);
+        log('代理' + result.proxyIdx + ' 竞速胜出!');
+        lastWorkingProxy = result.proxyIdx;
+        hideSourceInfo();
+        // 中断其他请求
+        for (var c = 0; c < controllers.length; c++) {
+          try { controllers[c].abort(); } catch(e) {}
         }
-      } else {
-        for (var q = 0; q < CORS_PROXIES.length; q++) proxyOrder.push(q);
+        return result.text;
+      } catch(e) {
+        hideSourceInfo();
+        throw new Error('所有代理均不可用');
       }
-
-      for (var i = 0; i < proxyOrder.length; i++) {
-        var proxyIdx = proxyOrder[i];
-        var proxyUrl = CORS_PROXIES[proxyIdx](targetUrl);
-        log('代理' + proxyIdx + ' 请求: ' + targetUrl.substring(0, 50));
-        showSourceInfo('正在加载... (线路 ' + (i + 1) + '/' + proxyOrder.length + ')', 'loading');
-
-        try {
-          var controller = createTimeoutController(15000);
-          var resp = await fetch(proxyUrl, { signal: controller.signal });
-          if (!resp.ok) {
-            errors.push('代理' + proxyIdx + ': HTTP ' + resp.status);
-            continue;
-          }
-          var text = await resp.text();
-
-          try {
-            var json = JSON.parse(text);
-            if (json && json.contents) text = json.contents;
-            else if (json && json.data) text = typeof json.data === 'string' ? json.data : text;
-            else if (json && json.html) text = json.html;
-          } catch (e) {}
-
-          if (text && text.length > 200 && (text.indexOf('<') !== -1 || text.indexOf('http') !== -1)) {
-            log('代理' + proxyIdx + ' 成功!');
-            lastWorkingProxy = proxyIdx;
-            hideSourceInfo();
-            return text;
-          } else {
-            errors.push('代理' + proxyIdx + ': 内容无效(' + (text ? text.length : 0) + '字节)');
-          }
-        } catch (e) {
-          errors.push('代理' + proxyIdx + ': ' + e.message);
-        }
-      }
-      throw new Error('所有代理均不可用\n\n' + errors.slice(0, 5).join('\n'));
     }
 
     function extractImagesFromScript(html) {
@@ -2011,13 +2007,21 @@
     }
 
     // ==================== 图片提取（公共函数） ====================
+    // 章节HTML缓存（避免预加载和下载时重复抓取）
+    var chapterHtmlCache = {};
+
     async function fetchChapterImages(index) {
       var chapter = currentChapters[index];
       if (!chapter) return { images: [], fromScript: false };
       if (!currentSource) currentSource = COMIC_SOURCES[0];
       var src = currentSource;
 
-      var html = await fetchWithProxies(chapter.url, src.domains[0]);
+      // 优先使用缓存的HTML
+      var html = chapterHtmlCache[chapter.url];
+      if (!html) {
+        html = await fetchWithProxies(chapter.url, src.domains[0]);
+        chapterHtmlCache[chapter.url] = html;
+      }
       var doc = parseHTML(html);
       var images = [];
       var scriptImages = extractImagesFromScript(html);
@@ -2066,36 +2070,56 @@
     }
 
     // ==================== 离线下载 ====================
+    // 图片下载：代理竞速模式（同时发起多个请求，谁先成功用谁）
+    var imageProxyCache = {};
     async function fetchImageAsBlob(url) {
       if (!url) return null;
       // blob: URL 直接读取
       if (url.indexOf('blob:') === 0) {
         try { return await (await fetch(url)).blob(); } catch(e) { return null; }
       }
+
+      // 代理列表（wsrv.nl 专门做图片代理，最快，排第一）
       var proxies = [
+        function(u) { return 'https://wsrv.nl/?url=' + encodeURIComponent(u.replace(/^https?:\/\//, '')); },
         function(u) { return 'https://images.weserv.nl/?url=' + encodeURIComponent(u.replace(/^https?:\/\//, '')); },
-        function(u) { return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u); },
-        function(u) { return 'https://corsproxy.io/?url=' + encodeURIComponent(u); },
-        function(u) { return 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(u); }
+        function(u) { return 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(u); },
+        function(u) { return 'https://corsproxy.io/?url=' + encodeURIComponent(u); }
       ];
-      for (var i = 0; i < proxies.length; i++) {
-        try {
-          var controller = createTimeoutController(12000);
-          var resp = await fetch(proxies[i](url), { signal: controller.signal });
-          if (resp.ok) {
-            var blob = await resp.blob();
-            if (blob.size > 1000 && (blob.type.indexOf('image') !== -1 || blob.type === '')) {
-              return blob;
-            }
-          }
-        } catch(e) {}
+
+      // 同时发起所有代理请求，取第一个成功的
+      var controllers = [];
+      var promises = proxies.map(function(proxyFn, i) {
+        var controller = createTimeoutController(10000);
+        controllers.push(controller);
+        return fetch(proxyFn(url), { signal: controller.signal })
+          .then(function(resp) {
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            return resp.blob();
+          })
+          .then(function(blob) {
+            if (blob.size < 1000) throw new Error('too small');
+            return blob;
+          });
+      });
+
+      try {
+        // Promise.any: 取第一个成功，取消其余
+        var blob = await Promise.any(promises);
+        // 中断其他还在跑的请求
+        for (var c = 0; c < controllers.length; c++) {
+          try { controllers[c].abort(); } catch(e) {}
+        }
+        return blob;
+      } catch(e) {
+        // 全部失败
+        return null;
       }
-      return null;
     }
 
     // 并行下载图片（batchSize 张一批）
     async function downloadImagesBatch(urls, onProgress, batchSize) {
-      batchSize = batchSize || 3;
+      batchSize = batchSize || 6;
       var results = new Array(urls.length);
       var completed = 0;
       var queue = [];

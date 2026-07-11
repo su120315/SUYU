@@ -1,5 +1,5 @@
 // SUYU 漫画 Service Worker - 离线缓存
-const CACHE_NAME = 'suyu-comic-v2';
+const CACHE_NAME = 'suyu-comic-v3';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -10,6 +10,7 @@ const CORE_ASSETS = [
   './script.js',
   './tools.js',
   './qrcode.min.js',
+  './sw.js',
   'https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js'
 ];
 
