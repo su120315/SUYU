@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://unpkg.com">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/lucide@latest" defer onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js';"></script>
   <script src="qrcode.min.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -191,7 +191,7 @@
 
       document.addEventListener('DOMContentLoaded', function() {
         if (typeof lucide !== 'undefined') {
-          lucide.createIcons();
+          try { lucide.createIcons(); } catch(e) { console.warn('Lucide error:', e); }
         }
 
         const toggles = document.querySelectorAll('#themeToggle, #themeToggleMobile');
@@ -200,7 +200,9 @@
           toggles.forEach(toggle => {
             toggle.innerHTML = `<i data-lucide="${isDark ? 'sun' : 'moon'}"></i>`;
           });
-          if (typeof lucide !== 'undefined') lucide.createIcons();
+          if (typeof lucide !== 'undefined') {
+            try { lucide.createIcons(); } catch(e) { console.warn('Lucide error:', e); }
+          }
         }
         if (toggles.length > 0) {
           updateIcons();

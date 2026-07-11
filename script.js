@@ -1,5 +1,29 @@
-// Initialize Lucide Icons
-lucide.createIcons();
+// 全局错误捕获 - 防止单个错误导致整个页面崩溃
+window.addEventListener('error', function(e) {
+  console.error('Global error:', e.error || e.message);
+  return true;
+});
+window.addEventListener('unhandledrejection', function(e) {
+  console.error('Unhandled promise rejection:', e.reason);
+  return true;
+});
+
+// Initialize Lucide Icons (with safety check)
+if (typeof lucide !== 'undefined') {
+  try { lucide.createIcons(); } catch(e) { console.warn('Lucide init error:', e); }
+} else {
+  // 等待 Lucide 加载完成后重新初始化
+  var lucideRetries = 0;
+  function checkLucide() {
+    if (typeof lucide !== 'undefined') {
+      try { lucide.createIcons(); } catch(e) { console.warn('Lucide init error:', e); }
+    } else if (lucideRetries < 20) {
+      lucideRetries++;
+      setTimeout(checkLucide, 500);
+    }
+  }
+  setTimeout(checkLucide, 500);
+}
 
 // ==================== 移动端检测 ====================
 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
@@ -71,77 +95,93 @@ if (typewriterElement && fullText) {
 }
 
 // ==================== Intersection Observer for Animations ====================
-const observerOptions = {
-  threshold: 0.1,
-  rootMargin: '0px 0px -50px 0px'
-};
+try {
+  const observerOptions = {
+    threshold: 0.1,
+    rootMargin: '0px 0px -50px 0px'
+  };
 
-const fadeInObserver = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      const delay = entry.target.getAttribute('data-delay') || 0;
-      setTimeout(() => {
-        entry.target.classList.add('visible');
-      }, delay);
-      fadeInObserver.unobserve(entry.target);
-    }
+  const fadeInObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const delay = entry.target.getAttribute('data-delay') || 0;
+        setTimeout(() => {
+          entry.target.classList.add('visible');
+        }, delay);
+        fadeInObserver.unobserve(entry.target);
+      }
+    });
+  }, observerOptions);
+
+  // Observe all fade-in elements
+  document.querySelectorAll('.skill-card, .project-card, .hobby-card, .site-card').forEach(el => {
+    fadeInObserver.observe(el);
   });
-}, observerOptions);
-
-// Observe all fade-in elements
-document.querySelectorAll('.skill-card, .project-card, .hobby-card, .site-card').forEach(el => {
-  fadeInObserver.observe(el);
-});
+} catch(e) {
+  console.warn('IntersectionObserver (fade-in) error:', e);
+}
 
 // ==================== Skill Bar Animation ====================
-const skillBars = document.querySelectorAll('.skill-fill');
+try {
+  const skillBars = document.querySelectorAll('.skill-fill');
 
-const skillObserver = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      const width = entry.target.getAttribute('data-width');
-      entry.target.style.width = `${width}%`;
-      skillObserver.unobserve(entry.target);
-    }
+  const skillObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const width = entry.target.getAttribute('data-width');
+        entry.target.style.width = `${width}%`;
+        skillObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.5 });
+
+  skillBars.forEach(bar => {
+    skillObserver.observe(bar);
   });
-}, { threshold: 0.5 });
-
-skillBars.forEach(bar => {
-  skillObserver.observe(bar);
-});
+} catch(e) {
+  console.warn('IntersectionObserver (skill bars) error:', e);
+}
 
 // ==================== Smooth Scroll for Nav Links ====================
-document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-  anchor.addEventListener('click', function(e) {
-    e.preventDefault();
-    const targetId = this.getAttribute('href');
-    const targetElement = document.querySelector(targetId);
-    
-    if (targetElement) {
-      const navHeight = navbar.offsetHeight;
-      const targetPosition = targetElement.offsetTop - navHeight;
+try {
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function(e) {
+      e.preventDefault();
+      const targetId = this.getAttribute('href');
+      const targetElement = document.querySelector(targetId);
       
-      window.scrollTo({
-        top: targetPosition,
-        behavior: 'smooth'
-      });
-    }
+      if (targetElement) {
+        const navHeight = navbar.offsetHeight;
+        const targetPosition = targetElement.offsetTop - navHeight;
+        
+        window.scrollTo({
+          top: targetPosition,
+          behavior: 'smooth'
+        });
+      }
+    });
   });
-});
+} catch(e) {
+  console.warn('Smooth scroll error:', e);
+}
 
 // ==================== Parallax Effect for Orbs (仅桌面端启用) ====================
-const orbs = document.querySelectorAll('.orb');
+try {
+  const orbs = document.querySelectorAll('.orb');
 
-if (!isMobile && window.matchMedia('(prefers-reduced-motion: no-preference)').matches) {
-  window.addEventListener('scroll', () => {
-    requestTick(() => {
-      const scrollY = window.scrollY;
-      orbs.forEach((orb, index) => {
-        const speed = (index + 1) * 0.05;
-        orb.style.transform = `translateY(${scrollY * speed}px)`;
+  if (!isMobile && window.matchMedia('(prefers-reduced-motion: no-preference)').matches) {
+    window.addEventListener('scroll', () => {
+      requestTick(() => {
+        const scrollY = window.scrollY;
+        orbs.forEach((orb, index) => {
+          const speed = (index + 1) * 0.05;
+          orb.style.transform = `translateY(${scrollY * speed}px)`;
+        });
       });
-    });
-  }, { passive: true });
+    }, { passive: true });
+  }
+} catch(e) {
+  console.warn('Parallax effect error:', e);
 }
 
 // ==================== Theme Toggle ====================
@@ -160,7 +200,9 @@ if (!isMobile && window.matchMedia('(prefers-reduced-motion: no-preference)').ma
     themeToggles.forEach(toggle => {
       toggle.innerHTML = `<i data-lucide="${isDark ? 'sun' : 'moon'}"></i>`;
     });
-    lucide.createIcons();
+    if (typeof lucide !== 'undefined') {
+      try { lucide.createIcons(); } catch(e) { console.warn('Lucide error:', e); }
+    }
   }
 
   themeToggles.forEach(toggle => {
@@ -313,7 +355,9 @@ function initGallery() {
     lightboxImage.src = photos[index];
     lightbox.classList.add('active');
     document.body.style.overflow = 'hidden';
-    lucide.createIcons();
+    if (typeof lucide !== 'undefined') {
+      try { lucide.createIcons(); } catch(e) { console.warn('Lucide error:', e); }
+    }
   }
 
   function closeLightbox() {
@@ -880,7 +924,9 @@ function initComments() {
     });
     
     commentsList.innerHTML = html;
-    lucide.createIcons();
+    if (typeof lucide !== 'undefined') {
+      try { lucide.createIcons(); } catch(e) { console.warn('Lucide error:', e); }
+    }
     bindCommentEvents();
   }
 
@@ -1036,7 +1082,9 @@ function initComments() {
     
     commentSubmit.disabled = false;
     commentSubmit.innerHTML = '<i data-lucide="send"></i><span>发布留言</span>';
-    lucide.createIcons();
+    if (typeof lucide !== 'undefined') {
+      try { lucide.createIcons(); } catch(e) { console.warn('Lucide error:', e); }
+    }
     
     showConfetti();
   });
@@ -1044,7 +1092,16 @@ function initComments() {
   loadComments();
 }
 
-initComments();
+safeInit(initComments, 'comments');
+
+// ==================== 安全初始化包装器 ====================
+function safeInit(fn, name) {
+  try {
+    fn();
+  } catch (e) {
+    console.error('Init error [' + name + ']:', e);
+  }
+}
 
 // ==================== Visitor Counter ====================
 function initVisitorCounter() {
@@ -1130,7 +1187,7 @@ function initVisitorCounter() {
   init();
 }
 
-initVisitorCounter();
+safeInit(initVisitorCounter, 'visitorCounter');
 
 // ==================== Weather ====================
 function initWeather() {
@@ -1205,7 +1262,7 @@ function initWeather() {
   setInterval(fetchWeather, 30 * 60 * 1000);
 }
 
-initWeather();
+safeInit(initWeather, 'weather');
 
 // ==================== AI 对话小窗 ====================
 function initChat() {
@@ -1366,7 +1423,7 @@ function initChat() {
 }
 
 // 等 lucide 加载完再初始化
-setTimeout(initChat, 500);
+setTimeout(function() { safeInit(initChat, 'chat'); }, 500);
 
 // ==================== 复制QQ号 ====================
 function copyQQ() {

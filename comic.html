@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/lucide@0.460.0"></script>
+  <script src="https://unpkg.com/lucide@0.460.0" defer onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js';"></script>
   <link rel="stylesheet" href="style.css">
   <meta name="referrer" content="no-referrer">
   <style>
@@ -862,6 +862,16 @@
   </div>
 
   <script>
+    // 全局错误捕获
+    window.addEventListener('error', function(e) {
+      console.error('Global error:', e.error || e.message);
+      return true;
+    });
+    window.addEventListener('unhandledrejection', function(e) {
+      console.error('Unhandled promise rejection:', e.reason);
+      return true;
+    });
+
     var BAOZI_DOMAINS = ['https://cn.bzmgcn.com', 'https://www.baozimh.com'];
     var CORS_PROXIES = [
       function(url) { return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url); },
@@ -888,6 +898,12 @@
 
     function log(msg) {
       console.log('[漫画]', msg);
+    }
+
+    function safeLucide() {
+      if (typeof lucide !== 'undefined') {
+        try { lucide.createIcons(); } catch(e) { console.warn('Lucide error:', e); }
+      }
     }
 
     function createTimeoutController(ms) {
@@ -950,6 +966,34 @@
 
     async function fetchWithProxies(targetUrl, referer) {
       var errors = [];
+      var headers = getDefaultHeaders(referer);
+      
+      var tryDirect = true;
+      if (tryDirect) {
+        log('尝试直连: ' + targetUrl.substring(0, 50));
+        showSourceInfo('正在加载... (直连尝试)', 'loading');
+        try {
+          var controller0 = createTimeoutController(10000);
+          var resp0 = await fetch(targetUrl, {
+            signal: controller0.signal,
+            mode: 'cors',
+            credentials: 'omit',
+            headers: headers
+          });
+          if (resp0.ok) {
+            var text0 = await resp0.text();
+            if (text0 && text0.length > 200 && text0.indexOf('<') !== -1) {
+              log('直连成功');
+              hideSourceInfo();
+              return text0;
+            }
+          }
+        } catch (e) {
+          errors.push('直连: ' + e.message);
+          log('直连失败: ' + e.message);
+        }
+      }
+
       var proxyOrder = [];
       if (lastWorkingProxy >= 0) {
         proxyOrder.push(lastWorkingProxy);
@@ -967,8 +1011,12 @@
         showSourceInfo('正在加载... (线路 ' + (i + 1) + '/' + proxyOrder.length + ')', 'loading');
 
         try {
-          var controller = createTimeoutController(15000);
-          var resp = await fetch(proxyUrl, { signal: controller.signal });
+          var controller = createTimeoutController(12000);
+          var resp = await fetch(proxyUrl, {
+            signal: controller.signal,
+            mode: 'cors',
+            credentials: 'omit'
+          });
           if (!resp.ok) { errors.push('代理' + proxyIdx + ': HTTP ' + resp.status); continue; }
           var text = await resp.text();
 
@@ -1213,7 +1261,7 @@
                 '</button>' +
               '</div>' +
             '</div>';
-          lucide.createIcons();
+          safeLucide();
           return;
         }
 
@@ -1375,7 +1423,7 @@
             chapterSearchHtml +
             '<div class="chapter-list" id="chapterList">' + chapterHtml + '</div>' +
           '</div>';
-        lucide.createIcons();
+        safeLucide();
       } catch (e) {
         showErrorWithActions('加载详情失败', e.message, true, [
           { text: '重试', action: 'loadComicDetail("' + comicUrl.replace(/'/g, "\\'") + '", "' + (fallbackTitle || '').replace(/'/g, "\\'") + '")' },
@@ -1564,7 +1612,7 @@
               nextBtn +
             '</div>' +
           '</div>';
-        lucide.createIcons();
+        safeLucide();
       } catch (e) {
         showErrorWithActions('加载章节失败', e.message, true, [
           { text: '重试', action: 'loadChapter(' + index + ')' },
@@ -1753,7 +1801,7 @@
           actionsHtml +
           detailHtml +
         '</div>';
-      lucide.createIcons();
+      safeLucide();
     }
 
     // ==================== 导航 ====================
@@ -1776,8 +1824,23 @@
     }
 
     // ==================== 初始化 ====================
-    lucide.createIcons();
+    safeLucide();
     log('漫画模块初始化完成');
+
+    // 等待 Lucide 加载完成后重新初始化图标
+    var lucideRetryCount = 0;
+    function waitForLucide() {
+      if (typeof lucide !== 'undefined' && lucide.createIcons) {
+        safeLucide();
+        log('Lucide 加载完成，图标已初始化');
+      } else if (lucideRetryCount < 20) {
+        lucideRetryCount++;
+        setTimeout(waitForLucide, 500);
+      }
+    }
+    if (typeof lucide === 'undefined') {
+      setTimeout(waitForLucide, 500);
+    }
 
     setTimeout(function() {
       loadComicList('recommend');

@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="preconnect" href="https://unpkg.com">
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/lucide@latest" defer onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js';"></script>
   <link rel="stylesheet" href="style.css">
   <style>
     .container-novel {
@@ -134,6 +134,12 @@
     const GITHUB_TOKEN = TOKEN_PART1 + TOKEN_PART2;
 
     // 判断内容是否为空的占位符
+    function safeLucide() {
+      if (typeof lucide !== 'undefined') {
+        try { lucide.createIcons(); } catch(e) { console.warn('Lucide error:', e); }
+      }
+    }
+
     function isEmptyContent(content) {
       if (!content) return true;
       const trimmed = content.trim();
@@ -143,7 +149,7 @@
     // 显示空状态
     function showEmptyState() {
       novelContent.innerHTML = '<div class="novel-empty"><i data-lucide="book-open"></i><p>还没有上传小说，快来分享吧～</p></div>';
-      lucide.createIcons();
+      safeLucide();
     }
 
     // 用 API 读取最新内容，不会被缓存
@@ -194,7 +200,7 @@
 
     function showLoadError() {
       novelContent.innerHTML = '<div class="novel-empty"><i data-lucide="alert-circle"></i><p>加载失败，点击「刷新内容」重试</p></div>';
-      lucide.createIcons();
+      safeLucide();
     }
 
     function displayNovel(content) {
@@ -293,11 +299,11 @@
     refreshBtn.addEventListener('click', () => {
       refreshBtn.disabled = true;
       refreshBtn.innerHTML = '<i data-lucide="loader"></i><span>加载中...</span>';
-      lucide.createIcons();
+      safeLucide();
       loadNovel().finally(() => {
         refreshBtn.disabled = false;
         refreshBtn.innerHTML = '<i data-lucide="refresh-cw"></i><span>刷新内容</span>';
-        lucide.createIcons();
+        safeLucide();
       });
     });
 
@@ -318,7 +324,7 @@
       try {
         await saveNovel('暂无内容，等待上传～');
         showEmptyState();
-        lucide.createIcons();
+        safeLucide();
       } catch (error) {
         alert('清空失败');
       } finally {
@@ -330,7 +336,7 @@
       window.location.href = 'index.html';
     });
 
-    lucide.createIcons();
+    safeLucide();
     loadNovel();
   </script>
 </body>
