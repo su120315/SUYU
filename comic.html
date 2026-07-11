@@ -862,7 +862,7 @@
   </div>
 
   <script>
-    var BAOZI_DOMAINS = ['https://www.baozimh.com', 'https://cn.baozimh.com', 'https://baozimh.com'];
+    var BAOZI_DOMAINS = ['https://cn.bzmgcn.com', 'https://www.baozimh.com'];
     var CORS_PROXIES = [
       function(url) { return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url); },
       function(url) { return 'https://corsproxy.io/?url=' + encodeURIComponent(url); },
@@ -996,13 +996,13 @@
 
     function extractImagesFromScript(html) {
       var images = [];
-      var imgUrlPattern = /"((?:https?:\/\/|\/\/)[^"']+\.(?:jpg|jpeg|png|webp|gif)(?:\?[^"']*)?)"/gi;
+      var imgUrlPattern = /"(https?:\/\/[^"']+\.(?:jpg|jpeg|png|webp|gif)(?:\?[^"']*)?)"/gi;
       var matches = html.match(imgUrlPattern);
       if (matches) {
         for (var i = 0; i < matches.length; i++) {
           var url = matches[i].replace(/^"|"$/g, '');
           if (url.indexOf('//') === 0) url = 'https:' + url;
-          if (url.length > 30 && url.indexOf('logo') === -1 && url.indexOf('avatar') === -1 && url.indexOf('icon') === -1 && url.indexOf('placeholder') === -1) {
+          if (url.length > 30 && url.indexOf('logo') === -1 && url.indexOf('avatar') === -1 && url.indexOf('icon') === -1 && url.indexOf('apple-icon') === -1 && url.indexOf('favicon') === -1 && url.indexOf('placeholder') === -1 && url.indexOf('static/bzmh') === -1) {
             images.push(url);
           }
         }
@@ -1308,10 +1308,10 @@
           }
         }
 
-        var chapterLinks = findElements(doc, ['.comics-chapters a', '.chapter-list a', '[class*="chapter"] a', '[class*="catalog"] a'], 3);
+        var chapterLinks = findElements(doc, ['.comics-chapters__item a', '.comics-chapters a', '.chapter-list a', '[class*="chapter"] a', '[class*="catalog"] a'], 3);
 
         if (chapterLinks.length < 3) {
-          var allLinks = doc.querySelectorAll('a[href*="/chapter/"], a[href*="/comic_chapter/"]');
+          var allLinks = doc.querySelectorAll('a[href*="/user/page_direct"], a[href*="/chapter/"], a[href*="/comic_chapter/"]');
           var seenCh = {};
           for (var al2 = 0; al2 < allLinks.length; al2++) {
             var hr = fixProxyUrl(allLinks[al2].getAttribute('href'), BAOZI_DOMAINS[currentDomainIndex]);
@@ -1483,7 +1483,7 @@
           images = scriptImages;
           hasWatermark = false;
         } else {
-          var containerSelectors = ['.comic-contain', '.comic-images', '.comic-content', '[class*="comic"][class*="content"]', 'article'];
+          var containerSelectors = ['.comic-contain', '.comic-images', '.comic-content', '[class*="comic"][class*="contain"]', '[class*="comic"][class*="content"]', 'article'];
           for (var cs = 0; cs < containerSelectors.length; cs++) {
             var container = doc.querySelector(containerSelectors[cs]);
             if (container) {
@@ -1491,7 +1491,7 @@
               for (var i = 0; i < imgs.length; i++) {
                 var imgsrc = getImgSrc(imgs[i]);
                 imgsrc = imgsrc ? fixProxyUrl(imgsrc, BAOZI_DOMAINS[currentDomainIndex]) : '';
-                if (imgsrc && imgsrc.indexOf('http') === 0 && !imgsrc.match(/\.(js|css|ico|svg)$/i) && imgsrc.indexOf('placeholder') === -1 && imgsrc.indexOf('avatar') === -1 && imgsrc.indexOf('logo') === -1 && imgsrc.indexOf('icon') === -1 && imgsrc.length > 30) {
+                if (imgsrc && imgsrc.indexOf('http') === 0 && !imgsrc.match(/\.(js|css|ico|svg)$/i) && imgsrc.indexOf('placeholder') === -1 && imgsrc.indexOf('avatar') === -1 && imgsrc.indexOf('logo') === -1 && imgsrc.indexOf('icon') === -1 && imgsrc.indexOf('apple-icon') === -1 && imgsrc.indexOf('favicon') === -1 && imgsrc.length > 30) {
                   images.push(imgsrc);
                 }
               }
@@ -1503,11 +1503,11 @@
           }
 
           if (images.length < 3) {
-            var allImgs = doc.querySelectorAll('img[src*="http"], amp-img[src*="http"]');
+            var allImgs = doc.querySelectorAll('amp-img[data-src], img[src*="bzcdn"], img[src*="baozimh"], img[data-src*="bzcdn"], img[data-src*="baozimh"]');
             for (var ai = 0; ai < allImgs.length; ai++) {
               var asrc = getImgSrc(allImgs[ai]);
               asrc = asrc ? fixProxyUrl(asrc, BAOZI_DOMAINS[currentDomainIndex]) : '';
-              if (asrc && asrc.indexOf('http') === 0 && !asrc.match(/\.(js|css|ico|svg)$/i) && asrc.indexOf('placeholder') === -1 && asrc.indexOf('avatar') === -1 && asrc.indexOf('logo') === -1 && asrc.indexOf('icon') === -1 && asrc.length > 30) {
+              if (asrc && asrc.indexOf('http') === 0 && !asrc.match(/\.(js|css|ico|svg)$/i) && asrc.indexOf('placeholder') === -1 && asrc.indexOf('avatar') === -1 && asrc.indexOf('logo') === -1 && asrc.indexOf('icon') === -1 && asrc.indexOf('apple-icon') === -1 && asrc.indexOf('favicon') === -1 && asrc.length > 30) {
                 if (images.indexOf(asrc) === -1) images.push(asrc);
               }
             }
