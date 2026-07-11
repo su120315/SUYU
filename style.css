@@ -1484,7 +1484,16 @@ section {
   line-height: 1.8;
 }
 
-.contact-email {
+.contact-links {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 48px;
+}
+
+.contact-email,
+.contact-qq {
   display: inline-flex;
   align-items: center;
   gap: 12px;
@@ -1495,19 +1504,29 @@ section {
   font-size: 1.1rem;
   color: var(--text-primary);
   transition: all 0.3s ease;
-  margin-bottom: 48px;
+  cursor: pointer;
+  user-select: none;
 }
 
-.contact-email:hover {
+.contact-email:hover,
+.contact-qq:hover {
   border-color: var(--accent-primary);
   background: var(--bg-tertiary);
   transform: scale(1.02);
 }
 
-.contact-email svg {
+.contact-email svg,
+.contact-qq svg {
   width: 24px;
   height: 24px;
   color: var(--accent-primary);
+  flex-shrink: 0;
+}
+
+#qqCopyTip {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  white-space: nowrap;
 }
 
 .social-links {
@@ -1806,7 +1825,8 @@ section {
     min-height: 48px;
   }
 
-  .contact-email {
+  .contact-email,
+  .contact-qq {
     padding: 16px 28px;
     font-size: 1rem;
     min-height: 48px;
@@ -3349,7 +3369,8 @@ section {
     min-height: 44px;
   }
 
-  .contact-email {
+  .contact-email,
+  .contact-qq {
     padding: 14px 24px;
     font-size: 0.95rem;
     min-height: 48px;
@@ -3783,14 +3804,20 @@ section {
     margin-bottom: 28px;
   }
 
-  .contact-email {
+  .contact-email,
+  .contact-qq {
     padding: 12px 20px;
     font-size: 0.9rem;
     min-height: 44px;
+  }
+
+  .contact-links {
+    gap: 12px;
     margin-bottom: 32px;
   }
 
-  .contact-email svg {
+  .contact-email svg,
+  .contact-qq svg {
     width: 20px;
     height: 20px;
   }
