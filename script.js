@@ -1347,4 +1347,17 @@ function initChat() {
 // 等 lucide 加载完再初始化
 setTimeout(initChat, 500);
 
+// ==================== 复制QQ号 ====================
+function copyQQ() {
+  const qq = '1399680690';
+  const tip = document.getElementById('qqCopyTip');
+  navigator.clipboard.writeText(qq).then(() => {
+    tip.textContent = '已复制！';
+    setTimeout(() => { tip.textContent = '点击复制'; }, 2000);
+  }).catch(() => {
+    tip.textContent = '复制失败';
+    setTimeout(() => { tip.textContent = '点击复制'; }, 2000);
+  });
+}
+
 
