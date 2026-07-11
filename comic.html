@@ -696,6 +696,106 @@
       color: #f59e0b;
     }
 
+    .chapter-toolbar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .chapter-search-wrap {
+      flex: 1;
+      min-width: 200px;
+      max-width: 400px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      border: 1px solid var(--bg-tertiary);
+      color: var(--text-muted);
+    }
+
+    .chapter-search-input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      outline: none;
+      font-size: 0.85rem;
+      color: var(--text-primary);
+    }
+
+    .chapter-search-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .chapter-quick-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .chapter-quick-actions button {
+      padding: 8px 12px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--bg-tertiary);
+      border-radius: 8px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .chapter-quick-actions button:hover {
+      border-color: var(--accent-primary);
+      color: var(--accent-primary);
+    }
+
+    .chapter-group {
+      margin-bottom: 8px;
+    }
+
+    .chapter-group-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: 600;
+      color: var(--text-primary);
+      font-size: 0.9rem;
+    }
+
+    .chapter-group-header:hover {
+      background: var(--bg-tertiary);
+    }
+
+    .group-toggle-icon {
+      transition: transform 0.2s;
+      color: var(--text-muted);
+    }
+
+    .group-count {
+      margin-left: auto;
+      font-size: 0.78rem;
+      font-weight: 400;
+      color: var(--text-muted);
+    }
+
+    .chapter-group-content {
+      padding-left: 20px;
+      margin-top: 4px;
+    }
+
+    .chapter-item.current {
+      background: rgba(99, 102, 241, 0.15);
+      color: var(--accent-primary);
+      font-weight: 500;
+    }
+
     @media (max-width: 768px) {
       .source-selector {
         padding: 0 14px;
@@ -816,13 +916,13 @@
         comicUrlPattern: /\/comic\//,
         chapterUrlPattern: /\/comic\/.*\/chapter\//,
         selectors: {
-          card: ['.comicCard', '.comic-card', '.comic_card', '[class*="comic"][class*="card"]'],
-          title: ['.comicInfo .title', '.comic-title', 'h1', '.comicInfo h1'],
-          author: ['.comicInfo .author', '.comic-author', '.author'],
-          desc: ['.comicInfo .intro', '.comic-desc', '.description'],
-          cover: ['.comicInfo img', '.comicCover img', '.cover img'],
-          chapters: ['.chapter-list a', '.chapterItem a', '[class*="chapter"] a'],
-          images: ['.comicContent', '.comic-images', '.imageList', '[class*="image"]']
+          card: ['.comicCard', '.comic-card', '.comic_card', '[class*="comic"][class*="card"]', '.pure-u-1-2', 'li.pure-u'],
+          title: ['.comicInfo .title', '.comic-title', 'h1', '.comicInfo h1', '.card-title'],
+          author: ['.comicInfo .author', '.comic-author', '.author', '.tag-author'],
+          desc: ['.comicInfo .intro', '.comic-desc', '.description', '.comic-desc'],
+          cover: ['.comicInfo img', '.comicCover img', '.cover img', '.card-cover img'],
+          chapters: ['.chapter-list a', '.chapterItem a', '[class*="chapter"] a', '#chapter-list a'],
+          images: ['.comicContent', '.comic-images', '.imageList', '[class*="image"]', '.reader-content']
         },
         watermark: '可能有水印',
         status: 'unknown'
@@ -841,13 +941,13 @@
         comicUrlPattern: /\/comic\//,
         chapterUrlPattern: /\/comic\/.*?\.html/,
         selectors: {
-          card: ['.book-list li', '.comic-item', '[class*="book"][class*="item"]'],
-          title: ['.book-title', 'h1', '.comic-title'],
-          author: ['.book-author', '.author'],
-          desc: ['.book-intro', '.description'],
-          cover: ['.book-cover img', '.cover img'],
-          chapters: ['.chapter-list a', '.detail-list-select a'],
-          images: ['.comicImages', '.manga-img', '[class*="comic"][class*="image"]']
+          card: ['.book-list li', '.comic-item', '[class*="book"][class*="item"]', '.mh-book', '.book-item'],
+          title: ['.book-title', 'h1', '.comic-title', '.mh-title'],
+          author: ['.book-author', '.author', '.mh-author'],
+          desc: ['.book-intro', '.description', '.mh-desc'],
+          cover: ['.book-cover img', '.cover img', '.mh-cover img'],
+          chapters: ['.chapter-list a', '.detail-list-select a', '.mh-chapters a', '#chapter-list a'],
+          images: ['.comicImages', '.manga-img', '[class*="comic"][class*="image"]', '#images']
         },
         watermark: '可能有水印',
         status: 'unknown'
@@ -866,13 +966,13 @@
         comicUrlPattern: /\/\d+\//,
         chapterUrlPattern: /\/\d+\/\d+\.html/,
         selectors: {
-          card: ['.comic-list li', '.cartoon-info', '[class*="comic"][class*="item"]'],
-          title: ['h1', '.title', '.comic-title'],
-          author: ['.author', '.zuozhe'],
-          desc: ['.intro', '.description', '.jianjie'],
-          cover: ['.cover img', '.comic-cover img'],
-          chapters: ['.chapter-list a', '.list_m2 a'],
-          images: ['.comic-content', '.mh_img', '#images']
+          card: ['.comic-list li', '.cartoon-info', '[class*="comic"][class*="item"]', '.comic-item', '.mh-list li'],
+          title: ['h1', '.title', '.comic-title', '.mh-title'],
+          author: ['.author', '.zuozhe', '.mh-author'],
+          desc: ['.intro', '.description', '.jianjie', '.mh-desc'],
+          cover: ['.cover img', '.comic-cover img', '.mh-cover img'],
+          chapters: ['.chapter-list a', '.list_m2 a', '.mh-chapters a', '#chapter-list a'],
+          images: ['.comic-content', '.mh_img', '#images', '.reader-content']
         },
         watermark: '可能有水印',
         status: 'unknown'
@@ -891,10 +991,10 @@
         comicUrlPattern: /\/info\//,
         chapterUrlPattern: /\/view\//,
         selectors: {
-          card: ['.tcaz2', '.cartoon_info', '[class*="comic"][class*="item"]'],
-          title: ['h1', '.comic-title', '.title'],
-          author: ['.author', '.zuozhe'],
-          desc: ['.comic_decon', '.description', '.jianjie'],
+          card: ['.tcaz2', '.cartoon_info', '[class*="comic"][class*="item"]', '.dmzj-comic', '.comic-item'],
+          title: ['h1', '.comic-title', '.title', '.dmzj-title'],
+          author: ['.author', '.zuozhe', '.dmzj-author'],
+          desc: ['.comic_decon', '.description', '.jianjie', '.dmzj-desc'],
           cover: ['.comic_i_img img', '.cover img'],
           chapters: ['.list_con_li a', '.cartoon_online_border a'],
           images: ['.cartoon_online_border', '#img'],
@@ -1557,6 +1657,21 @@
         }
 
         var safeTitle = titleText.replace(/"/g, '&quot;');
+        var chapterSearchHtml =
+          '<div class="chapter-toolbar">' +
+            '<div class="chapter-search-wrap">' +
+              '<i data-lucide="search" style="width:14px;height:14px;"></i>' +
+              '<input type="text" class="chapter-search-input" placeholder="搜索章节..." oninput="filterChapters(this.value)">' +
+            '</div>' +
+            '<div class="chapter-quick-actions">' +
+              '<button onclick="loadChapter(0)" title="第一话"><i data-lucide="chevrons-left" style="width:14px;height:14px;"></i></button>' +
+              '<button onclick="scrollToCurrentChapter()" title="当前话"><i data-lucide="circle-dot" style="width:14px;height:14px;"></i></button>' +
+              '<button onclick="loadChapter(currentChapters.length-1)" title="最后一话"><i data-lucide="chevrons-right" style="width:14px;height:14px;"></i></button>' +
+            '</div>' +
+          '</div>';
+
+        var chapterHtml = generateChapterList(currentChapters);
+
         content.innerHTML =
           '<div class="comic-detail">' +
             '<button class="comic-back-btn" onclick="goBackToList()">' +
@@ -1573,7 +1688,8 @@
               '</div>' +
             '</div>' +
             '<h3 style="font-size:1.05rem;margin-bottom:12px;color:var(--text-primary);">章节列表 (' + currentChapters.length + '话)</h3>' +
-            '<div class="chapter-list">' + chapterHtml + '</div>' +
+            chapterSearchHtml +
+            '<div class="chapter-list" id="chapterList">' + chapterHtml + '</div>' +
           '</div>';
         lucide.createIcons();
       } catch (e) {
@@ -1708,7 +1824,112 @@
       }
     }
 
-    // ==================== 图片重试机制 ====================
+    // ==================== 章节列表管理 ====================
+    function generateChapterList(chapters) {
+      if (!chapters || chapters.length === 0) return '';
+
+      var grouped = {};
+      for (var i = 0; i < chapters.length; i++) {
+        var title = chapters[i].title;
+        var groupKey = '其他';
+        if (title.match(/第[\d一二三四五六七八九十百]+话/)) groupKey = '正篇';
+        else if (title.match(/番外|特别篇|SP/)) groupKey = '番外';
+        else if (title.match(/序章|序幕|引子/)) groupKey = '序章';
+        else if (title.match(/外传/)) groupKey = '外传';
+        else if (title.match(/第[\d一二三四五六七八九十百]+卷/)) groupKey = '单行本';
+        else if (title.match(/第[\d一二三四五六七八九十百]+季/)) groupKey = '分季';
+        else if (title.match(/OVA|OAD/)) groupKey = 'OVA';
+
+        if (!grouped[groupKey]) grouped[groupKey] = [];
+        grouped[groupKey].push({ index: i, title: title });
+      }
+
+      var html = '';
+      var groupOrder = ['序章', '正篇', '番外', '外传', '单行本', '分季', 'OVA', '其他'];
+
+      for (var g = 0; g < groupOrder.length; g++) {
+        var groupName = groupOrder[g];
+        if (!grouped[groupName]) continue;
+
+        var items = grouped[groupName];
+        html += '<div class="chapter-group">' +
+                  '<div class="chapter-group-header" onclick="toggleChapterGroup(this)">' +
+                    '<i data-lucide="chevron-right" class="group-toggle-icon" style="width:14px;height:14px;"></i>' +
+                    '<span>' + groupName + '</span>' +
+                    '<span class="group-count">(' + items.length + ')</span>' +
+                  '</div>' +
+                  '<div class="chapter-group-content">';
+
+        for (var j = 0; j < items.length; j++) {
+          var isCurrent = items[j].index === currentChapterIndex;
+          html += '<div class="chapter-item' + (isCurrent ? ' current' : '') + '" onclick="loadChapter(' + items[j].index + ')">' + items[j].title + '</div>';
+        }
+
+        html += '</div></div>';
+      }
+
+      return html;
+    }
+
+    function toggleChapterGroup(header) {
+      var content = header.nextElementSibling;
+      var icon = header.querySelector('.group-toggle-icon');
+      if (content.style.display === 'none') {
+        content.style.display = 'block';
+        icon.style.transform = 'rotate(90deg)';
+      } else {
+        content.style.display = 'none';
+        icon.style.transform = 'rotate(0deg)';
+      }
+    }
+
+    function filterChapters(keyword) {
+      var chapterList = document.getElementById('chapterList');
+      if (!chapterList) return;
+
+      var groups = chapterList.querySelectorAll('.chapter-group');
+      var keywordLower = keyword.toLowerCase().trim();
+
+      for (var g = 0; g < groups.length; g++) {
+        var group = groups[g];
+        var items = group.querySelectorAll('.chapter-item');
+        var hasMatch = false;
+
+        for (var i = 0; i < items.length; i++) {
+          var item = items[i];
+          var title = item.textContent.toLowerCase();
+          if (title.indexOf(keywordLower) !== -1) {
+            item.style.display = 'block';
+            hasMatch = true;
+          } else {
+            item.style.display = 'none';
+          }
+        }
+
+        var header = group.querySelector('.chapter-group-header');
+        var content = group.querySelector('.chapter-group-content');
+        if (hasMatch) {
+          group.style.display = 'block';
+          content.style.display = 'block';
+          header.querySelector('.group-toggle-icon').style.transform = 'rotate(90deg)';
+        } else {
+          group.style.display = 'none';
+        }
+      }
+    }
+
+    function scrollToCurrentChapter() {
+      var currentItem = document.querySelector('.chapter-item.current');
+      if (currentItem) {
+        currentItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        currentItem.style.backgroundColor = 'var(--accent-primary)';
+        currentItem.style.color = '#fff';
+        setTimeout(function() {
+          currentItem.style.backgroundColor = '';
+          currentItem.style.color = '';
+        }, 2000);
+      }
+    }
     var CORS_IMAGE_PROXIES = [
       'https://images.weserv.nl/?url=',
       'https://api.allorigins.win/raw?url=',
