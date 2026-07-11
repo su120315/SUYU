@@ -966,34 +966,7 @@
 
     async function fetchWithProxies(targetUrl, referer) {
       var errors = [];
-      var headers = getDefaultHeaders(referer);
       
-      var tryDirect = true;
-      if (tryDirect) {
-        log('尝试直连: ' + targetUrl.substring(0, 50));
-        showSourceInfo('正在加载... (直连尝试)', 'loading');
-        try {
-          var controller0 = createTimeoutController(10000);
-          var resp0 = await fetch(targetUrl, {
-            signal: controller0.signal,
-            mode: 'cors',
-            credentials: 'omit',
-            headers: headers
-          });
-          if (resp0.ok) {
-            var text0 = await resp0.text();
-            if (text0 && text0.length > 200 && text0.indexOf('<') !== -1) {
-              log('直连成功');
-              hideSourceInfo();
-              return text0;
-            }
-          }
-        } catch (e) {
-          errors.push('直连: ' + e.message);
-          log('直连失败: ' + e.message);
-        }
-      }
-
       var proxyOrder = [];
       if (lastWorkingProxy >= 0) {
         proxyOrder.push(lastWorkingProxy);
@@ -1004,34 +977,82 @@
         for (var q = 0; q < CORS_PROXIES.length; q++) proxyOrder.push(q);
       }
 
-      for (var i = 0; i < proxyOrder.length; i++) {
-        var proxyIdx = proxyOrder[i];
+      // 并发请求前2个代理，取最快的结果
+      var fastProxies = proxyOrder.slice(0, Math.min(2, proxyOrder.length));
+      showSourceInfo('正在加载... (多线路并发)', 'loading');
+      
+      var fastResults = await Promise.allSettled(fastProxies.map(function(proxyIdx) {
+        return new Promise(async function(resolve, reject) {
+          try {
+            var proxyUrl = CORS_PROXIES[proxyIdx](targetUrl);
+            log('代理' + proxyIdx + ' (并发): ' + targetUrl.substring(0, 50));
+            var controller = createTimeoutController(8000);
+            var resp = await fetch(proxyUrl, {
+              signal: controller.signal,
+              mode: 'cors',
+              credentials: 'omit'
+            });
+            if (!resp.ok) { reject(new Error('HTTP ' + resp.status)); return; }
+            var text = await resp.text();
+            
+            try {
+              var json = JSON.parse(text);
+              if (json && json.contents) text = json.contents;
+              else if (json && json.data) text = typeof json.data === 'string' ? json.data : text;
+              else if (json && json.html) text = json.html;
+            } catch (e) {}
+
+            if (text && text.length > 200 && text.indexOf('<') !== -1) {
+              log('代理' + proxyIdx + '成功 (最快)');
+              lastWorkingProxy = proxyIdx;
+              hideSourceInfo();
+              resolve({ text: text, proxyIdx: proxyIdx });
+            } else {
+              reject(new Error('内容无效'));
+            }
+          } catch (e) {
+            errors.push('代理' + proxyIdx + ': ' + e.message);
+            reject(e);
+          }
+        });
+      }));
+
+      for (var r = 0; r < fastResults.length; r++) {
+        if (fastResults[r].status === 'fulfilled') {
+          return fastResults[r].value.text;
+        }
+      }
+
+      // 前2个都失败了，继续尝试剩下的
+      var remainingProxies = proxyOrder.slice(fastProxies.length);
+      for (var i = 0; i < remainingProxies.length; i++) {
+        var proxyIdx = remainingProxies[i];
         var proxyUrl = CORS_PROXIES[proxyIdx](targetUrl);
         log('代理' + proxyIdx + ': ' + targetUrl.substring(0, 50));
-        showSourceInfo('正在加载... (线路 ' + (i + 1) + '/' + proxyOrder.length + ')', 'loading');
+        showSourceInfo('正在加载... (线路 ' + (fastProxies.length + i + 1) + '/' + proxyOrder.length + ')', 'loading');
 
         try {
-          var controller = createTimeoutController(12000);
-          var resp = await fetch(proxyUrl, {
-            signal: controller.signal,
+          var controller2 = createTimeoutController(10000);
+          var resp2 = await fetch(proxyUrl, {
+            signal: controller2.signal,
             mode: 'cors',
             credentials: 'omit'
           });
-          if (!resp.ok) { errors.push('代理' + proxyIdx + ': HTTP ' + resp.status); continue; }
-          var text = await resp.text();
+          if (!resp2.ok) { errors.push('代理' + proxyIdx + ': HTTP ' + resp2.status); continue; }
+          var text2 = await resp2.text();
 
           try {
-            var json = JSON.parse(text);
-            if (json && json.contents) text = json.contents;
-            else if (json && json.data) text = typeof json.data === 'string' ? json.data : text;
-            else if (json && json.html) text = json.html;
+            var json2 = JSON.parse(text2);
+            if (json2 && json2.contents) text2 = json2.contents;
+            else if (json2 && json2.data) text2 = typeof json2.data === 'string' ? json2.data : text2;
+            else if (json2 && json2.html) text2 = json2.html;
           } catch (e) {}
 
-          if (text && text.length > 200 && text.indexOf('<') !== -1) {
+          if (text2 && text2.length > 200 && text2.indexOf('<') !== -1) {
             log('代理' + proxyIdx + '成功');
             lastWorkingProxy = proxyIdx;
             hideSourceInfo();
-            return text;
+            return text2;
           } else {
             errors.push('代理' + proxyIdx + ': 内容无效');
           }
