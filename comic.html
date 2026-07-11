@@ -845,24 +845,11 @@
       </div>
     </div>
 
-    <div class="source-selector" id="sourceSelector">
-      <span class="source-selector-label">
-        <i data-lucide="database" style="width:14px;height:14px;"></i>
-        漫画源:
-      </span>
-      <div class="source-tabs" id="sourceTabs"></div>
-    </div>
-
     <div class="comic-tags" id="comicTags">
       <span class="comic-tag active" data-type="recommend">推荐</span>
       <span class="comic-tag" data-type="hot">热门</span>
       <span class="comic-tag" data-type="finish">完结</span>
       <span class="comic-tag" data-type="连载中">连载中</span>
-    </div>
-
-    <div class="source-info" id="sourceInfo" style="display:none;">
-      <span class="source-dot" id="sourceDot"></span>
-      <span id="sourceText">正在加载...</span>
     </div>
 
     <div id="comicContent">
@@ -875,135 +862,7 @@
   </div>
 
   <script>
-    // ==================== 多漫画源架构 ====================
-    var COMIC_SOURCES = [
-      {
-        id: 'baozimh',
-        name: '包子漫画',
-        domains: ['https://www.baozimh.com', 'https://cn.baozimh.com', 'https://baozimh.com'],
-        searchPath: '/search?q=',
-        listPaths: {
-          recommend: '/',
-          hot: '/classify?type=all&region=all&state=all&filter=click&page=1',
-          finish: '/classify?type=all&region=all&state=pub&filter=*&page=1',
-          serial: '/classify?type=all&region=all&state=serial&filter=*&page=1'
-        },
-        comicUrlPattern: /\/comic\//,
-        chapterUrlPattern: /\/chapter\/|\/comic_chapter\//,
-        selectors: {
-          card: ['.comics-card', '.comic-card', '[class*="comics"][class*="card"]', '[class*="comic"][class*="card"]', '.card'],
-          title: ['.comics-detail__title', '.comic-title', 'h1', '.detail-title'],
-          author: ['.comics-detail__author', '.comic-author', '.author'],
-          desc: ['.comics-detail__desc', '.comic-desc', '.description'],
-          cover: ['.comics-detail__cover amp-img', '.comic-cover amp-img', '.cover amp-img', '.comics-detail__cover img', '.comic-cover img'],
-          chapters: ['.comics-chapters a', '.chapter-list a', '[class*="chapter"] a', '[class*="catalog"] a'],
-          images: ['.comic-contain', '.comic-images', '.comic-content', '[class*="comic"][class*="content"]', 'article']
-        },
-        watermark: '可能有水印',
-        status: 'unknown'
-      },
-      {
-        id: 'copymanga',
-        name: '拷贝漫画',
-        domains: ['https://www.copymanga.site', 'https://www.copymanga.com', 'https://copymanga.site'],
-        searchPath: '/search?q=',
-        listPaths: {
-          recommend: '/',
-          hot: '/classify/0-0-0-0-0-0-0-1?ordering=-popular',
-          finish: '/classify/0-0-0-0-0-0-1-1',
-          serial: '/classify/0-0-0-0-0-0-0-1'
-        },
-        comicUrlPattern: /\/comic\//,
-        chapterUrlPattern: /\/comic\/.*\/chapter\//,
-        selectors: {
-          card: ['.comicCard', '.comic-card', '.comic_card', '[class*="comic"][class*="card"]', '.pure-u-1-2', 'li.pure-u'],
-          title: ['.comicInfo .title', '.comic-title', 'h1', '.comicInfo h1', '.card-title'],
-          author: ['.comicInfo .author', '.comic-author', '.author', '.tag-author'],
-          desc: ['.comicInfo .intro', '.comic-desc', '.description', '.comic-desc'],
-          cover: ['.comicInfo img', '.comicCover img', '.cover img', '.card-cover img'],
-          chapters: ['.chapter-list a', '.chapterItem a', '[class*="chapter"] a', '#chapter-list a'],
-          images: ['.comicContent', '.comic-images', '.imageList', '[class*="image"]', '.reader-content']
-        },
-        watermark: '可能有水印',
-        status: 'unknown'
-      },
-      {
-        id: 'manhuagui',
-        name: '漫画柜',
-        domains: ['https://www.manhuagui.com', 'https://m.manhuagui.com'],
-        searchPath: '/s/',
-        listPaths: {
-          recommend: '/',
-          hot: '/rank/',
-          finish: '/list/wanjie/',
-          serial: '/list/lianzai/'
-        },
-        comicUrlPattern: /\/comic\//,
-        chapterUrlPattern: /\/comic\/.*?\.html/,
-        selectors: {
-          card: ['.book-list li', '.comic-item', '[class*="book"][class*="item"]', '.mh-book', '.book-item'],
-          title: ['.book-title', 'h1', '.comic-title', '.mh-title'],
-          author: ['.book-author', '.author', '.mh-author'],
-          desc: ['.book-intro', '.description', '.mh-desc'],
-          cover: ['.book-cover img', '.cover img', '.mh-cover img'],
-          chapters: ['.chapter-list a', '.detail-list-select a', '.mh-chapters a', '#chapter-list a'],
-          images: ['.comicImages', '.manga-img', '[class*="comic"][class*="image"]', '#images']
-        },
-        watermark: '可能有水印',
-        status: 'unknown'
-      },
-      {
-        id: 'kanman',
-        name: '看漫画',
-        domains: ['https://www.kanman.com', 'https://m.kanman.com'],
-        searchPath: '/search/?key=',
-        listPaths: {
-          recommend: '/',
-          hot: '/rank/',
-          finish: '/wankua/',
-          serial: '/lianai/'
-        },
-        comicUrlPattern: /\/\d+\//,
-        chapterUrlPattern: /\/\d+\/\d+\.html/,
-        selectors: {
-          card: ['.comic-list li', '.cartoon-info', '[class*="comic"][class*="item"]', '.comic-item', '.mh-list li'],
-          title: ['h1', '.title', '.comic-title', '.mh-title'],
-          author: ['.author', '.zuozhe', '.mh-author'],
-          desc: ['.intro', '.description', '.jianjie', '.mh-desc'],
-          cover: ['.cover img', '.comic-cover img', '.mh-cover img'],
-          chapters: ['.chapter-list a', '.list_m2 a', '.mh-chapters a', '#chapter-list a'],
-          images: ['.comic-content', '.mh_img', '#images', '.reader-content']
-        },
-        watermark: '可能有水印',
-        status: 'unknown'
-      },
-      {
-        id: 'dmzj',
-        name: '动漫之家',
-        domains: ['https://www.dmzj.com', 'https://m.dmzj.com'],
-        searchPath: '/search/index/?keywords=',
-        listPaths: {
-          recommend: '/',
-          hot: '/rank/',
-          finish: '/classify/0-1-0-0-0-0-0-1.html',
-          serial: '/classify/0-0-0-0-0-0-0-1.html'
-        },
-        comicUrlPattern: /\/info\//,
-        chapterUrlPattern: /\/view\//,
-        selectors: {
-          card: ['.tcaz2', '.cartoon_info', '[class*="comic"][class*="item"]', '.dmzj-comic', '.comic-item'],
-          title: ['h1', '.comic-title', '.title', '.dmzj-title'],
-          author: ['.author', '.zuozhe', '.dmzj-author'],
-          desc: ['.comic_decon', '.description', '.jianjie', '.dmzj-desc'],
-          cover: ['.comic_i_img img', '.cover img'],
-          chapters: ['.list_con_li a', '.cartoon_online_border a'],
-          images: ['.cartoon_online_border', '#img'],
-        },
-        watermark: '可能有水印',
-        status: 'unknown'
-      }
-    ];
-
+    var BAOZI_DOMAINS = ['https://www.baozimh.com', 'https://cn.baozimh.com', 'https://baozimh.com'];
     var CORS_PROXIES = [
       function(url) { return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url); },
       function(url) { return 'https://corsproxy.io/?url=' + encodeURIComponent(url); },
@@ -1012,19 +871,22 @@
       function(url) { return 'https://api.whateverorigin.org/get?url=' + encodeURIComponent(url); }
     ];
 
-    var currentSource = null;
+    var CORS_IMAGE_PROXIES = [
+      'https://images.weserv.nl/?url=',
+      'https://api.allorigins.win/raw?url=',
+      'https://corsproxy.io/?url=',
+      'https://cors-anywhere.herokuapp.com/'
+    ];
+
     var currentDomainIndex = 0;
     var currentView = 'list';
     var currentComicUrl = '';
     var currentComicTitle = '';
     var currentChapters = [];
     var currentChapterIndex = 0;
-    var debugLogs = [];
     var lastWorkingProxy = -1;
 
     function log(msg) {
-      debugLogs.push(msg);
-      if (debugLogs.length > 50) debugLogs.shift();
       console.log('[漫画]', msg);
     }
 
@@ -1048,24 +910,22 @@
       if (!url) return '';
       url = url.replace(/https?:\/\/api\.allorigins\.win/g, '');
       url = url.replace(/https?:\/\/corsproxy\.io\/?\?url=[^&]*/g, function(m) {
-        try {
-          var u = m.match(/url=([^&]+)/);
-          return u ? decodeURIComponent(u[1]) : '';
-        } catch(e) { return ''; }
+        try { var u = m.match(/url=([^&]+)/); return u ? decodeURIComponent(u[1]) : ''; } catch(e) { return ''; }
       });
       url = url.replace(/https?:\/\/api\.codetabs\.com\/v1\/proxy\/\?quest=/g, '');
       url = url.replace(/https?:\/\/api\.whateverorigin\.org\/get\?url=/g, '');
       if (url && url.indexOf('http') !== 0 && url.charAt(0) === '/') {
-        url = (baseUrl || '') + url;
+        url = (baseUrl || BAOZI_DOMAINS[currentDomainIndex]) + url;
       }
+      if (url && url.indexOf('//') === 0) url = 'https:' + url;
       return url;
     }
 
     function showSourceInfo(text, status) {
       var info = document.getElementById('sourceInfo');
-      if (!info) return;
       var dot = document.getElementById('sourceDot');
       var txt = document.getElementById('sourceText');
+      if (!info || !dot || !txt) return;
       info.style.display = 'flex';
       txt.textContent = text;
       dot.className = 'source-dot';
@@ -1103,16 +963,13 @@
       for (var i = 0; i < proxyOrder.length; i++) {
         var proxyIdx = proxyOrder[i];
         var proxyUrl = CORS_PROXIES[proxyIdx](targetUrl);
-        log('代理' + proxyIdx + ' 请求: ' + targetUrl.substring(0, 50));
+        log('代理' + proxyIdx + ': ' + targetUrl.substring(0, 50));
         showSourceInfo('正在加载... (线路 ' + (i + 1) + '/' + proxyOrder.length + ')', 'loading');
 
         try {
           var controller = createTimeoutController(15000);
           var resp = await fetch(proxyUrl, { signal: controller.signal });
-          if (!resp.ok) {
-            errors.push('代理' + proxyIdx + ': HTTP ' + resp.status);
-            continue;
-          }
+          if (!resp.ok) { errors.push('代理' + proxyIdx + ': HTTP ' + resp.status); continue; }
           var text = await resp.text();
 
           try {
@@ -1122,13 +979,13 @@
             else if (json && json.html) text = json.html;
           } catch (e) {}
 
-          if (text && text.length > 200 && (text.indexOf('<') !== -1 || text.indexOf('http') !== -1)) {
-            log('代理' + proxyIdx + ' 成功!');
+          if (text && text.length > 200 && text.indexOf('<') !== -1) {
+            log('代理' + proxyIdx + '成功');
             lastWorkingProxy = proxyIdx;
             hideSourceInfo();
             return text;
           } else {
-            errors.push('代理' + proxyIdx + ': 内容无效(' + (text ? text.length : 0) + '字节)');
+            errors.push('代理' + proxyIdx + ': 内容无效');
           }
         } catch (e) {
           errors.push('代理' + proxyIdx + ': ' + e.message);
@@ -1155,7 +1012,6 @@
         /window\.__INITIAL_STATE__\s*=\s*([\s\S]*?);?\s*<\/script>/i,
         /var\s+chapterImages\s*=\s*\[([\s\S]*?)\]/i,
         /var\s+imageList\s*=\s*\[([\s\S]*?)\]/i,
-        /var\s+pageImages\s*=\s*\[([\s\S]*?)\]/i,
         /images\s*:\s*\[([\s\S]*?)\]/i
       ];
       for (var j = 0; j < jsonPatterns.length; j++) {
@@ -1176,10 +1032,7 @@
       var uniqueImages = [];
       var seen = {};
       for (var u = 0; u < images.length; u++) {
-        if (!seen[images[u]]) {
-          seen[images[u]] = true;
-          uniqueImages.push(images[u]);
-        }
+        if (!seen[images[u]]) { seen[images[u]] = true; uniqueImages.push(images[u]); }
       }
       return uniqueImages;
     }
@@ -1188,9 +1041,7 @@
       for (var i = 0; i < selectors.length; i++) {
         try {
           var found = doc.querySelectorAll(selectors[i]);
-          if (found.length >= (minCount || 1)) {
-            return found;
-          }
+          if (found.length >= (minCount || 1)) return found;
         } catch (e) {}
       }
       return [];
@@ -1206,115 +1057,41 @@
       return '';
     }
 
-    // ==================== 漫画源管理 ====================
-    function initSourceTabs() {
-      var tabsEl = document.getElementById('sourceTabs');
-      if (!tabsEl) return;
-      var html = '';
-      for (var i = 0; i < COMIC_SOURCES.length; i++) {
-        var src = COMIC_SOURCES[i];
-        var activeCls = (currentSource && currentSource.id === src.id) ? ' active' : '';
-        html += '<div class="source-tab' + activeCls + '" data-id="' + src.id + '" onclick="switchSource(\'' + src.id + '\')">' +
-                  '<span class="source-status" id="status-' + src.id + '"></span>' +
-                  src.name +
-                '</div>';
-      }
-      tabsEl.innerHTML = html;
-      testAllSources();
-    }
-
-    function testAllSources() {
-      for (var i = 0; i < COMIC_SOURCES.length; i++) {
-        (function(idx) {
-          var src = COMIC_SOURCES[idx];
-          var dot = document.getElementById('status-' + src.id);
-          if (dot) dot.className = 'source-status checking';
-
-          var testUrl = src.domains[0] + src.listPaths.recommend;
-          var controller = createTimeoutController(8000);
-          fetch(CORS_PROXIES[0](testUrl), { signal: controller.signal })
-            .then(function(r) {
-              if (r.ok && dot) {
-                dot.className = 'source-status ok';
-                COMIC_SOURCES[idx].status = 'ok';
-              } else if (dot) {
-                dot.className = 'source-status error';
-                COMIC_SOURCES[idx].status = 'error';
-              }
-            })
-            .catch(function() {
-              if (dot) dot.className = 'source-status error';
-              COMIC_SOURCES[idx].status = 'error';
-            });
-        })(i);
-      }
-    }
-
-    function switchSource(sourceId) {
-      var src = null;
-      for (var i = 0; i < COMIC_SOURCES.length; i++) {
-        if (COMIC_SOURCES[i].id === sourceId) {
-          src = COMIC_SOURCES[i];
-          break;
-        }
-      }
-      if (!src) return;
-      currentSource = src;
-      currentDomainIndex = 0;
-
-      var tabs = document.querySelectorAll('.source-tab');
-      for (var t = 0; t < tabs.length; t++) {
-        tabs[t].classList.remove('active');
-        if (tabs[t].getAttribute('data-id') === sourceId) {
-          tabs[t].classList.add('active');
-        }
-      }
-
-      log('切换到漫画源: ' + src.name);
-      loadComicList('recommend');
-    }
-
-    function getFastestSource() {
-      for (var i = 0; i < COMIC_SOURCES.length; i++) {
-        if (COMIC_SOURCES[i].status === 'ok') return COMIC_SOURCES[i];
-      }
-      return COMIC_SOURCES[0];
-    }
-
     // ==================== 加载漫画列表 ====================
     async function loadComicList(type) {
       type = type || 'recommend';
       currentView = 'list';
-      if (!currentSource) currentSource = getFastestSource();
-      var src = currentSource;
 
       var content = document.getElementById('comicContent');
       content.innerHTML =
         '<div class="comic-loading">' +
           '<div class="spinner"></div>' +
           '<p>正在加载漫画列表...</p>' +
-          '<p class="comic-loading-tips">来源: ' + src.name + '，请稍候</p>' +
+          '<p class="comic-loading-tips">来源: 包子漫画，请稍候</p>' +
         '</div>';
 
-      var path = src.listPaths[type] || src.listPaths.recommend;
-      var targetUrl = src.domains[currentDomainIndex] + path;
+      var path;
+      if (type === 'recommend') path = '/';
+      else if (type === 'hot') path = '/classify?type=all&region=all&state=all&filter=click&page=1';
+      else if (type === 'finish') path = '/classify?type=all&region=all&state=pub&filter=*&page=1';
+      else if (type === '连载中') path = '/classify?type=all&region=all&state=serial&filter=*&page=1';
+      else path = '/classify?type=' + type + '&region=all&state=all&filter=*&page=1';
+
+      var targetUrl = BAOZI_DOMAINS[currentDomainIndex] + path;
 
       try {
-        var html = await fetchWithProxies(targetUrl, src.domains[0]);
+        var html = await fetchWithProxies(targetUrl, BAOZI_DOMAINS[0]);
         var doc = parseHTML(html);
 
-        var cards = findElements(doc, src.selectors.card, 3);
+        var cards = findElements(doc, ['.comics-card', '.comic-card', '[class*="comics"][class*="card"]', '[class*="comic"][class*="card"]', '.card'], 3);
 
         if (cards.length === 0) {
-          var allLinks = doc.querySelectorAll('a[href*="' + src.comicUrlPattern.source.replace(/[\/\\\[\]\(\)]/g, function(c) { return c; }) + '"]');
-          if (allLinks.length === 0) {
-            allLinks = doc.querySelectorAll('a[href*="/comic"], a[href*="/manga"]');
-          }
+          var allLinks = doc.querySelectorAll('a[href*="/comic/"]');
           log('备用方案: 找到' + allLinks.length + '个链接');
           var seenUrls = {};
           var tempCards = [];
           for (var al = 0; al < allLinks.length; al++) {
-            var alHref = fixProxyUrl(allLinks[al].getAttribute('href'), src.domains[currentDomainIndex]);
+            var alHref = fixProxyUrl(allLinks[al].getAttribute('href'), BAOZI_DOMAINS[currentDomainIndex]);
             if (alHref && !seenUrls[alHref] && alHref.length > 10) {
               seenUrls[alHref] = true;
               var parent = allLinks[al].closest('div, li, article') || allLinks[al].parentElement;
@@ -1325,7 +1102,7 @@
         }
 
         if (cards.length === 0) {
-          showErrorWithActions('未找到漫画数据', '请尝试切换其他漫画源', true);
+          showErrorWithActions('未找到漫画数据', '请重试', true);
           return;
         }
 
@@ -1334,35 +1111,29 @@
         var seenHrefs = {};
         for (var c = 0; c < cards.length; c++) {
           var card = cards[c];
-          var link = card.querySelector('a[href]');
+          var link = card.querySelector('a[href*="/comic/"]') || card.querySelector('a');
           if (!link) continue;
-          var href = fixProxyUrl(link.getAttribute('href'), src.domains[currentDomainIndex]);
-          if (!href || href === '#' || seenHrefs[href]) continue;
+          var href = fixProxyUrl(link.getAttribute('href'), BAOZI_DOMAINS[currentDomainIndex]);
+          if (!href || href === '#' || href.indexOf('/comic/') === -1 || seenHrefs[href]) continue;
           seenHrefs[href] = true;
 
           var titleEls = card.querySelectorAll('[class*="title"], h3, h4, [class*="name"]');
           var titleText = '';
           for (var t = 0; t < titleEls.length; t++) {
             var txt = titleEls[t].textContent.trim();
-            if (txt && txt.length > 1 && txt.length < 50) {
-              titleText = txt;
-              break;
-            }
+            if (txt && txt.length > 1 && txt.length < 50) { titleText = txt; break; }
           }
           if (!titleText && link) titleText = link.textContent.trim().substring(0, 30);
 
           var img = card.querySelector('amp-img') || card.querySelector('img');
           var imgSrc = getImgSrc(img);
-          if (imgSrc) imgSrc = fixProxyUrl(imgSrc, src.domains[currentDomainIndex]);
+          if (imgSrc) imgSrc = fixProxyUrl(imgSrc, BAOZI_DOMAINS[currentDomainIndex]);
 
           var chapterEls = card.querySelectorAll('[class*="chapter"], em, [class*="subtitle"], [class*="info"]');
           var chapterText = '';
           for (var ch = 0; ch < chapterEls.length; ch++) {
             var chtxt = chapterEls[ch].textContent.trim();
-            if (chtxt && chtxt.length > 1 && chtxt.length < 40) {
-              chapterText = chtxt;
-              break;
-            }
+            if (chtxt && chtxt.length > 1 && chtxt.length < 40) { chapterText = chtxt; break; }
           }
 
           if (href && titleText) {
@@ -1382,115 +1153,46 @@
         }
         htmlStr += '</div>';
 
-        if (count === 0) {
-          showErrorWithActions('未能解析漫画列表', '请尝试切换其他漫画源', true);
-          return;
-        }
-
         content.innerHTML = htmlStr;
-        showSourceInfo('来源: ' + src.name + ' · 共 ' + count + ' 部', 'ok');
-        log('加载 ' + count + ' 部漫画 (' + src.name + ')');
+        showSourceInfo('来源: 包子漫画 · 共 ' + count + ' 部', 'ok');
       } catch (e) {
         log('加载列表失败: ' + e.message);
         showErrorWithActions('加载失败', e.message, true, [
-          { text: '重试', action: 'loadComicList(\'' + type + '\')' },
-          { text: '切换源', action: 'tryNextSource(\'list\',\'' + type + '\')' }
+          { text: '重试', action: 'loadComicList(\'' + type + '\')' }
         ]);
-      }
-    }
-
-    function tryNextSource(viewType, param) {
-      if (!currentSource) currentSource = COMIC_SOURCES[0];
-      var idx = -1;
-      for (var i = 0; i < COMIC_SOURCES.length; i++) {
-        if (COMIC_SOURCES[i].id === currentSource.id) {
-          idx = i;
-          break;
-        }
-      }
-      var nextIdx = (idx + 1) % COMIC_SOURCES.length;
-      currentSource = COMIC_SOURCES[nextIdx];
-      currentDomainIndex = 0;
-
-      var tabs = document.querySelectorAll('.source-tab');
-      for (var t = 0; t < tabs.length; t++) {
-        tabs[t].classList.remove('active');
-        if (tabs[t].getAttribute('data-id') === currentSource.id) {
-          tabs[t].classList.add('active');
-        }
-      }
-
-      log('自动切换到: ' + currentSource.name);
-      if (viewType === 'list') loadComicList(param || 'recommend');
-      else if (viewType === 'search') searchComic(param);
-      else if (viewType === 'detail') loadComicDetail(currentComicUrl, currentComicTitle);
-    }
-
-    function tryNextSourceChapter() {
-      if (!currentSource) currentSource = COMIC_SOURCES[0];
-      var idx = -1;
-      for (var i = 0; i < COMIC_SOURCES.length; i++) {
-        if (COMIC_SOURCES[i].id === currentSource.id) {
-          idx = i;
-          break;
-        }
-      }
-      var nextIdx = (idx + 1) % COMIC_SOURCES.length;
-      currentSource = COMIC_SOURCES[nextIdx];
-      currentDomainIndex = 0;
-
-      var tabs = document.querySelectorAll('.source-tab');
-      for (var t = 0; t < tabs.length; t++) {
-        tabs[t].classList.remove('active');
-        if (tabs[t].getAttribute('data-id') === currentSource.id) {
-          tabs[t].classList.add('active');
-        }
-      }
-
-      log('自动切换到: ' + currentSource.name);
-      if (currentChapterIndex >= 0 && currentChapters.length > 0) {
-        loadChapter(currentChapterIndex);
-      } else {
-        loadComicList('recommend');
       }
     }
 
     // ==================== 搜索 ====================
     function doSearch() {
       var keyword = document.getElementById('searchInput').value.trim();
-      if (!keyword) {
-        loadComicList('recommend');
-        return;
-      }
+      if (!keyword) { loadComicList('recommend'); return; }
       searchComic(keyword);
     }
 
     async function searchComic(keyword) {
       currentView = 'list';
-      if (!currentSource) currentSource = getFastestSource();
-      var src = currentSource;
 
       var content = document.getElementById('comicContent');
       content.innerHTML =
         '<div class="comic-loading">' +
           '<div class="spinner"></div>' +
           '<p>正在搜索 "' + keyword + '"...</p>' +
-          '<p class="comic-loading-tips">来源: ' + src.name + '</p>' +
         '</div>';
 
       try {
-        var searchUrl = src.domains[currentDomainIndex] + src.searchPath + encodeURIComponent(keyword);
-        var html = await fetchWithProxies(searchUrl, src.domains[0]);
+        var targetUrl = BAOZI_DOMAINS[currentDomainIndex] + '/search?q=' + encodeURIComponent(keyword);
+        var html = await fetchWithProxies(targetUrl, BAOZI_DOMAINS[0]);
         var doc = parseHTML(html);
 
-        var cards = findElements(doc, src.selectors.card, 1);
+        var cards = findElements(doc, ['.comics-card', '.comic-card', '[class*="comics"][class*="card"]', '[class*="comic"][class*="card"]', '.card', '.search-result-item'], 1);
 
         if (cards.length === 0) {
-          var allLinks = doc.querySelectorAll('a[href*="/comic"], a[href*="/manga"]');
+          var allLinks = doc.querySelectorAll('a[href*="/comic/"]');
           var seenUrls = {};
           var tempCards = [];
           for (var al = 0; al < allLinks.length; al++) {
-            var alHref = fixProxyUrl(allLinks[al].getAttribute('href'), src.domains[currentDomainIndex]);
+            var alHref = fixProxyUrl(allLinks[al].getAttribute('href'), BAOZI_DOMAINS[currentDomainIndex]);
             if (alHref && !seenUrls[alHref] && alHref.length > 10) {
               seenUrls[alHref] = true;
               var parent = allLinks[al].closest('div, li, article') || allLinks[al].parentElement;
@@ -1506,11 +1208,8 @@
               '<i data-lucide="search-x"></i>' +
               '<p>未找到 "' + keyword + '" 相关漫画</p>' +
               '<div class="comic-error-actions">' +
-                '<button class="comic-error-btn primary" onclick="tryNextSource(\'search\',\'' + keyword.replace(/'/g, "\\'") + '\')">' +
-                  '<i data-lucide="refresh-cw" style="width:14px;height:14px;"></i>换源搜索' +
-                '</button>' +
                 '<button class="comic-error-btn" onclick="loadComicList(\'recommend\')">' +
-                  '<i data-lucide="arrow-left" style="width:14px;height:14px;"></i>返回' +
+                  '<i data-lucide="arrow-left" style="width:14px;height:14px;"></i>返回推荐' +
                 '</button>' +
               '</div>' +
             '</div>';
@@ -1523,10 +1222,10 @@
         var seenHrefs = {};
         for (var c = 0; c < cards.length; c++) {
           var card = cards[c];
-          var link = card.querySelector('a[href]');
+          var link = card.querySelector('a[href*="/comic/"]') || card.querySelector('a');
           if (!link) continue;
-          var href = fixProxyUrl(link.getAttribute('href'), src.domains[currentDomainIndex]);
-          if (!href || href === '#' || seenHrefs[href]) continue;
+          var href = fixProxyUrl(link.getAttribute('href'), BAOZI_DOMAINS[currentDomainIndex]);
+          if (!href || href === '#' || href.indexOf('/comic/') === -1 || seenHrefs[href]) continue;
           seenHrefs[href] = true;
 
           var titleEls = card.querySelectorAll('[class*="title"], h3, h4, [class*="name"]');
@@ -1539,7 +1238,7 @@
 
           var img = card.querySelector('amp-img') || card.querySelector('img');
           var imgSrc = getImgSrc(img);
-          if (imgSrc) imgSrc = fixProxyUrl(imgSrc, src.domains[currentDomainIndex]);
+          if (imgSrc) imgSrc = fixProxyUrl(imgSrc, BAOZI_DOMAINS[currentDomainIndex]);
 
           if (href && titleText) {
             var safeHref = href.replace(/'/g, "\\'").replace(/"/g, '&quot;');
@@ -1558,10 +1257,10 @@
         htmlStr += '</div>';
 
         content.innerHTML = htmlStr;
-        showSourceInfo('来源: ' + src.name + ' · 找到 ' + count + ' 个结果', 'ok');
+        showSourceInfo('找到 ' + count + ' 个结果', 'ok');
       } catch (e) {
         showErrorWithActions('搜索失败', e.message, true, [
-          { text: '换源搜索', action: 'tryNextSource(\'search\',\'' + keyword.replace(/'/g, "\\'") + '\')' },
+          { text: '重试', action: 'searchComic(\'' + keyword.replace(/'/g, "\\'") + '\')' },
           { text: '返回', action: 'loadComicList(\'recommend\')' }
         ]);
       }
@@ -1572,8 +1271,6 @@
       currentView = 'detail';
       currentComicUrl = comicUrl;
       currentComicTitle = fallbackTitle || '';
-      if (!currentSource) currentSource = COMIC_SOURCES[0];
-      var src = currentSource;
 
       var content = document.getElementById('comicContent');
       content.innerHTML =
@@ -1584,8 +1281,108 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
       try {
-        var html = await fetchWithProxies(comicUrl, src.domains[0]);
+        var html = await fetchWithProxies(comicUrl, BAOZI_DOMAINS[0]);
         var doc = parseHTML(html);
+
+        var titleText = findFirstText(doc, ['.comics-detail__title', '.comic-title', 'h1', '.detail-title']) || fallbackTitle || '未知漫画';
+        var authorText = findFirstText(doc, ['.comics-detail__author', '.comic-author', '.author']);
+        var descText = findFirstText(doc, ['.comics-detail__desc', '.comic-desc', '.description']);
+
+        var coverSrc = '';
+        var coverSelectors = ['.comics-detail__cover amp-img', '.comic-cover amp-img', '.cover amp-img', '.comics-detail__cover img', '.comic-cover img'];
+        for (var ci = 0; ci < coverSelectors.length; ci++) {
+          var cel = doc.querySelector(coverSelectors[ci]);
+          if (cel) {
+            coverSrc = getImgSrc(cel);
+            if (coverSrc) { coverSrc = fixProxyUrl(coverSrc, BAOZI_DOMAINS[currentDomainIndex]); break; }
+          }
+        }
+
+        var tagsHtml = '';
+        var tagContainer = doc.querySelector('[class*="tag"]:not([class*="nav"]):not(nav), .tags, .tag-list');
+        if (tagContainer) {
+          var tags = tagContainer.querySelectorAll('span, a');
+          for (var ti = 0; ti < tags.length; ti++) {
+            var ttxt = tags[ti].textContent.trim();
+            if (ttxt && ttxt.length >= 2 && ttxt.length < 15) { tagsHtml += '<span class="comic-detail-tag">' + ttxt + '</span>'; }
+          }
+        }
+
+        var chapterLinks = findElements(doc, ['.comics-chapters a', '.chapter-list a', '[class*="chapter"] a', '[class*="catalog"] a'], 3);
+
+        if (chapterLinks.length < 3) {
+          var allLinks = doc.querySelectorAll('a[href*="/chapter/"], a[href*="/comic_chapter/"]');
+          var seenCh = {};
+          for (var al2 = 0; al2 < allLinks.length; al2++) {
+            var hr = fixProxyUrl(allLinks[al2].getAttribute('href'), BAOZI_DOMAINS[currentDomainIndex]);
+            var txt = allLinks[al2].textContent.trim();
+            if (hr && txt && txt.length < 30) { if (!seenCh[hr]) seenCh[hr] = true; }
+          }
+        }
+
+        currentChapters = [];
+        var seenChapterUrls = {};
+        for (var cl = 0; cl < chapterLinks.length; cl++) {
+          var chLink = chapterLinks[cl];
+          var chref = fixProxyUrl(chLink.getAttribute('href'), BAOZI_DOMAINS[currentDomainIndex]);
+          var chtext = chLink.textContent.trim();
+          if (chref && chtext && !seenChapterUrls[chref] && chtext.length < 50) {
+            seenChapterUrls[chref] = true;
+            currentChapters.push({ url: chref, title: chtext });
+          }
+        }
+
+        if (currentChapters.length > 2) {
+          var firstNum = currentChapters[0].title.match(/\d+/);
+          var lastNum = currentChapters[currentChapters.length - 1].title.match(/\d+/);
+          if (firstNum && lastNum && parseInt(firstNum[0]) > parseInt(lastNum[0])) {
+            currentChapters.reverse();
+          }
+        }
+
+        var safeTitle = titleText.replace(/"/g, '&quot;');
+        var chapterSearchHtml =
+          '<div class="chapter-toolbar">' +
+            '<div class="chapter-search-wrap">' +
+              '<i data-lucide="search" style="width:14px;height:14px;"></i>' +
+              '<input type="text" class="chapter-search-input" placeholder="搜索章节..." oninput="filterChapters(this.value)">' +
+            '</div>' +
+            '<div class="chapter-quick-actions">' +
+              '<button onclick="loadChapter(0)" title="第一话"><i data-lucide="chevrons-left" style="width:14px;height:14px;"></i></button>' +
+              '<button onclick="scrollToCurrentChapter()" title="当前话"><i data-lucide="circle-dot" style="width:14px;height:14px;"></i></button>' +
+              '<button onclick="loadChapter(currentChapters.length-1)" title="最后一话"><i data-lucide="chevrons-right" style="width:14px;height:14px;"></i></button>' +
+            '</div>' +
+          '</div>';
+
+        var chapterHtml = generateChapterList(currentChapters);
+
+        content.innerHTML =
+          '<div class="comic-detail">' +
+            '<button class="comic-back-btn" onclick="goBackToList()">' +
+              '<i data-lucide="arrow-left" style="width:16px;height:16px;"></i>' +
+              '返回列表' +
+            '</button>' +
+            '<div class="comic-detail-header">' +
+              (coverSrc ? '<img class="comic-detail-cover" src="' + coverSrc + '" alt="' + safeTitle + '" referrerpolicy="no-referrer" onerror="this.style.display=\'none\'">' : '') +
+              '<div class="comic-detail-meta">' +
+                '<div class="comic-detail-title">' + safeTitle + '</div>' +
+                (authorText ? '<div class="comic-detail-author">' + authorText + '</div>' : '') +
+                '<div class="comic-detail-tags">' + tagsHtml + '</div>' +
+                (descText ? '<div class="comic-detail-desc">' + descText.substring(0, 200) + '</div>' : '') +
+              '</div>' +
+            '</div>' +
+            '<h3 style="font-size:1.05rem;margin-bottom:12px;color:var(--text-primary);">章节列表 (' + currentChapters.length + '话)</h3>' +
+            chapterSearchHtml +
+            '<div class="chapter-list" id="chapterList">' + chapterHtml + '</div>' +
+          '</div>';
+        lucide.createIcons();
+      } catch (e) {
+        showErrorWithActions('加载详情失败', e.message, true, [
+          { text: '重试', action: 'loadComicDetail("' + comicUrl.replace(/'/g, "\\'") + '", "' + (fallbackTitle || '').replace(/'/g, "\\'") + '")' },
+          { text: '返回列表', action: 'goBackToList()' }
+        ]);
+      }
+    }
 
         var titleText = findFirstText(doc, src.selectors.title) || fallbackTitle || '未知漫画';
         var authorText = findFirstText(doc, src.selectors.author);
@@ -1657,57 +1454,11 @@
         }
 
         var safeTitle = titleText.replace(/"/g, '&quot;');
-        var chapterSearchHtml =
-          '<div class="chapter-toolbar">' +
-            '<div class="chapter-search-wrap">' +
-              '<i data-lucide="search" style="width:14px;height:14px;"></i>' +
-              '<input type="text" class="chapter-search-input" placeholder="搜索章节..." oninput="filterChapters(this.value)">' +
-            '</div>' +
-            '<div class="chapter-quick-actions">' +
-              '<button onclick="loadChapter(0)" title="第一话"><i data-lucide="chevrons-left" style="width:14px;height:14px;"></i></button>' +
-              '<button onclick="scrollToCurrentChapter()" title="当前话"><i data-lucide="circle-dot" style="width:14px;height:14px;"></i></button>' +
-              '<button onclick="loadChapter(currentChapters.length-1)" title="最后一话"><i data-lucide="chevrons-right" style="width:14px;height:14px;"></i></button>' +
-            '</div>' +
-          '</div>';
-
-        var chapterHtml = generateChapterList(currentChapters);
-
-        content.innerHTML =
-          '<div class="comic-detail">' +
-            '<button class="comic-back-btn" onclick="goBackToList()">' +
-              '<i data-lucide="arrow-left" style="width:16px;height:16px;"></i>' +
-              '返回列表' +
-            '</button>' +
-            '<div class="comic-detail-header">' +
-              (coverSrc ? '<img class="comic-detail-cover" src="' + coverSrc + '" alt="' + safeTitle + '" referrerpolicy="no-referrer" onerror="this.style.display=\'none\'">' : '') +
-              '<div class="comic-detail-meta">' +
-                '<div class="comic-detail-title">' + safeTitle + '</div>' +
-                (authorText ? '<div class="comic-detail-author">' + authorText + '</div>' : '') +
-                '<div class="comic-detail-tags">' + tagsHtml + '</div>' +
-                (descText ? '<div class="comic-detail-desc">' + descText.substring(0, 200) + '</div>' : '') +
-              '</div>' +
-            '</div>' +
-            '<h3 style="font-size:1.05rem;margin-bottom:12px;color:var(--text-primary);">章节列表 (' + currentChapters.length + '话)</h3>' +
-            chapterSearchHtml +
-            '<div class="chapter-list" id="chapterList">' + chapterHtml + '</div>' +
-          '</div>';
-        lucide.createIcons();
-      } catch (e) {
-        showErrorWithActions('加载详情失败', e.message, true, [
-          { text: '重试', action: 'loadComicDetail("' + comicUrl.replace(/'/g, "\\'") + '", "' + (fallbackTitle || '').replace(/'/g, "\\'") + '")' },
-          { text: '换源', action: 'tryNextSourceChapter()' },
-          { text: '返回列表', action: 'goBackToList()' }
-        ]);
-      }
-    }
-
     // ==================== 阅读器 ====================
     async function loadChapter(index) {
       currentView = 'reader';
       currentChapterIndex = index;
       var chapter = currentChapters[index];
-      if (!currentSource) currentSource = COMIC_SOURCES[0];
-      var src = currentSource;
 
       var content = document.getElementById('comicContent');
       content.innerHTML =
@@ -1719,7 +1470,7 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
       try {
-        var html = await fetchWithProxies(chapter.url, src.domains[0]);
+        var html = await fetchWithProxies(chapter.url, BAOZI_DOMAINS[0]);
         var doc = parseHTML(html);
 
         var images = [];
@@ -1727,19 +1478,19 @@
         var scriptImages = extractImagesFromScript(html);
         var hasWatermark = true;
 
-        if (scriptImages.length >= 5) {
+        if (scriptImages.length >= 3) {
           log('从脚本数据提取 ' + scriptImages.length + ' 张图片');
           images = scriptImages;
           hasWatermark = false;
         } else {
-          var containerSelectors = src.selectors.images || ['.comic-content', 'article'];
+          var containerSelectors = ['.comic-contain', '.comic-images', '.comic-content', '[class*="comic"][class*="content"]', 'article'];
           for (var cs = 0; cs < containerSelectors.length; cs++) {
             var container = doc.querySelector(containerSelectors[cs]);
             if (container) {
               var imgs = container.querySelectorAll('amp-img, img');
               for (var i = 0; i < imgs.length; i++) {
                 var imgsrc = getImgSrc(imgs[i]);
-                imgsrc = imgsrc ? fixProxyUrl(imgsrc, src.domains[currentDomainIndex]) : '';
+                imgsrc = imgsrc ? fixProxyUrl(imgsrc, BAOZI_DOMAINS[currentDomainIndex]) : '';
                 if (imgsrc && imgsrc.indexOf('http') === 0 && !imgsrc.match(/\.(js|css|ico|svg)$/i) && imgsrc.indexOf('placeholder') === -1 && imgsrc.indexOf('avatar') === -1 && imgsrc.indexOf('logo') === -1 && imgsrc.indexOf('icon') === -1 && imgsrc.length > 30) {
                   images.push(imgsrc);
                 }
@@ -1755,7 +1506,7 @@
             var allImgs = doc.querySelectorAll('img[src*="http"], amp-img[src*="http"]');
             for (var ai = 0; ai < allImgs.length; ai++) {
               var asrc = getImgSrc(allImgs[ai]);
-              asrc = asrc ? fixProxyUrl(asrc, src.domains[currentDomainIndex]) : '';
+              asrc = asrc ? fixProxyUrl(asrc, BAOZI_DOMAINS[currentDomainIndex]) : '';
               if (asrc && asrc.indexOf('http') === 0 && !asrc.match(/\.(js|css|ico|svg)$/i) && asrc.indexOf('placeholder') === -1 && asrc.indexOf('avatar') === -1 && asrc.indexOf('logo') === -1 && asrc.indexOf('icon') === -1 && asrc.length > 30) {
                 if (images.indexOf(asrc) === -1) images.push(asrc);
               }
@@ -1776,16 +1527,14 @@
 
         var imagesHtml = '';
         for (var img = 0; img < images.length; img++) {
-          var fixedUrl = fixProxyUrl(images[img], src.domains[currentDomainIndex]);
+          var fixedUrl = fixProxyUrl(images[img], BAOZI_DOMAINS[currentDomainIndex]);
           if (fixedUrl.indexOf('//') === 0) fixedUrl = 'https:' + fixedUrl;
           imagesHtml +=
-            '<div class="comic-image-wrap" data-src="' + fixedUrl + '" data-backup-src="" data-index="' + img + '">' +
+            '<div class="comic-image-wrap" data-src="' + fixedUrl + '" data-retry-count="0">' +
               '<img src="' + fixedUrl + '" alt="第' + (img + 1) + '页" referrerpolicy="no-referrer" loading="lazy" ' +
                    'onerror="retryComicImage(this)" ' +
                    'style="width:100%;display:block;">' +
-              '<div class="comic-image-placeholder" style="display:none;">' +
-                '<span class="mini-spinner"></span>加载中...' +
-              '</div>' +
+              '<div class="comic-image-placeholder" style="display:none;">加载中...</div>' +
             '</div>';
         }
 
@@ -1800,7 +1549,7 @@
             '<div class="comic-reader-title">' +
               chapter.title +
               '<div style="margin-top:8px;display:flex;justify-content:center;gap:8px;">' + watermarkBadge +
-                '<span class="watermark-badge" style="background:rgba(99,102,241,0.15);color:var(--accent-primary);">来源: ' + src.name + '</span>' +
+                '<span class="watermark-badge" style="background:rgba(99,102,241,0.15);color:var(--accent-primary);">来源: 包子漫画</span>' +
               '</div>' +
             '</div>' +
             '<div class="comic-reader-nav">' + prevBtn +
@@ -2027,15 +1776,11 @@
     }
 
     // ==================== 初始化 ====================
-    initSourceTabs();
-    currentSource = COMIC_SOURCES[0];
     lucide.createIcons();
     log('漫画模块初始化完成');
 
     setTimeout(function() {
-      if (currentSource) {
-        loadComicList('recommend');
-      }
+      loadComicList('recommend');
     }, 200);
   </script>
 </body>
