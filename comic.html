@@ -1660,11 +1660,16 @@
 
         var imagesHtml = '';
         for (var img = 0; img < images.length; img++) {
+          var fixedUrl = fixProxyUrl(images[img], src.domains[currentDomainIndex]);
+          if (fixedUrl.indexOf('//') === 0) fixedUrl = 'https:' + fixedUrl;
           imagesHtml +=
-            '<div class="comic-image-wrap">' +
-              '<img src="' + images[img] + '" alt="第' + (img + 1) + '页" referrerpolicy="no-referrer" loading="lazy" ' +
-                   'onerror="this.style.display=\'none\';this.parentElement.innerHTML=\'<div class=\\\'comic-image-placeholder\\\'>加载失败</div>\'" ' +
+            '<div class="comic-image-wrap" data-src="' + fixedUrl + '" data-backup-src="" data-index="' + img + '">' +
+              '<img src="' + fixedUrl + '" alt="第' + (img + 1) + '页" referrerpolicy="no-referrer" loading="lazy" ' +
+                   'onerror="retryComicImage(this)" ' +
                    'style="width:100%;display:block;">' +
+              '<div class="comic-image-placeholder" style="display:none;">' +
+                '<span class="mini-spinner"></span>加载中...' +
+              '</div>' +
             '</div>';
         }
 
@@ -1703,7 +1708,47 @@
       }
     }
 
-    // ==================== 错误展示 ====================
+    // ==================== 图片重试机制 ====================
+    var CORS_IMAGE_PROXIES = [
+      'https://images.weserv.nl/?url=',
+      'https://api.allorigins.win/raw?url=',
+      'https://corsproxy.io/?url=',
+      'https://cors-anywhere.herokuapp.com/'
+    ];
+
+    function retryComicImage(img) {
+      var wrap = img.parentElement;
+      if (!wrap) return;
+
+      var originalSrc = wrap.getAttribute('data-src');
+      var backupSrc = wrap.getAttribute('data-backup-src');
+      var retryCount = parseInt(wrap.getAttribute('data-retry-count') || '0');
+
+      if (retryCount >= 3) {
+        img.style.display = 'none';
+        var placeholder = wrap.querySelector('.comic-image-placeholder');
+        if (placeholder) {
+          placeholder.textContent = '加载失败，点击重试';
+          placeholder.style.display = 'flex';
+          placeholder.onclick = function() {
+            wrap.setAttribute('data-retry-count', '0');
+            img.style.display = 'block';
+            img.src = originalSrc;
+            placeholder.style.display = 'none';
+          };
+        }
+        return;
+      }
+
+      retryCount++;
+      wrap.setAttribute('data-retry-count', retryCount.toString());
+
+      var proxyUrl = CORS_IMAGE_PROXIES[(retryCount - 1) % CORS_IMAGE_PROXIES.length];
+      var newSrc = proxyUrl + encodeURIComponent(originalSrc);
+
+      log('图片重试 (' + retryCount + ') 使用代理: ' + newSrc.substring(0, 60));
+      img.src = newSrc;
+    }
     function showErrorWithActions(title, detail, showDetail, actions) {
       var content = document.getElementById('comicContent');
       showSourceInfo('加载失败', 'error');
