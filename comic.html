@@ -421,6 +421,8 @@
       display: flex;
       flex-direction: column;
       gap: 0;
+      will-change: transform;
+      -webkit-overflow-scrolling: touch;
     }
 
     .comic-reader-images img {
@@ -429,6 +431,7 @@
       background: var(--bg-tertiary);
       margin: 0;
       padding: 0;
+      will-change: transform;
     }
 
     .comic-reader-nav {
@@ -652,10 +655,11 @@
       width: 100%;
       position: relative;
       background: var(--bg-tertiary);
-      min-height: 100px;
+      min-height: 200px;
       display: flex;
       align-items: center;
       justify-content: center;
+      overflow: hidden;
     }
 
     .comic-image-wrap img {
@@ -663,12 +667,18 @@
       display: block;
     }
 
+    .comic-image-wrap img + .comic-image-placeholder {
+      display: none;
+    }
+
     .comic-image-placeholder {
+      position: absolute;
       color: var(--text-muted);
       font-size: 0.85rem;
       display: flex;
       align-items: center;
       gap: 6px;
+      pointer-events: none;
     }
 
     .comic-image-placeholder .mini-spinner {
@@ -1868,11 +1878,12 @@
           var fixedUrl = fixProxyUrl(images[img], src.domains[currentDomainIndex]);
           if (fixedUrl.indexOf('//') === 0) fixedUrl = 'https:' + fixedUrl;
           imagesHtml +=
-            '<div class="comic-image-wrap" data-src="' + fixedUrl + '" data-backup-src="" data-index="' + img + '">' +
-              '<img src="' + fixedUrl + '" alt="第' + (img + 1) + '页" referrerpolicy="no-referrer" loading="lazy" ' +
+            '<div class="comic-image-wrap" data-src="' + fixedUrl + '" data-backup-src="" data-index="' + img + '" style="min-height:200px;">' +
+              '<img src="' + fixedUrl + '" alt="第' + (img + 1) + '页" referrerpolicy="no-referrer" ' +
                    'onerror="retryComicImage(this)" ' +
+                   'onload="this.parentElement.style.minHeight=\'\'" ' +
                    'style="width:100%;display:block;">' +
-              '<div class="comic-image-placeholder" style="display:none;">' +
+              '<div class="comic-image-placeholder">' +
                 '<span class="mini-spinner"></span>加载中...' +
               '</div>' +
             '</div>';
@@ -1905,6 +1916,29 @@
             '</div>' +
           '</div>';
         safeLucide();
+
+        // 图片加载后隐藏占位符
+        var placeholders = content.querySelectorAll('.comic-image-placeholder');
+        var loadedImgs = content.querySelectorAll('.comic-reader-images img');
+        for (var li = 0; li < loadedImgs.length; li++) {
+          (function(imgEl, phEl) {
+            if (imgEl.complete && imgEl.naturalWidth > 0) {
+              if (phEl) phEl.style.display = 'none';
+              imgEl.parentElement.style.minHeight = '';
+            } else {
+              imgEl.addEventListener('load', function() {
+                if (phEl) phEl.style.display = 'none';
+                imgEl.parentElement.style.minHeight = '';
+              });
+              imgEl.addEventListener('error', function() {
+                if (phEl) phEl.style.display = 'none';
+              });
+            }
+          })(loadedImgs[li], placeholders[li]);
+        }
+
+        // 预加载下一章和上一章的图片
+        preloadAdjacentChapters(index);
       } catch (e) {
         showErrorWithActions('加载章节失败', e.message, true, [
           { text: '重试', action: 'loadChapter(' + index + ')' },
@@ -2177,6 +2211,69 @@
         target = target.parentElement;
       }
     });
+
+    // ==================== 章节预加载 ====================
+    var preloadedChapters = {};
+
+    function preloadAdjacentChapters(currentIndex) {
+      // 预加载下一章
+      if (currentIndex < currentChapters.length - 1) {
+        preloadChapterImages(currentIndex + 1);
+      }
+      // 预加载上一章
+      if (currentIndex > 0) {
+        preloadChapterImages(currentIndex - 1);
+      }
+    }
+
+    async function preloadChapterImages(index) {
+      var key = 'ch_' + index;
+      if (preloadedChapters[key]) return;
+      preloadedChapters[key] = [];
+
+      var chapter = currentChapters[index];
+      if (!chapter) return;
+
+      try {
+        var src = currentSource || COMIC_SOURCES[0];
+        var html = await fetchWithProxies(chapter.url, src.domains[0]);
+        var doc = parseHTML(html);
+        var images = [];
+
+        var scriptImages = extractImagesFromScript(html);
+        if (scriptImages.length >= 5) {
+          images = scriptImages;
+        } else {
+          var containerSelectors = src.selectors.images || ['.comic-content', 'article'];
+          for (var cs = 0; cs < containerSelectors.length; cs++) {
+            var container = doc.querySelector(containerSelectors[cs]);
+            if (container) {
+              var imgs = container.querySelectorAll('amp-img, img');
+              for (var i = 0; i < imgs.length; i++) {
+                var imgsrc = getImgSrc(imgs[i]);
+                imgsrc = imgsrc ? fixProxyUrl(imgsrc, src.domains[currentDomainIndex]) : '';
+                if (imgsrc && imgsrc.indexOf('http') === 0 && imgsrc.length > 30) {
+                  images.push(imgsrc);
+                }
+              }
+              if (images.length >= 3) break;
+            }
+          }
+        }
+
+        // 用 Image 对象预加载图片到浏览器缓存
+        for (var p = 0; p < images.length; p++) {
+          var fixedUrl = fixProxyUrl(images[p], src.domains[currentDomainIndex]);
+          if (fixedUrl.indexOf('//') === 0) fixedUrl = 'https:' + fixedUrl;
+          var preloadImg = new Image();
+          preloadImg.src = fixedUrl;
+          preloadedChapters[key].push(fixedUrl);
+        }
+        log('预加载第' + (index + 1) + '话: ' + images.length + '张图片');
+      } catch (e) {
+        log('预加载第' + (index + 1) + '话失败: ' + e.message);
+      }
+    }
 
     // ==================== 阅读器触摸手势 ====================
     var touchStartX = 0;
