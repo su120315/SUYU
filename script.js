@@ -21,18 +21,22 @@ function requestTick(callback) {
 const progressFill = document.querySelector('.progress-fill');
 
 function updateProgressBar() {
+  if (!progressFill) return;
   const scrollTop = window.scrollY;
   const docHeight = document.documentElement.scrollHeight - window.innerHeight;
   const progress = (scrollTop / docHeight) * 100;
   progressFill.style.width = `${progress}%`;
 }
 
-window.addEventListener('scroll', () => requestTick(updateProgressBar), { passive: true });
+if (progressFill) {
+  window.addEventListener('scroll', () => requestTick(updateProgressBar), { passive: true });
+}
 
 // ==================== Navbar Scroll Effect ====================
 const navbar = document.querySelector('.navbar');
 
 function updateNavbar() {
+  if (!navbar) return;
   if (window.scrollY > 50) {
     navbar.classList.add('scrolled');
   } else {
@@ -40,14 +44,21 @@ function updateNavbar() {
   }
 }
 
-window.addEventListener('scroll', () => requestTick(updateNavbar), { passive: true });
+if (navbar) {
+  window.addEventListener('scroll', () => requestTick(updateNavbar), { passive: true });
+}
 
 // ==================== Typewriter Effect ====================
 const typewriterElement = document.querySelector('.typewriter');
-const fullText = typewriterElement.getAttribute('data-text');
 let charIndex = 0;
+let fullText = '';
+
+if (typewriterElement) {
+  fullText = typewriterElement.getAttribute('data-text') || '';
+}
 
 function typeWriter() {
+  if (!typewriterElement || !fullText) return;
   if (charIndex < fullText.length) {
     typewriterElement.textContent += fullText.charAt(charIndex);
     charIndex++;
@@ -55,8 +66,9 @@ function typeWriter() {
   }
 }
 
-// Start typewriter after a short delay
-setTimeout(typeWriter, isMobile ? 300 : 500);
+if (typewriterElement && fullText) {
+  setTimeout(typeWriter, isMobile ? 300 : 500);
+}
 
 // ==================== Intersection Observer for Animations ====================
 const observerOptions = {
@@ -207,27 +219,34 @@ document.addEventListener('DOMContentLoaded', () => {
 function initQuickNav() {
   const toTopBtn = document.getElementById('toTopBtn');
   const toBottomBtn = document.getElementById('toBottomBtn');
+  if (!toTopBtn && !toBottomBtn) return;
 
-  toTopBtn.addEventListener('click', () => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
+  if (toTopBtn) {
+    toTopBtn.addEventListener('click', () => {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
     });
-  });
+  }
 
-  toBottomBtn.addEventListener('click', () => {
-    window.scrollTo({
-      top: document.body.scrollHeight,
-      behavior: 'smooth'
+  if (toBottomBtn) {
+    toBottomBtn.addEventListener('click', () => {
+      window.scrollTo({
+        top: document.body.scrollHeight,
+        behavior: 'smooth'
+      });
     });
-  });
+  }
 }
 
 // ==================== Gallery ====================
 function initGallery() {
+  const galleryGrid = document.getElementById('galleryGrid');
+  if (!galleryGrid) return;
+
   const photoInput = document.getElementById('photoInput');
   const clearBtn = document.getElementById('clearBtn');
-  const galleryGrid = document.getElementById('galleryGrid');
   const galleryEmpty = document.getElementById('galleryEmpty');
   const galleryLoading = document.getElementById('galleryLoading');
   const catContainer = document.getElementById('galleryCategories');
@@ -742,10 +761,12 @@ document.querySelectorAll('.social-link').forEach(link => {
 
 // ==================== Comments System ====================
 function initComments() {
+  const commentsList = document.getElementById('commentsList');
+  if (!commentsList) return;
+
   const commentName = document.getElementById('commentName');
   const commentContent = document.getElementById('commentContent');
   const commentSubmit = document.getElementById('commentSubmit');
-  const commentsList = document.getElementById('commentsList');
 
   const TOKEN_PART1 = 'ghp_GMiHyZUI5RkF';
   const TOKEN_PART2 = 'DIFadXOlohhXN9nvl63RzsQM';
