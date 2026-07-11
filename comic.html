@@ -553,14 +553,22 @@
     let currentChapters = [];
     let currentChapterIndex = 0;
 
+    // ==================== 工具：创建超时 AbortController（兼容旧iOS） ====================
+    function createTimeoutController(ms) {
+      const controller = new AbortController();
+      setTimeout(() => controller.abort(), ms);
+      return controller;
+    }
+
     // ==================== 代理请求 ====================
     async function proxyFetch(url) {
       for (let i = 0; i < CORS_PROXIES.length; i++) {
         const idx = (currentProxyIndex + i) % CORS_PROXIES.length;
         const proxyUrl = CORS_PROXIES[idx](url);
         try {
+          const controller = createTimeoutController(15000);
           const resp = await fetch(proxyUrl, {
-            signal: AbortSignal.timeout(15000)
+            signal: controller.signal
           });
           if (resp.ok) {
             const text = await resp.text();
@@ -570,7 +578,7 @@
             }
           }
         } catch (e) {
-          console.warn(`代理 ${idx} 失败:`, e.message);
+          console.warn('代理 ' + idx + ' 失败:', e.message);
         }
       }
       throw new Error('所有代理均不可用');
