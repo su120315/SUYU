@@ -841,7 +841,7 @@
     <div class="comic-search-bar">
       <div class="comic-search-wrap">
         <input type="text" class="comic-search-input" id="searchInput" placeholder="搜索漫画名称..." onkeydown="if(event.key==='Enter') doSearch()">
-        <button class="comic-search-btn" onclick="doSearch()">搜索</button>
+        <button class="comic-search-btn" data-action="search">搜索</button>
       </div>
     </div>
 
@@ -890,6 +890,75 @@
         try { lucide.createIcons(); } catch(e) { console.warn('Lucide error:', e); }
       }
     }
+
+    // ==================== 工具函数 ====================
+    function debounce(fn, delay) {
+      var timer = null;
+      return function() {
+        var args = arguments;
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(function() { fn.apply(this, args); }, delay);
+      };
+    }
+
+    function throttle(fn, limit) {
+      var inThrottle = false;
+      return function() {
+        var args = arguments;
+        if (!inThrottle) {
+          fn.apply(this, args);
+          inThrottle = true;
+          setTimeout(function() { inThrottle = false; }, limit);
+        }
+      };
+    }
+
+    function addClickFeedback(el) {
+      el.style.transform = 'scale(0.95)';
+      el.style.opacity = '0.7';
+      setTimeout(function() {
+        el.style.transform = '';
+        el.style.opacity = '';
+      }, 150);
+    }
+
+    // ==================== 事件委托系统 ====================
+    var eventHandlers = {};
+
+    function registerHandler(type, selector, handler) {
+      if (!eventHandlers[type]) eventHandlers[type] = [];
+      eventHandlers[type].push({ selector: selector, handler: handler });
+    }
+
+    function dispatchEvent(e) {
+      var type = e.type;
+      if (!eventHandlers[type]) return;
+
+      var target = e.target;
+      while (target) {
+        for (var i = 0; i < eventHandlers[type].length; i++) {
+          var h = eventHandlers[type][i];
+          if (target.matches && target.matches(h.selector)) {
+            h.handler.call(target, e);
+            return;
+          }
+        }
+        target = target.parentElement;
+      }
+    }
+
+    // 初始化事件委托
+    document.addEventListener('click', dispatchEvent);
+    document.addEventListener('touchstart', function(e) {
+      var target = e.target;
+      while (target) {
+        if (target.matches && target.matches('.comic-card, .chapter-item, button')) {
+          addClickFeedback(target);
+          break;
+        }
+        target = target.parentElement;
+      }
+    });
 
     // ==================== 多漫画源架构 ====================
     var COMIC_SOURCES = [
@@ -1385,7 +1454,7 @@
             var safeHref = href.replace(/'/g, "\\'").replace(/"/g, '&quot;');
             var safeTitle = titleText.replace(/"/g, '&quot;');
             htmlStr +=
-              '<div class="comic-card" onclick=\'loadComicDetail("' + safeHref + '","' + safeTitle + '")\'>' +
+              '<div class="comic-card" data-action="comic-detail" data-url="' + safeHref + '" data-title="' + safeTitle + '">' +
                 (imgSrc ? '<img class="comic-card-img" src="' + imgSrc + '" alt="' + safeTitle + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display=\'none\'">' :
                  '<div class="comic-card-img" style="display:flex;align-items:center;justify-content:center;font-size:2rem;">📖</div>') +
                 '<div class="comic-card-info">' +
@@ -1561,7 +1630,7 @@
             var safeHref = href.replace(/'/g, "\\'").replace(/"/g, '&quot;');
             var safeTitle = titleText.replace(/"/g, '&quot;');
             htmlStr +=
-              '<div class="comic-card" onclick=\'loadComicDetail("' + safeHref + '","' + safeTitle + '")\'>' +
+              '<div class="comic-card" data-action="comic-detail" data-url="' + safeHref + '" data-title="' + safeTitle + '">' +
                 (imgSrc ? '<img class="comic-card-img" src="' + imgSrc + '" alt="' + safeTitle + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display=\'none\'">' :
                  '<div class="comic-card-img" style="display:flex;align-items:center;justify-content:center;font-size:2rem;">📖</div>') +
                 '<div class="comic-card-info">' +
@@ -1669,7 +1738,7 @@
 
         var chapterHtml = '';
         for (var ch = 0; ch < currentChapters.length; ch++) {
-          chapterHtml += '<div class="chapter-item" onclick="loadChapter(' + ch + ')">' + currentChapters[ch].title + '</div>';
+          chapterHtml += '<div class="chapter-item" data-action="load-chapter" data-index="' + ch + '">' + currentChapters[ch].title + '</div>';
         }
 
         var safeTitle = titleText.replace(/"/g, '&quot;');
@@ -1677,12 +1746,12 @@
           '<div class="chapter-toolbar">' +
             '<div class="chapter-search-wrap">' +
               '<i data-lucide="search" style="width:14px;height:14px;"></i>' +
-              '<input type="text" class="chapter-search-input" placeholder="搜索章节..." oninput="filterChapters(this.value)">' +
+              '<input type="text" class="chapter-search-input" placeholder="搜索章节..." data-action="chapter-search">' +
             '</div>' +
             '<div class="chapter-quick-actions">' +
-              '<button onclick="loadChapter(0)" title="第一话"><i data-lucide="chevrons-left" style="width:14px;height:14px;"></i></button>' +
-              '<button onclick="scrollToCurrentChapter()" title="当前话"><i data-lucide="circle-dot" style="width:14px;height:14px;"></i></button>' +
-              '<button onclick="loadChapter(currentChapters.length-1)" title="最后一话"><i data-lucide="chevrons-right" style="width:14px;height:14px;"></i></button>' +
+              '<button data-action="chapter-first" title="第一话"><i data-lucide="chevrons-left" style="width:14px;height:14px;"></i></button>' +
+              '<button data-action="chapter-current" title="当前话"><i data-lucide="circle-dot" style="width:14px;height:14px;"></i></button>' +
+              '<button data-action="chapter-last" title="最后一话"><i data-lucide="chevrons-right" style="width:14px;height:14px;"></i></button>' +
             '</div>' +
           '</div>';
 
@@ -1690,7 +1759,7 @@
 
         content.innerHTML =
           '<div class="comic-detail">' +
-            '<button class="comic-back-btn" onclick="goBackToList()">' +
+            '<button class="comic-back-btn" data-action="back-list">' +
               '<i data-lucide="arrow-left" style="width:16px;height:16px;"></i>' +
               '返回列表' +
             '</button>' +
@@ -1780,10 +1849,10 @@
         }
 
         var prevBtn = index > 0
-          ? '<button onclick="loadChapter(' + (index - 1) + ')"><i data-lucide="chevron-left" style="width:16px;height:16px;"></i>上一话</button>'
+          ? '<button data-action="chapter-prev" data-index="' + (index - 1) + '"><i data-lucide="chevron-left" style="width:16px;height:16px;"></i>上一话</button>'
           : '<button disabled><i data-lucide="chevron-left" style="width:16px;height:16px;"></i>上一话</button>';
         var nextBtn = index < currentChapters.length - 1
-          ? '<button onclick="loadChapter(' + (index + 1) + ')">下一话<i data-lucide="chevron-right" style="width:16px;height:16px;"></i></button>'
+          ? '<button data-action="chapter-next" data-index="' + (index + 1) + '">下一话<i data-lucide="chevron-right" style="width:16px;height:16px;"></i></button>'
           : '<button disabled>下一话<i data-lucide="chevron-right" style="width:16px;height:16px;"></i></button>';
 
         var watermarkBadge = hasWatermark
@@ -1809,7 +1878,7 @@
         var safeTitle = (currentComicTitle || '').replace(/"/g, '&quot;');
         content.innerHTML =
           '<div class="comic-reader">' +
-            '<button class="comic-back-btn" onclick=\'loadComicDetail("' + safeUrl + '", "' + safeTitle + '")\'>' +
+            '<button class="comic-back-btn" data-action="back-detail">' +
               '<i data-lucide="arrow-left" style="width:16px;height:16px;"></i>' +
               '返回详情' +
             '</button>' +
@@ -1869,7 +1938,7 @@
 
         var items = grouped[groupName];
         html += '<div class="chapter-group">' +
-                  '<div class="chapter-group-header" onclick="toggleChapterGroup(this)">' +
+                  '<div class="chapter-group-header" data-action="toggle-group">' +
                     '<i data-lucide="chevron-right" class="group-toggle-icon" style="width:14px;height:14px;"></i>' +
                     '<span>' + groupName + '</span>' +
                     '<span class="group-count">(' + items.length + ')</span>' +
@@ -1878,7 +1947,7 @@
 
         for (var j = 0; j < items.length; j++) {
           var isCurrent = items[j].index === currentChapterIndex;
-          html += '<div class="chapter-item' + (isCurrent ? ' current' : '') + '" onclick="loadChapter(' + items[j].index + ')">' + items[j].title + '</div>';
+          html += '<div class="chapter-item' + (isCurrent ? ' current' : '') + '" data-action="load-chapter" data-index="' + items[j].index + '">' + items[j].title + '</div>';
         }
 
         html += '</div></div>';
@@ -2040,6 +2109,122 @@
         this.classList.add('active');
         loadComicList(this.dataset.type);
       });
+    }
+
+    // ==================== 事件处理注册 ====================
+    registerHandler('click', '[data-action="search"]', function() {
+      doSearch();
+    });
+
+    registerHandler('click', '[data-action="comic-detail"]', function() {
+      var url = this.getAttribute('data-url');
+      var title = this.getAttribute('data-title');
+      if (url) loadComicDetail(url, title);
+    });
+
+    registerHandler('click', '[data-action="load-chapter"]', function() {
+      var index = parseInt(this.getAttribute('data-index'));
+      if (!isNaN(index)) loadChapter(index);
+    });
+
+    registerHandler('click', '[data-action="chapter-prev"]', function() {
+      var index = parseInt(this.getAttribute('data-index'));
+      if (!isNaN(index)) loadChapter(index);
+    });
+
+    registerHandler('click', '[data-action="chapter-next"]', function() {
+      var index = parseInt(this.getAttribute('data-index'));
+      if (!isNaN(index)) loadChapter(index);
+    });
+
+    registerHandler('click', '[data-action="chapter-first"]', function() {
+      loadChapter(0);
+    });
+
+    registerHandler('click', '[data-action="chapter-last"]', function() {
+      loadChapter(currentChapters.length - 1);
+    });
+
+    registerHandler('click', '[data-action="chapter-current"]', function() {
+      scrollToCurrentChapter();
+    });
+
+    registerHandler('click', '[data-action="back-list"]', function() {
+      goBackToList();
+    });
+
+    registerHandler('click', '[data-action="back-detail"]', function() {
+      loadComicDetail(currentComicUrl, currentComicTitle);
+    });
+
+    registerHandler('click', '[data-action="toggle-group"]', function() {
+      toggleChapterGroup(this);
+    });
+
+    // 章节搜索防抖处理
+    var debouncedFilter = debounce(filterChapters, 200);
+    document.addEventListener('input', function(e) {
+      var target = e.target;
+      while (target) {
+        if (target.matches && target.matches('[data-action="chapter-search"]')) {
+          debouncedFilter(target.value);
+          return;
+        }
+        target = target.parentElement;
+      }
+    });
+
+    // ==================== 阅读器触摸手势 ====================
+    var touchStartX = 0;
+    var touchStartY = 0;
+    var lastTapTime = 0;
+
+    document.addEventListener('touchstart', function(e) {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+
+      var now = Date.now();
+      if (now - lastTapTime < 300) {
+        e.preventDefault();
+        var target = e.target;
+        while (target) {
+          if (target.tagName === 'IMG' && target.closest('.comic-reader-images')) {
+            toggleImageZoom(target);
+            break;
+          }
+          target = target.parentElement;
+        }
+      }
+      lastTapTime = now;
+    }, { passive: true });
+
+    document.addEventListener('touchend', function(e) {
+      if (currentView !== 'reader') return;
+
+      var touchEndX = e.changedTouches[0].clientX;
+      var touchEndY = e.changedTouches[0].clientY;
+      var diffX = touchEndX - touchStartX;
+      var diffY = touchEndY - touchStartY;
+
+      if (Math.abs(diffX) > 50 && Math.abs(diffX) > Math.abs(diffY)) {
+        if (diffX > 0 && currentChapterIndex > 0) {
+          loadChapter(currentChapterIndex - 1);
+        } else if (diffX < 0 && currentChapterIndex < currentChapters.length - 1) {
+          loadChapter(currentChapterIndex + 1);
+        }
+      }
+    });
+
+    function toggleImageZoom(img) {
+      if (!img) return;
+      if (img.style.transform && img.style.transform.indexOf('scale') !== -1) {
+        img.style.transform = '';
+        img.style.transition = 'transform 0.3s ease';
+      } else {
+        img.style.transform = 'scale(2)';
+        img.style.transition = 'transform 0.3s ease';
+        img.style.cursor = 'zoom-out';
+      }
     }
 
     // ==================== 初始化 ====================
