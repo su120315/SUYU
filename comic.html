@@ -2088,7 +2088,30 @@
         try { return await (await fetch(url)).blob(); } catch(e) { return null; }
       }
 
-      // 代理列表（wsrv.nl 专门做图片代理，最快，排第一）
+      // === 第一阶段：直连优先（命中浏览器缓存则毫秒级返回） ===
+      // 先直接请求原图，不通过代理。如果用户之前阅读过，浏览器缓存可能命中，瞬间返回。
+      try {
+        var directController = createTimeoutController(3000);
+        if (downloadAbortController) {
+          if (downloadAbortController.signal.aborted) directController.abort();
+          else downloadAbortController.signal.addEventListener('abort', function() { directController.abort(); });
+        }
+        var directResp = await fetch(url, {
+          signal: directController.signal,
+          mode: 'cors',
+          credentials: 'omit'
+        });
+        if (directResp.ok) {
+          var directBlob = await directResp.blob();
+          if (isValidImageBlob(directBlob)) {
+            return directBlob;
+          }
+        }
+      } catch(e) {
+        // 直连失败（CORS / 网络问题），继续走代理
+      }
+
+      // === 第二阶段：代理竞速 ===
       var proxies = [
         function(u) { return 'https://wsrv.nl/?url=' + encodeURIComponent(u.replace(/^https?:\/\//, '')); },
         function(u) { return 'https://images.weserv.nl/?url=' + encodeURIComponent(u.replace(/^https?:\/\//, '')); },
@@ -2096,12 +2119,10 @@
         function(u) { return 'https://corsproxy.io/?url=' + encodeURIComponent(u); }
       ];
 
-      // 同时发起所有代理请求，取第一个成功的
       var controllers = [];
       var promises = proxies.map(function(proxyFn, i) {
         var controller = createTimeoutController(8000);
         controllers.push(controller);
-        // 监听下载取消信号
         if (downloadAbortController) {
           if (downloadAbortController.signal.aborted) controller.abort();
           else downloadAbortController.signal.addEventListener('abort', function() { controller.abort(); });
@@ -2112,28 +2133,35 @@
             return resp.blob();
           })
           .then(function(blob) {
-            if (blob.size < 1000) throw new Error('too small');
+            if (!isValidImageBlob(blob)) throw new Error('not valid image');
             return blob;
           });
       });
 
       try {
-        // Promise.any: 取第一个成功，取消其余
         var blob = await Promise.any(promises);
-        // 中断其他还在跑的请求
         for (var c = 0; c < controllers.length; c++) {
           try { controllers[c].abort(); } catch(e) {}
         }
         return blob;
       } catch(e) {
-        // 全部失败
         return null;
       }
     }
 
+    // 严格校验图片 Blob
+    function isValidImageBlob(blob) {
+      if (!blob || blob.size < 1000) return false;
+      // 有明确 MIME 类型的，必须是图片
+      if (blob.type && blob.type.indexOf('image') === -1) return false;
+      if (blob.type && blob.type.indexOf('image') !== -1) return true;
+      // 没有 MIME 类型但体积够大，大概率是图片（代理服务器可能返回空类型）
+      return blob.size > 5000;
+    }
+
     // 并行下载图片（batchSize 张一批）
     async function downloadImagesBatch(urls, onProgress, batchSize) {
-      batchSize = batchSize || 6;
+      batchSize = batchSize || 8;
       var results = new Array(urls.length);
       var completed = 0;
       var queue = [];
@@ -2313,55 +2341,90 @@
         offlineLibrary[currentComicUrl] = comicData;
       }
 
-      // 逐章下载选中的章节
+      // 第一阶段：并行解析所有选中章节的图片URL（4 章并发）
+      // 先把所有章节的图片 URL 解析出来，再统一下载，避免解析时下载线程空转
+      updateDownloadProgress(0, totalToDownload, '正在解析章节列表...', 0, 0);
+      var chapterImageUrls = [];
+      var parseQueue = [];
+      for (var pi = 0; pi < selectedIndices.length; pi++) {
+        parseQueue.push(pi);
+        chapterImageUrls.push(null);
+      }
+      var parseConcurrency = 4;
+
+      async function parseWorker() {
+        while (parseQueue.length > 0 && !downloadCancelled) {
+          var pi = parseQueue.shift();
+          if (pi === undefined) break;
+          var chapterIdx = selectedIndices[pi];
+          var chapterTitle = currentChapters[chapterIdx].title;
+          try {
+            var result = await fetchChapterImages(chapterIdx);
+            chapterImageUrls[pi] = result.images || [];
+          } catch(e) {
+            chapterImageUrls[pi] = [];
+            log('解析"' + chapterTitle + '"失败: ' + e.message);
+          }
+        }
+      }
+
+      var parseWorkers = [];
+      for (var pw = 0; pw < parseConcurrency; pw++) parseWorkers.push(parseWorker());
+      await Promise.all(parseWorkers);
+
+      if (downloadCancelled) {
+        hideDownloadProgress();
+        log('下载已取消');
+        loadComicDetail(currentComicUrl, currentComicTitle);
+        return;
+      }
+
+      // 第二阶段：逐章下载图片
+      var totalAllImages = 0;
+      var doneAllImages = 0;
+      for (var ti = 0; ti < chapterImageUrls.length; ti++) {
+        totalAllImages += (chapterImageUrls[ti] || []).length;
+      }
+
       for (var si = 0; si < selectedIndices.length; si++) {
         if (downloadCancelled) { hideDownloadProgress(); log('下载已取消'); loadComicDetail(currentComicUrl, currentComicTitle); return; }
 
         var chapterIdx = selectedIndices[si];
         var chapterTitle = currentChapters[chapterIdx].title;
+        var imageUrls = chapterImageUrls[si] || [];
 
-        // 阶段1：抓取章节图片列表
-        updateDownloadProgress(si, totalToDownload, chapterTitle, 0, 0);
-        document.getElementById('downloadChapterInfo').textContent = '正在解析: ' + chapterTitle;
-
-        try {
-          var result = await fetchChapterImages(chapterIdx);
-          var imageUrls = result.images;
-
-          if (imageUrls.length === 0) {
-            log('"' + chapterTitle + '"未提取到图片');
-            comicData.chapters[chapterIdx].images = [];
-            continue;
-          }
-
-          // 阶段2：并行下载图片
-          var blobUrls = await downloadImagesBatch(imageUrls, function(completed, total) {
-            if (downloadCancelled) return;
-            updateDownloadProgress(si, totalToDownload, chapterTitle, completed, total);
-          }, 3);
-
-          // 过滤掉 null
-          var validUrls = [];
-          for (var k = 0; k < blobUrls.length; k++) {
-            if (blobUrls[k]) validUrls.push(blobUrls[k]);
-          }
-
-          // 如果已有旧图片，先释放
-          var oldImages = comicData.chapters[chapterIdx].images || [];
-          for (var oi = 0; oi < oldImages.length; oi++) {
-            if (oldImages[oi].indexOf('blob:') === 0) URL.revokeObjectURL(oldImages[oi]);
-          }
-
-          comicData.chapters[chapterIdx].images = validUrls;
-          comicData.totalImages = 0;
-          for (var ci = 0; ci < comicData.chapters.length; ci++) {
-            comicData.totalImages += comicData.chapters[ci].images.length;
-          }
-          log('下载"' + chapterTitle + '"完成: ' + validUrls.length + '/' + imageUrls.length + '张');
-        } catch(e) {
-          log('下载"' + chapterTitle + '"失败: ' + e.message);
+        if (imageUrls.length === 0) {
+          log('"' + chapterTitle + '"未提取到图片');
           comicData.chapters[chapterIdx].images = [];
+          continue;
         }
+
+        // 阶段2：并行下载图片（8 张并发）
+        var chapterStartImages = doneAllImages;
+        var blobUrls = await downloadImagesBatch(imageUrls, function(completed, total) {
+          if (downloadCancelled) return;
+          doneAllImages = chapterStartImages + completed;
+          updateDownloadProgress(si, totalToDownload, chapterTitle, completed, total);
+        }, 8);
+
+        // 过滤掉 null
+        var validUrls = [];
+        for (var k = 0; k < blobUrls.length; k++) {
+          if (blobUrls[k]) validUrls.push(blobUrls[k]);
+        }
+
+        // 如果已有旧图片，先释放
+        var oldImages = comicData.chapters[chapterIdx].images || [];
+        for (var oi = 0; oi < oldImages.length; oi++) {
+          if (oldImages[oi].indexOf('blob:') === 0) URL.revokeObjectURL(oldImages[oi]);
+        }
+
+        comicData.chapters[chapterIdx].images = validUrls;
+        comicData.totalImages = 0;
+        for (var ci = 0; ci < comicData.chapters.length; ci++) {
+          comicData.totalImages += comicData.chapters[ci].images.length;
+        }
+        log('下载"' + chapterTitle + '"完成: ' + validUrls.length + '/' + imageUrls.length + '张');
       }
 
       hideDownloadProgress();
