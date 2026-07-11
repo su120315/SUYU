@@ -1035,6 +1035,165 @@
       height: 48px;
       margin-bottom: 12px;
     }
+
+    /* ==================== 章节选择弹窗 ==================== */
+    .chapter-select-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 9998;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+      padding: 16px;
+    }
+
+    .chapter-select-overlay.active {
+      display: flex;
+    }
+
+    .chapter-select-modal {
+      background: var(--bg-secondary);
+      border: 1px solid var(--bg-tertiary);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 500px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .chapter-select-header {
+      padding: 20px 24px 12px;
+      border-bottom: 1px solid var(--bg-tertiary);
+    }
+
+    .chapter-select-header h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .chapter-select-header p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .chapter-select-toolbar {
+      display: flex;
+      gap: 8px;
+      padding: 12px 24px;
+      border-bottom: 1px solid var(--bg-tertiary);
+      flex-wrap: wrap;
+    }
+
+    .chapter-select-toolbar button {
+      padding: 6px 14px;
+      border-radius: 100px;
+      border: 1px solid var(--bg-tertiary);
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .chapter-select-toolbar button:hover {
+      border-color: var(--accent-primary);
+      color: var(--accent-primary);
+    }
+
+    .chapter-select-toolbar .selected-count {
+      margin-left: auto;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      align-self: center;
+    }
+
+    .chapter-select-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 16px;
+    }
+
+    .chapter-select-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s;
+      font-size: 0.88rem;
+      color: var(--text-primary);
+    }
+
+    .chapter-select-item:hover {
+      background: var(--bg-tertiary);
+    }
+
+    .chapter-select-item input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--accent-primary);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .chapter-select-item.downloaded {
+      color: #22c55e;
+    }
+
+    .chapter-select-item .downloaded-tag {
+      margin-left: auto;
+      font-size: 0.72rem;
+      color: #22c55e;
+    }
+
+    .chapter-select-footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--bg-tertiary);
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+
+    .chapter-select-footer button {
+      padding: 10px 24px;
+      border-radius: 100px;
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+    }
+
+    .chapter-select-cancel {
+      background: transparent;
+      border: 1px solid var(--bg-tertiary) !important;
+      color: var(--text-secondary);
+    }
+
+    .chapter-select-cancel:hover {
+      border-color: #ef4444 !important;
+      color: #ef4444;
+    }
+
+    .chapter-select-confirm {
+      background: var(--gradient-short);
+      color: #fff;
+    }
+
+    .chapter-select-confirm:hover {
+      opacity: 0.9;
+    }
+
+    .chapter-select-confirm:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
@@ -1121,6 +1280,27 @@
       <div class="download-progress-text" id="downloadProgressText">准备中...</div>
       <div class="download-chapter-info" id="downloadChapterInfo"></div>
       <button class="download-cancel-btn" id="downloadCancelBtn">取消下载</button>
+    </div>
+  </div>
+
+  <!-- 章节选择弹窗 -->
+  <div class="chapter-select-overlay" id="chapterSelectOverlay">
+    <div class="chapter-select-modal">
+      <div class="chapter-select-header">
+        <h3>选择要下载的章节</h3>
+        <p id="chapterSelectTitle"></p>
+      </div>
+      <div class="chapter-select-toolbar">
+        <button id="chapterSelectAll">全选</button>
+        <button id="chapterSelectNone">全不选</button>
+        <button id="chapterSelectInvert">反选</button>
+        <span class="selected-count" id="chapterSelectCount">已选 0 话</span>
+      </div>
+      <div class="chapter-select-list" id="chapterSelectList"></div>
+      <div class="chapter-select-footer">
+        <button class="chapter-select-cancel" id="chapterSelectCancel">取消</button>
+        <button class="chapter-select-confirm" id="chapterSelectConfirm">开始下载</button>
+      </div>
     </div>
   </div>
 
@@ -1734,6 +1914,10 @@
     // ==================== 离线下载 ====================
     async function fetchImageAsBlob(url) {
       if (!url) return null;
+      // blob: URL 直接读取
+      if (url.indexOf('blob:') === 0) {
+        try { return await (await fetch(url)).blob(); } catch(e) { return null; }
+      }
       var proxies = [
         function(u) { return 'https://images.weserv.nl/?url=' + encodeURIComponent(u.replace(/^https?:\/\//, '')); },
         function(u) { return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u); },
@@ -1742,7 +1926,7 @@
       ];
       for (var i = 0; i < proxies.length; i++) {
         try {
-          var controller = createTimeoutController(25000);
+          var controller = createTimeoutController(12000);
           var resp = await fetch(proxies[i](url), { signal: controller.signal });
           if (resp.ok) {
             var blob = await resp.blob();
@@ -1753,6 +1937,35 @@
         } catch(e) {}
       }
       return null;
+    }
+
+    // 并行下载图片（batchSize 张一批）
+    async function downloadImagesBatch(urls, onProgress, batchSize) {
+      batchSize = batchSize || 3;
+      var results = new Array(urls.length);
+      var completed = 0;
+      var queue = [];
+      for (var i = 0; i < urls.length; i++) queue.push(i);
+
+      async function worker() {
+        while (queue.length > 0 && !downloadCancelled) {
+          var idx = queue.shift();
+          if (idx === undefined) break;
+          try {
+            var blob = await fetchImageAsBlob(urls[idx]);
+            results[idx] = blob ? URL.createObjectURL(blob) : null;
+          } catch(e) {
+            results[idx] = null;
+          }
+          completed++;
+          if (onProgress) onProgress(completed, urls.length);
+        }
+      }
+
+      var workers = [];
+      for (var w = 0; w < batchSize; w++) workers.push(worker());
+      await Promise.all(workers);
+      return results;
     }
 
     function showDownloadProgress(totalChapters, comicTitle) {
@@ -1778,19 +1991,95 @@
       if (overlay) overlay.classList.remove('active');
     }
 
-    async function downloadComicOffline() {
+    // ==================== 章节选择弹窗 ====================
+    function showChapterSelection() {
       if (!currentComicUrl || currentChapters.length === 0) {
         alert('请先加载漫画详情页');
         return;
       }
-      if (offlineLibrary[currentComicUrl]) {
-        if (!confirm('该漫画已下载，是否重新下载？（会清除旧缓存）')) return;
-        removeOfflineComic(currentComicUrl, true);
+
+      var overlay = document.getElementById('chapterSelectOverlay');
+      var listEl = document.getElementById('chapterSelectList');
+      var countEl = document.getElementById('chapterSelectCount');
+      var confirmBtn = document.getElementById('chapterSelectConfirm');
+      var titleEl = document.getElementById('chapterSelectTitle');
+
+      titleEl.textContent = currentComicTitle + ' · 共 ' + currentChapters.length + ' 话';
+
+      var existingComic = offlineLibrary[currentComicUrl];
+      var html = '';
+      for (var i = 0; i < currentChapters.length; i++) {
+        var isDownloaded = existingComic && existingComic.chapters[i] && existingComic.chapters[i].images.length > 0;
+        var checked = !isDownloaded ? 'checked' : '';
+        var downloadedCls = isDownloaded ? ' downloaded' : '';
+        var downloadedTag = isDownloaded ? '<span class="downloaded-tag">已下载</span>' : '';
+        html +=
+          '<label class="chapter-select-item' + downloadedCls + '">' +
+            '<input type="checkbox" value="' + i + '" ' + checked + ' ' + (isDownloaded ? 'disabled' : '') + '>' +
+            '<span>' + currentChapters[i].title + '</span>' +
+            downloadedTag +
+          '</label>';
+      }
+      listEl.innerHTML = html;
+
+      function updateCount() {
+        var checked = listEl.querySelectorAll('input[type="checkbox"]:checked').length;
+        countEl.textContent = '已选 ' + checked + ' 话';
+        confirmBtn.disabled = checked === 0;
+      }
+      updateCount();
+
+      listEl.onchange = updateCount;
+
+      document.getElementById('chapterSelectAll').onclick = function() {
+        var cbs = listEl.querySelectorAll('input[type="checkbox"]:not(:disabled)');
+        for (var i = 0; i < cbs.length; i++) cbs[i].checked = true;
+        updateCount();
+      };
+      document.getElementById('chapterSelectNone').onclick = function() {
+        var cbs = listEl.querySelectorAll('input[type="checkbox"]:not(:disabled)');
+        for (var i = 0; i < cbs.length; i++) cbs[i].checked = false;
+        updateCount();
+      };
+      document.getElementById('chapterSelectInvert').onclick = function() {
+        var cbs = listEl.querySelectorAll('input[type="checkbox"]:not(:disabled)');
+        for (var i = 0; i < cbs.length; i++) cbs[i].checked = !cbs[i].checked;
+        updateCount();
+      };
+
+      document.getElementById('chapterSelectCancel').onclick = function() {
+        overlay.classList.remove('active');
+      };
+
+      confirmBtn.onclick = function() {
+        var cbs = listEl.querySelectorAll('input[type="checkbox"]:checked');
+        var indices = [];
+        for (var i = 0; i < cbs.length; i++) indices.push(parseInt(cbs[i].value));
+        if (indices.length === 0) return;
+        overlay.classList.remove('active');
+        downloadComicOffline(indices);
+      };
+
+      overlay.classList.add('active');
+    }
+
+    async function downloadComicOffline(selectedIndices) {
+      if (!currentComicUrl || currentChapters.length === 0) {
+        alert('请先加载漫画详情页');
+        return;
+      }
+
+      // 默认下载全部
+      if (!selectedIndices || selectedIndices.length === 0) {
+        selectedIndices = [];
+        for (var i = 0; i < currentChapters.length; i++) selectedIndices.push(i);
       }
 
       downloadCancelled = false;
-      showDownloadProgress(currentChapters.length, currentComicTitle);
+      var totalToDownload = selectedIndices.length;
+      showDownloadProgress(totalToDownload, currentComicTitle);
 
+      // 获取/创建 comicData（保留已下载的章节）
       var coverSrc = '';
       var coverImg = document.querySelector('.comic-detail-cover');
       if (coverImg && coverImg.src) coverSrc = coverImg.src;
@@ -1804,51 +2093,85 @@
       var tagEls = document.querySelectorAll('.comic-detail-tag');
       for (var t = 0; t < tagEls.length; t++) tags.push(tagEls[t].textContent.trim());
 
-      var coverBlobUrl = '';
-      if (coverSrc && coverSrc.indexOf('http') === 0) {
-        updateDownloadProgress(0, currentChapters.length, '正在下载封面...');
-        var coverBlob = await fetchImageAsBlob(coverSrc);
-        if (coverBlob) coverBlobUrl = URL.createObjectURL(coverBlob);
+      var comicData = offlineLibrary[currentComicUrl];
+      if (!comicData) {
+        // 下载封面
+        var coverBlobUrl = '';
+        if (coverSrc && coverSrc.indexOf('http') === 0) {
+          updateDownloadProgress(0, totalToDownload, '正在下载封面...');
+          var coverBlob = await fetchImageAsBlob(coverSrc);
+          if (coverBlob) coverBlobUrl = URL.createObjectURL(coverBlob);
+        }
+        comicData = {
+          title: currentComicTitle,
+          author: authorText,
+          desc: descText,
+          tags: tags,
+          cover: coverBlobUrl || coverSrc,
+          sourceName: currentSource ? currentSource.name : '',
+          chapters: [],
+          downloadedAt: Date.now(),
+          totalImages: 0
+        };
+        for (var i = 0; i < currentChapters.length; i++) {
+          comicData.chapters.push({ title: currentChapters[i].title, url: currentChapters[i].url, images: [] });
+        }
+        offlineLibrary[currentComicUrl] = comicData;
       }
 
-      var comicData = {
-        title: currentComicTitle,
-        author: authorText,
-        desc: descText,
-        tags: tags,
-        cover: coverBlobUrl || coverSrc,
-        sourceName: currentSource ? currentSource.name : '',
-        chapters: [],
-        downloadedAt: Date.now(),
-        totalImages: 0
-      };
-      for (var i = 0; i < currentChapters.length; i++) {
-        comicData.chapters.push({ title: currentChapters[i].title, url: currentChapters[i].url, images: [] });
-      }
-      offlineLibrary[currentComicUrl] = comicData;
-
-      for (var i = 0; i < currentChapters.length; i++) {
+      // 逐章下载选中的章节
+      for (var si = 0; si < selectedIndices.length; si++) {
         if (downloadCancelled) { hideDownloadProgress(); log('下载已取消'); loadComicDetail(currentComicUrl, currentComicTitle); return; }
-        updateDownloadProgress(i, currentChapters.length, currentChapters[i].title);
+
+        var chapterIdx = selectedIndices[si];
+        var chapterTitle = currentChapters[chapterIdx].title;
+
+        // 阶段1：抓取章节图片列表
+        updateDownloadProgress(si, totalToDownload, chapterTitle, 0, 0);
+        document.getElementById('downloadChapterInfo').textContent = '正在解析: ' + chapterTitle;
+
         try {
-          var result = await fetchChapterImages(i);
-          var blobUrls = [];
-          for (var j = 0; j < result.images.length; j++) {
-            if (downloadCancelled) break;
-            updateDownloadProgress(i, currentChapters.length, currentChapters[i].title, j + 1, result.images.length);
-            var blob = await fetchImageAsBlob(result.images[j]);
-            if (blob) { blobUrls.push(URL.createObjectURL(blob)); comicData.totalImages++; }
+          var result = await fetchChapterImages(chapterIdx);
+          var imageUrls = result.images;
+
+          if (imageUrls.length === 0) {
+            log('"' + chapterTitle + '"未提取到图片');
+            comicData.chapters[chapterIdx].images = [];
+            continue;
           }
-          comicData.chapters[i].images = blobUrls;
-          log('下载第' + (i + 1) + '话完成: ' + blobUrls.length + '张图片');
+
+          // 阶段2：并行下载图片
+          var blobUrls = await downloadImagesBatch(imageUrls, function(completed, total) {
+            if (downloadCancelled) return;
+            updateDownloadProgress(si, totalToDownload, chapterTitle, completed, total);
+          }, 3);
+
+          // 过滤掉 null
+          var validUrls = [];
+          for (var k = 0; k < blobUrls.length; k++) {
+            if (blobUrls[k]) validUrls.push(blobUrls[k]);
+          }
+
+          // 如果已有旧图片，先释放
+          var oldImages = comicData.chapters[chapterIdx].images || [];
+          for (var oi = 0; oi < oldImages.length; oi++) {
+            if (oldImages[oi].indexOf('blob:') === 0) URL.revokeObjectURL(oldImages[oi]);
+          }
+
+          comicData.chapters[chapterIdx].images = validUrls;
+          comicData.totalImages = 0;
+          for (var ci = 0; ci < comicData.chapters.length; ci++) {
+            comicData.totalImages += comicData.chapters[ci].images.length;
+          }
+          log('下载"' + chapterTitle + '"完成: ' + validUrls.length + '/' + imageUrls.length + '张');
         } catch(e) {
-          log('下载第' + (i + 1) + '话失败: ' + e.message);
-          comicData.chapters[i].images = [];
+          log('下载"' + chapterTitle + '"失败: ' + e.message);
+          comicData.chapters[chapterIdx].images = [];
         }
       }
 
       hideDownloadProgress();
-      log('下载完成: ' + comicData.title + ' · ' + comicData.totalImages + '张图片');
+      log('下载完成: ' + comicData.title + ' · 共' + comicData.totalImages + '张图片');
       loadComicDetail(currentComicUrl, currentComicTitle);
     }
 
@@ -1872,7 +2195,12 @@
     }
 
     function isComicDownloaded(comicUrl) {
-      return !!(offlineLibrary[comicUrl] && offlineLibrary[comicUrl].chapters.length > 0);
+      var comic = offlineLibrary[comicUrl];
+      if (!comic || !comic.chapters || comic.chapters.length === 0) return false;
+      for (var i = 0; i < comic.chapters.length; i++) {
+        if (comic.chapters[i].images && comic.chapters[i].images.length > 0) return true;
+      }
+      return false;
     }
 
     // ==================== 离线书架 ====================
@@ -1942,11 +2270,15 @@
       var safeTitle = comic.title.replace(/"/g, '&quot;');
       var downloadSectionHtml =
         '<div class="comic-download-section">' +
-          '<div class="comic-downloaded-badge">' +
+          '<div class="comic-downloaded-badge" style="margin-bottom:10px;">' +
             '<i data-lucide="check-circle" style="width:18px;height:18px;color:#22c55e;"></i>' +
             '<span>已下载到内存 · 可离线观看</span>' +
             '<button class="remove-download-btn" data-action="remove-download">删除下载</button>' +
           '</div>' +
+          '<button class="download-comic-btn" data-action="download-comic">' +
+            '<i data-lucide="download" style="width:16px;height:16px;"></i>' +
+            '<span>继续下载其他章节</span>' +
+          '</button>' +
         '</div>';
 
       var chapterSearchHtml =
@@ -2381,18 +2713,22 @@
         if (isComicDownloaded(comicUrl)) {
           downloadSectionHtml =
             '<div class="comic-download-section">' +
-              '<div class="comic-downloaded-badge">' +
+              '<div class="comic-downloaded-badge" style="margin-bottom:10px;">' +
                 '<i data-lucide="check-circle" style="width:18px;height:18px;color:#22c55e;"></i>' +
                 '<span>已下载到内存 · 可离线观看</span>' +
                 '<button class="remove-download-btn" data-action="remove-download">删除下载</button>' +
               '</div>' +
+              '<button class="download-comic-btn" data-action="download-comic">' +
+                '<i data-lucide="download" style="width:16px;height:16px;"></i>' +
+                '<span>继续下载其他章节</span>' +
+              '</button>' +
             '</div>';
         } else {
           downloadSectionHtml =
             '<div class="comic-download-section">' +
               '<button class="download-comic-btn" data-action="download-comic">' +
                 '<i data-lucide="download-cloud" style="width:18px;height:18px;"></i>' +
-                '<span>下载整本到内存 (离线观看)</span>' +
+                '<span>选择章节下载到内存 (离线观看)</span>' +
               '</button>' +
             '</div>';
         }
@@ -2821,7 +3157,7 @@
     });
 
     registerHandler('click', '[data-action="download-comic"]', function() {
-      downloadComicOffline();
+      showChapterSelection();
     });
 
     registerHandler('click', '[data-action="remove-download"]', function() {
