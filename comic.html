@@ -1541,6 +1541,160 @@
     var offlineLibrary = {};
     var downloadCancelled = false;
 
+    // ==================== IndexedDB 持久化 ====================
+    var DB_NAME = 'suyu-comic-db';
+    var DB_VERSION = 1;
+    var STORE_NAME = 'comics';
+    var idbReady = false;
+
+    function openIDB() {
+      return new Promise(function(resolve, reject) {
+        if (!window.indexedDB) { reject(new Error('IndexedDB 不支持')); return; }
+        var req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = function(e) {
+          var db = e.target.result;
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            db.createObjectStore(STORE_NAME, { keyPath: 'comicUrl' });
+          }
+        };
+        req.onsuccess = function(e) { idbReady = true; resolve(e.target.result); };
+        req.onerror = function(e) { reject(e.target.error); };
+      });
+    }
+
+    function idbPut(comicData) {
+      return openIDB().then(function(db) {
+        return new Promise(function(resolve, reject) {
+          // 将 blobUrl 转为 Blob 存储（IndexedDB 可直接存 Blob）
+          var tx = db.transaction(STORE_NAME, 'readwrite');
+          var store = tx.objectStore(STORE_NAME);
+          store.put(comicData);
+          tx.oncomplete = function() { resolve(); };
+          tx.onerror = function(e) { reject(e.target.error); };
+        });
+      });
+    }
+
+    function idbGet(comicUrl) {
+      return openIDB().then(function(db) {
+        return new Promise(function(resolve, reject) {
+          var tx = db.transaction(STORE_NAME, 'readonly');
+          var store = tx.objectStore(STORE_NAME);
+          var req = store.get(comicUrl);
+          req.onsuccess = function(e) { resolve(e.target.result); };
+          req.onerror = function(e) { reject(e.target.error); };
+        });
+      });
+    }
+
+    function idbGetAll() {
+      return openIDB().then(function(db) {
+        return new Promise(function(resolve, reject) {
+          var tx = db.transaction(STORE_NAME, 'readonly');
+          var store = tx.objectStore(STORE_NAME);
+          var req = store.getAll();
+          req.onsuccess = function(e) { resolve(e.target.result || []); };
+          req.onerror = function(e) { reject(e.target.error); };
+        });
+      });
+    }
+
+    function idbDelete(comicUrl) {
+      return openIDB().then(function(db) {
+        return new Promise(function(resolve, reject) {
+          var tx = db.transaction(STORE_NAME, 'readwrite');
+          var store = tx.objectStore(STORE_NAME);
+          store.delete(comicUrl);
+          tx.oncomplete = function() { resolve(); };
+          tx.onerror = function(e) { reject(e.target.error); };
+        });
+      });
+    }
+
+    // blobUrl 转 Blob（用于存储到 IndexedDB）
+    function blobUrlToBlob(blobUrl) {
+      if (!blobUrl || blobUrl.indexOf('blob:') !== 0) return Promise.resolve(blobUrl);
+      return fetch(blobUrl).then(function(r) { return r.blob(); });
+    }
+
+    // 从 IndexedDB 恢复所有漫画到 offlineLibrary（Blob → blobUrl）
+    async function restoreOfflineLibrary() {
+      try {
+        var records = await idbGetAll();
+        for (var i = 0; i < records.length; i++) {
+          var rec = records[i];
+          var comic = {
+            title: rec.title,
+            author: rec.author,
+            desc: rec.desc,
+            tags: rec.tags || [],
+            cover: rec.cover instanceof Blob ? URL.createObjectURL(rec.cover) : (rec.cover || ''),
+            sourceName: rec.sourceName,
+            chapters: [],
+            downloadedAt: rec.downloadedAt,
+            totalImages: rec.totalImages || 0
+          };
+          for (var c = 0; c < rec.chapters.length; c++) {
+            var chImages = [];
+            if (rec.chapters[c].imageBlobs) {
+              for (var b = 0; b < rec.chapters[c].imageBlobs.length; b++) {
+                if (rec.chapters[c].imageBlobs[b] instanceof Blob) {
+                  chImages.push(URL.createObjectURL(rec.chapters[c].imageBlobs[b]));
+                }
+              }
+            }
+            comic.chapters.push({ title: rec.chapters[c].title, url: rec.chapters[c].url || '', images: chImages });
+          }
+          offlineLibrary[rec.comicUrl] = comic;
+        }
+        var count = Object.keys(offlineLibrary).length;
+        if (count > 0) log('从 IndexedDB 恢复 ' + count + ' 部离线漫画');
+      } catch(e) {
+        log('IndexedDB 恢复失败: ' + e.message);
+      }
+    }
+
+    // 保存一部漫画到 IndexedDB（blobUrl → Blob）
+    async function saveComicToIDB(comicUrl) {
+      var comic = offlineLibrary[comicUrl];
+      if (!comic) return;
+      try {
+        var coverBlob = null;
+        if (comic.cover && comic.cover.indexOf('blob:') === 0) {
+          coverBlob = await blobUrlToBlob(comic.cover);
+        } else if (comic.cover) {
+          coverBlob = comic.cover;
+        }
+
+        var chaptersData = [];
+        for (var i = 0; i < comic.chapters.length; i++) {
+          var imageBlobs = [];
+          for (var j = 0; j < comic.chapters[i].images.length; j++) {
+            var blob = await blobUrlToBlob(comic.chapters[i].images[j]);
+            if (blob instanceof Blob) imageBlobs.push(blob);
+          }
+          chaptersData.push({ title: comic.chapters[i].title, url: comic.chapters[i].url, imageBlobs: imageBlobs });
+        }
+
+        var record = {
+          comicUrl: comicUrl,
+          title: comic.title,
+          author: comic.author,
+          desc: comic.desc,
+          tags: comic.tags,
+          cover: coverBlob,
+          sourceName: comic.sourceName,
+          chapters: chaptersData,
+          totalImages: comic.totalImages,
+          downloadedAt: comic.downloadedAt
+        };
+        await idbPut(record);
+        log('已保存到 IndexedDB: ' + comic.title);
+      } catch(e) {
+        log('保存到 IndexedDB 失败: ' + e.message);
+      }
+    }
+
     function log(msg) {
       debugLogs.push(msg);
       if (debugLogs.length > 50) debugLogs.shift();
@@ -2172,6 +2326,8 @@
 
       hideDownloadProgress();
       log('下载完成: ' + comicData.title + ' · 共' + comicData.totalImages + '张图片');
+      // 持久化到 IndexedDB
+      saveComicToIDB(currentComicUrl);
       loadComicDetail(currentComicUrl, currentComicTitle);
     }
 
@@ -2187,6 +2343,8 @@
       }
       if (comic.cover && comic.cover.indexOf('blob:') === 0) URL.revokeObjectURL(comic.cover);
       delete offlineLibrary[comicUrl];
+      // 同步删除 IndexedDB 记录
+      idbDelete(comicUrl).catch(function(e) { log('IDB删除失败: ' + e.message); });
       log('已删除离线漫画: ' + comic.title);
       if (!skipRefresh) {
         if (currentView === 'detail' || currentComicUrl === comicUrl) loadComicDetail(currentComicUrl, currentComicTitle);
@@ -3317,6 +3475,18 @@
     safeLucide();
     log('漫画模块初始化完成');
 
+    // 注册 Service Worker（离线缓存页面）
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').then(function(reg) {
+        log('Service Worker 注册成功');
+      }).catch(function(err) {
+        log('Service Worker 注册失败: ' + err.message);
+      });
+    }
+
+    // 从 IndexedDB 恢复离线漫画
+    restoreOfflineLibrary();
+
     // 等待 Lucide 加载完成后重新初始化图标
     var lucideRetryCount = 0;
     function waitForLucide() {
@@ -3332,11 +3502,53 @@
       setTimeout(waitForLucide, 500);
     }
 
+    // 离线检测：无网时直接显示离线书架
+    function showOfflineNotice() {
+      var content = document.getElementById('comicContent');
+      var hasOffline = Object.keys(offlineLibrary).length > 0;
+      if (hasOffline) {
+        content.innerHTML =
+          '<div class="offline-empty">' +
+            '<i data-lucide="wifi-off"></i>' +
+            '<p>当前处于离线状态</p>' +
+            '<p style="font-size:0.82rem;margin-top:8px;">已加载 ' + Object.keys(offlineLibrary).length + ' 部离线漫画，可离线观看</p>' +
+            '<div class="comic-error-actions" style="margin-top:20px;">' +
+              '<button class="comic-error-btn primary" onclick="showOfflineLibrary()">打开离线书架</button>' +
+            '</div>' +
+          '</div>';
+      } else {
+        content.innerHTML =
+          '<div class="offline-empty">' +
+            '<i data-lucide="wifi-off"></i>' +
+            '<p>当前处于离线状态</p>' +
+            '<p style="font-size:0.82rem;margin-top:8px;">离线书架为空，请联网后下载漫画</p>' +
+          '</div>';
+      }
+      hideSourceInfo();
+      safeLucide();
+    }
+
+    // 加载漫画列表（联网时）或显示离线提示
     setTimeout(function() {
-      if (currentSource) {
+      if (!navigator.onLine) {
+        log('检测到离线状态，显示离线提示');
+        showOfflineNotice();
+      } else if (currentSource) {
         loadComicList('recommend');
       }
     }, 200);
+
+    // 监听网络状态变化
+    window.addEventListener('offline', function() {
+      log('网络已断开');
+      showOfflineNotice();
+    });
+    window.addEventListener('online', function() {
+      log('网络已恢复');
+      if (currentView === 'list' || currentView === 'offline') {
+        loadComicList('recommend');
+      }
+    });
 
     // 离线书架按钮
     document.getElementById('offlineLibraryBtn').addEventListener('click', function() {
