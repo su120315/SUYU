@@ -10,8 +10,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@0.460.0"></script>
   <link rel="stylesheet" href="style.css">
+  <meta name="referrer" content="no-referrer">
   <style>
-    /* 漫画页面专用样式 */
     .comic-page {
       min-height: 100vh;
       padding-top: 80px;
@@ -68,7 +68,6 @@
       transform: translateX(-2px);
     }
 
-    /* 搜索栏 */
     .comic-search-bar {
       max-width: 1200px;
       margin: 0 auto;
@@ -121,7 +120,6 @@
       transform: scale(0.98);
     }
 
-    /* 分类标签 */
     .comic-tags {
       max-width: 1200px;
       margin: 0 auto;
@@ -150,7 +148,6 @@
       border-color: var(--accent-primary);
     }
 
-    /* 漫画网格 */
     .comic-grid {
       max-width: 1200px;
       margin: 0 auto;
@@ -205,7 +202,6 @@
       white-space: nowrap;
     }
 
-    /* 加载和提示 */
     .comic-loading {
       text-align: center;
       padding: 60px 20px;
@@ -228,6 +224,13 @@
       to { transform: rotate(360deg); }
     }
 
+    .comic-loading-tips {
+      margin-top: 16px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      opacity: 0.8;
+    }
+
     .comic-error {
       text-align: center;
       padding: 40px 20px;
@@ -240,7 +243,55 @@
       margin-bottom: 12px;
     }
 
-    /* 漫画详情 */
+    .comic-error-actions {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .comic-error-btn {
+      padding: 10px 20px;
+      border-radius: 100px;
+      border: 1px solid var(--bg-tertiary);
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .comic-error-btn:hover {
+      border-color: var(--accent-primary);
+    }
+
+    .comic-error-btn.primary {
+      background: var(--gradient-short);
+      color: #fff;
+      border-color: transparent;
+    }
+
+    .comic-error-detail {
+      margin-top: 16px;
+      padding: 12px;
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      font-size: 0.8rem;
+      text-align: left;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+      max-height: 150px;
+      overflow-y: auto;
+      font-family: monospace;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
     .comic-detail {
       max-width: 900px;
       margin: 0 auto;
@@ -321,7 +372,6 @@
       border-color: var(--accent-primary);
     }
 
-    /* 章节列表 */
     .chapter-list {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -348,7 +398,6 @@
       border-color: var(--accent-primary);
     }
 
-    /* 阅读器 */
     .comic-reader {
       max-width: 800px;
       margin: 0 auto;
@@ -416,7 +465,39 @@
       color: var(--text-muted);
     }
 
-    /* 响应式 */
+    .source-info {
+      max-width: 1200px;
+      margin: 0 auto 12px;
+      padding: 0 20px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .source-info .source-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #22c55e;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .source-info .source-dot.loading {
+      background: #f59e0b;
+    }
+
+    .source-info .source-dot.error {
+      background: #ef4444;
+      animation: none;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
     @media (max-width: 768px) {
       .comic-grid {
         grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
@@ -471,7 +552,8 @@
       .comic-tags,
       .comic-grid,
       .comic-detail,
-      .comic-reader {
+      .comic-reader,
+      .source-info {
         padding-left: 14px;
         padding-right: 14px;
       }
@@ -483,10 +565,8 @@
   </style>
 </head>
 <body>
-  <!-- 进度条 -->
   <div class="progress-bar"><div class="progress-fill"></div></div>
 
-  <!-- 导航 -->
   <nav class="navbar">
     <div class="nav-content">
       <a href="index.html" class="nav-logo">蘇魚</a>
@@ -495,8 +575,8 @@
         <li><a href="index.html#projects">作品</a></li>
         <li><a href="novel.html">小说</a></li>
         <li><a href="tools.html">工具</a></li>
-        <li><a href="index.html#sites">网站</a></li>
         <li><a href="comic.html" style="color:var(--accent-primary);">漫画</a></li>
+        <li><a href="https://su120315.github.io/SUYU3/" target="_blank" rel="noopener">编程</a></li>
         <li><a href="index.html#contact">联系</a></li>
       </ul>
     </div>
@@ -517,8 +597,8 @@
 
     <div class="comic-search-bar">
       <div class="comic-search-wrap">
-        <input type="text" class="comic-search-input" id="searchInput" placeholder="搜索漫画..." onkeydown="if(event.key==='Enter') searchComic()">
-        <button class="comic-search-btn" onclick="searchComic()">搜索</button>
+        <input type="text" class="comic-search-input" id="searchInput" placeholder="搜索漫画名称..." onkeydown="if(event.key==='Enter') doSearch()">
+        <button class="comic-search-btn" onclick="doSearch()">搜索</button>
       </div>
     </div>
 
@@ -526,279 +606,494 @@
       <span class="comic-tag active" data-type="recommend">推荐</span>
       <span class="comic-tag" data-type="hot">热门</span>
       <span class="comic-tag" data-type="finish">完结</span>
-      <span class="comic-tag" data-type="最新连载">连载中</span>
+      <span class="comic-tag" data-type="连载中">连载中</span>
+    </div>
+
+    <div class="source-info" id="sourceInfo" style="display:none;">
+      <span class="source-dot" id="sourceDot"></span>
+      <span id="sourceText">正在加载...</span>
     </div>
 
     <div id="comicContent">
       <div class="comic-loading">
         <div class="spinner"></div>
-        <p>加载中...</p>
+        <p>正在加载漫画...</p>
+        <p class="comic-loading-tips">首次加载可能需要几秒钟，请耐心等待</p>
       </div>
     </div>
   </div>
 
   <script>
-    // ==================== 配置 ====================
-    const BAOZI_BASE = 'https://cn.baozimh.com';
-    // CORS 代理列表，按优先级尝试
-    const CORS_PROXIES = [
-      url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-      url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
-      url => `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(url)}`,
+    // ==================== 数据源配置 ====================
+    var BAOZI_DOMAINS = [
+      'https://www.baozimh.com',
+      'https://cn.baozimh.com',
+      'https://www.baozimh.com',
+      'http://www.baozimh.com'
     ];
 
-    let currentProxyIndex = 0;
-    let currentView = 'list'; // list | detail | reader
-    let currentComicUrl = '';
-    let currentChapters = [];
-    let currentChapterIndex = 0;
+    var CORS_PROXIES = [
+      function(url) { return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url); },
+      function(url) { return 'https://corsproxy.io/?url=' + encodeURIComponent(url); },
+      function(url) { return 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(url); },
+      function(url) { return 'https://api.allorigins.win/get?url=' + encodeURIComponent(url); },
+      function(url) { return 'https://gembed.com/' + url; }
+    ];
 
-    // ==================== 工具：创建超时 AbortController（兼容旧iOS） ====================
+    // ==================== 状态 ====================
+    var currentDomainIndex = 0;
+    var currentProxyIndex = 0;
+    var currentView = 'list';
+    var currentComicUrl = '';
+    var currentComicTitle = '';
+    var currentChapters = [];
+    var currentChapterIndex = 0;
+    var debugLogs = [];
+
+    // ==================== 工具函数 ====================
+    function log(msg) {
+      debugLogs.push(msg);
+      if (debugLogs.length > 50) debugLogs.shift();
+      console.log('[漫画]', msg);
+    }
+
     function createTimeoutController(ms) {
-      const controller = new AbortController();
-      setTimeout(() => controller.abort(), ms);
+      var controller = new AbortController();
+      setTimeout(function() { controller.abort(); }, ms);
       return controller;
     }
 
-    // ==================== 代理请求 ====================
-    async function proxyFetch(url) {
-      for (let i = 0; i < CORS_PROXIES.length; i++) {
-        const idx = (currentProxyIndex + i) % CORS_PROXIES.length;
-        const proxyUrl = CORS_PROXIES[idx](url);
-        try {
-          const controller = createTimeoutController(15000);
-          const resp = await fetch(proxyUrl, {
-            signal: controller.signal
-          });
-          if (resp.ok) {
-            const text = await resp.text();
-            if (text && text.length > 100) {
-              currentProxyIndex = idx;
-              return text;
-            }
-          }
-        } catch (e) {
-          console.warn('代理 ' + idx + ' 失败:', e.message);
-        }
-      }
-      throw new Error('所有代理均不可用');
-    }
-
-    // ==================== HTML 解析 ====================
     function parseHTML(htmlStr) {
-      const parser = new DOMParser();
+      var parser = new DOMParser();
       return parser.parseFromString(htmlStr, 'text/html');
     }
 
-    // 提取漫画封面图URL（处理amp-img）
-    function getImgSrc(ampImg) {
-      return ampImg.getAttribute('src') || ampImg.getAttribute('data-src') || '';
+    function getImgSrc(el) {
+      if (!el) return '';
+      return el.getAttribute('src') || el.getAttribute('data-src') || el.getAttribute('data-original') || '';
+    }
+
+    function showSourceInfo(text, status) {
+      var info = document.getElementById('sourceInfo');
+      var dot = document.getElementById('sourceDot');
+      var txt = document.getElementById('sourceText');
+      info.style.display = 'flex';
+      txt.textContent = text;
+      dot.className = 'source-dot';
+      if (status === 'loading') dot.classList.add('loading');
+      if (status === 'error') dot.classList.add('error');
+    }
+
+    function hideSourceInfo() {
+      document.getElementById('sourceInfo').style.display = 'none';
+    }
+
+    // ==================== 核心请求：多域名 + 多代理 ====================
+    async function fetchComicHTML(pathOrUrl) {
+      var url = pathOrUrl;
+      var isFullUrl = pathOrUrl.indexOf('http') === 0;
+
+      var attempts = [];
+      for (var d = 0; d < BAOZI_DOMAINS.length; d++) {
+        for (var p = 0; p < CORS_PROXIES.length; p++) {
+          attempts.push({ domainIdx: d, proxyIdx: p });
+        }
+      }
+
+      var errors = [];
+      for (var i = 0; i < attempts.length; i++) {
+        var attempt = attempts[i];
+        var baseUrl = BAOZI_DOMAINS[attempt.domainIdx];
+        var targetUrl = isFullUrl ? url : (baseUrl + pathOrUrl);
+        var proxyUrl = CORS_PROXIES[attempt.proxyIdx](targetUrl);
+
+        log('尝试: 域名' + attempt.domainIdx + ' + 代理' + attempt.proxyIdx + ' -> ' + targetUrl.substring(0, 60));
+        showSourceInfo('正在尝试连接... (' + (i + 1) + '/' + attempts.length + ')', 'loading');
+
+        try {
+          var controller = createTimeoutController(12000);
+          var resp = await fetch(proxyUrl, { signal: controller.signal });
+          if (!resp.ok) {
+            errors.push('代理' + attempt.proxyIdx + ': HTTP ' + resp.status);
+            continue;
+          }
+
+          var text = await resp.text();
+
+          var isJson = false;
+          try {
+            var json = JSON.parse(text);
+            if (json && json.contents) {
+              text = json.contents;
+              isJson = true;
+            } else if (json && json.data) {
+              text = typeof json.data === 'string' ? json.data : '';
+              isJson = true;
+            }
+          } catch (e) {}
+
+          if (text && text.length > 200 && text.indexOf('<') !== -1) {
+            log('成功! 域名' + attempt.domainIdx + ' 代理' + attempt.proxyIdx);
+            currentDomainIndex = attempt.domainIdx;
+            currentProxyIndex = attempt.proxyIdx;
+            hideSourceInfo();
+            return text;
+          } else {
+            errors.push('代理' + attempt.proxyIdx + ': 返回内容无效(' + (text ? text.length : 0) + '字节)');
+          }
+        } catch (e) {
+          errors.push('代理' + attempt.proxyIdx + ': ' + e.message);
+        }
+      }
+
+      throw new Error('所有数据源均不可用\n\n失败详情:\n' + errors.slice(0, 8).join('\n'));
     }
 
     // ==================== 加载漫画列表 ====================
-    async function loadComicList(type = 'recommend') {
-      const content = document.getElementById('comicContent');
-      content.innerHTML = '<div class="comic-loading"><div class="spinner"></div><p>加载中...</p></div>';
+    async function loadComicList(type) {
+      type = type || 'recommend';
+      currentView = 'list';
+      var content = document.getElementById('comicContent');
+      content.innerHTML =
+        '<div class="comic-loading">' +
+          '<div class="spinner"></div>' +
+          '<p>正在加载漫画列表...</p>' +
+          '<p class="comic-loading-tips">正在尝试多线路连接，请稍候</p>' +
+        '</div>';
 
-      let url;
+      var path;
       if (type === 'recommend') {
-        url = BAOZI_BASE + '/';
+        path = '/';
       } else if (type === 'hot') {
-        url = BAOZI_BASE + '/classify?type=hot';
+        path = '/classify?type=hot';
       } else if (type === 'finish') {
-        url = BAOZI_BASE + '/classify?type=finish';
+        path = '/classify?type=finish';
+      } else if (type === '连载中') {
+        path = '/classify?type=serial';
       } else {
-        url = BAOZI_BASE + '/classify?type=' + type;
+        path = '/classify?type=' + type;
       }
 
       try {
-        const html = await proxyFetch(url);
-        const doc = parseHTML(html);
-        const cards = doc.querySelectorAll('.comics-card');
+        var html = await fetchComicHTML(path);
+        var doc = parseHTML(html);
+
+        var cards = [];
+        var selectors = [
+          '.comics-card',
+          '.comic-card',
+          '.card',
+          '[class*="comic"][class*="card"]',
+          '.pure-u-1-2'
+        ];
+
+        for (var s = 0; s < selectors.length; s++) {
+          var found = doc.querySelectorAll(selectors[s]);
+          if (found.length >= 6) {
+            cards = found;
+            log('使用选择器: ' + selectors[s] + ' (找到' + found.length + '个)');
+            break;
+          }
+        }
 
         if (cards.length === 0) {
-          content.innerHTML = '<div class="comic-error"><i data-lucide="search-x"></i><p>暂无漫画数据</p></div>';
-          lucide.createIcons();
+          showErrorWithActions('未找到漫画数据', html);
           return;
         }
 
-        let htmlStr = '<div class="comic-grid">';
-        cards.forEach(card => {
-          const link = card.querySelector('a');
-          const href = link ? link.getAttribute('href') : '';
-          const title = card.querySelector('.comics-card__title');
-          const titleText = title ? title.textContent.trim() : '未知';
-          const ampImg = card.querySelector('amp-img') || card.querySelector('img');
-          const imgSrc = ampImg ? getImgSrc(ampImg) : '';
-          const tag = card.querySelector('.tabs, .cls');
-          const tagText = tag ? tag.textContent.trim() : '';
+        var htmlStr = '<div class="comic-grid">';
+        var count = 0;
+        for (var c = 0; c < cards.length; c++) {
+          var card = cards[c];
+          var link = card.querySelector('a');
+          var href = link ? link.getAttribute('href') : '';
+          if (!href || href === '#') continue;
 
-          // 提取最新章节信息
-          const chapterInfo = card.querySelector('.supporting-text, em');
-          const chapterText = chapterInfo ? chapterInfo.textContent.trim() : '';
-
-          if (href && imgSrc) {
-            const fullUrl = href.startsWith('http') ? href : BAOZI_BASE + href;
-            htmlStr += `
-              <div class="comic-card" onclick="loadComicDetail('${fullUrl}')">
-                <img class="comic-card-img" src="${imgSrc}" alt="${titleText}" loading="lazy" referrerpolicy="no-referrer">
-                <div class="comic-card-info">
-                  <div class="comic-card-title">${titleText}</div>
-                  <div class="comic-card-chapter">${chapterText || tagText}</div>
-                </div>
-              </div>
-            `;
+          var titleEls = card.querySelectorAll('[class*="title"], h3, h4');
+          var titleText = '';
+          for (var t = 0; t < titleEls.length; t++) {
+            var txt = titleEls[t].textContent.trim();
+            if (txt && txt.length > 1 && txt.length < 50) {
+              titleText = txt;
+              break;
+            }
           }
-        });
+
+          var img = card.querySelector('amp-img') || card.querySelector('img');
+          var imgSrc = getImgSrc(img);
+
+          var chapterEls = card.querySelectorAll('[class*="chapter"], [class*="supporting"], em, [class*="subtitle"]');
+          var chapterText = '';
+          for (var ch = 0; ch < chapterEls.length; ch++) {
+            var chtxt = chapterEls[ch].textContent.trim();
+            if (chtxt && chtxt.length > 1 && chtxt.length < 40) {
+              chapterText = chtxt;
+              break;
+            }
+          }
+
+          if (href && imgSrc && titleText) {
+            var fullUrl = href.indexOf('http') === 0 ? href : (BAOZI_DOMAINS[currentDomainIndex] + href);
+            htmlStr +=
+              '<div class="comic-card" onclick=\'loadComicDetail("' + fullUrl.replace(/'/g, "\\'") + '","' + titleText.replace(/"/g, '&quot;') + '")\'>' +
+                '<img class="comic-card-img" src="' + imgSrc + '" alt="' + titleText + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display=\'none\'">' +
+                '<div class="comic-card-info">' +
+                  '<div class="comic-card-title">' + titleText + '</div>' +
+                  (chapterText ? '<div class="comic-card-chapter">' + chapterText + '</div>' : '') +
+                '</div>' +
+              '</div>';
+            count++;
+          }
+        }
         htmlStr += '</div>';
+
+        if (count === 0) {
+          showErrorWithActions('未能解析漫画列表数据', html);
+          return;
+        }
+
         content.innerHTML = htmlStr;
+        showSourceInfo('数据来源: 包子漫画 (线路 ' + (currentProxyIndex + 1) + ')', 'ok');
+        log('成功加载 ' + count + ' 部漫画');
       } catch (e) {
-        content.innerHTML = `
-          <div class="comic-error">
-            <i data-lucide="wifi-off"></i>
-            <p>加载失败，请稍后重试</p>
-            <p style="font-size:0.8rem;margin-top:8px;color:var(--text-muted);">${e.message}</p>
-          </div>
-        `;
-        lucide.createIcons();
+        log('加载列表失败: ' + e.message);
+        showErrorWithActions('加载失败，请重试', e.message, true);
       }
     }
 
-    // ==================== 搜索漫画 ====================
-    async function searchComic() {
-      const keyword = document.getElementById('searchInput').value.trim();
+    // ==================== 搜索 ====================
+    function doSearch() {
+      var keyword = document.getElementById('searchInput').value.trim();
       if (!keyword) {
-        loadComicList();
+        loadComicList('recommend');
         return;
       }
+      searchComic(keyword);
+    }
 
-      const content = document.getElementById('comicContent');
-      content.innerHTML = '<div class="comic-loading"><div class="spinner"></div><p>搜索中...</p></div>';
+    async function searchComic(keyword) {
       currentView = 'list';
+      var content = document.getElementById('comicContent');
+      content.innerHTML =
+        '<div class="comic-loading">' +
+          '<div class="spinner"></div>' +
+          '<p>正在搜索 "' + keyword + '"...</p>' +
+        '</div>';
 
       try {
-        const url = BAOZI_BASE + '/search?q=' + encodeURIComponent(keyword);
-        const html = await proxyFetch(url);
-        const doc = parseHTML(html);
-        const cards = doc.querySelectorAll('.comics-card');
+        var path = '/search?q=' + encodeURIComponent(keyword);
+        var html = await fetchComicHTML(path);
+        var doc = parseHTML(html);
+
+        var cards = [];
+        var selectors = [
+          '.comics-card',
+          '.comic-card',
+          '.card',
+          '[class*="comic"][class*="card"]',
+          '.search-result-item'
+        ];
+
+        for (var s = 0; s < selectors.length; s++) {
+          var found = doc.querySelectorAll(selectors[s]);
+          if (found.length >= 1) {
+            cards = found;
+            break;
+          }
+        }
 
         if (cards.length === 0) {
-          content.innerHTML = `<div class="comic-error"><i data-lucide="search-x"></i><p>未找到"${keyword}"相关漫画</p></div>`;
+          content.innerHTML =
+            '<div class="comic-error">' +
+              '<i data-lucide="search-x"></i>' +
+              '<p>未找到 "' + keyword + '" 相关漫画</p>' +
+              '<div class="comic-error-actions">' +
+                '<button class="comic-error-btn" onclick="loadComicList(\'recommend\')">' +
+                  '<i data-lucide="arrow-left" style="width:14px;height:14px;"></i>返回推荐' +
+                '</button>' +
+              '</div>' +
+            '</div>';
           lucide.createIcons();
           return;
         }
 
-        let htmlStr = `<div class="comic-grid">`;
-        cards.forEach(card => {
-          const link = card.querySelector('a');
-          const href = link ? link.getAttribute('href') : '';
-          const title = card.querySelector('.comics-card__title');
-          const titleText = title ? title.textContent.trim() : '未知';
-          const ampImg = card.querySelector('amp-img') || card.querySelector('img');
-          const imgSrc = ampImg ? getImgSrc(ampImg) : '';
+        var htmlStr = '<div class="comic-grid">';
+        var count = 0;
+        for (var c = 0; c < cards.length; c++) {
+          var card = cards[c];
+          var link = card.querySelector('a');
+          var href = link ? link.getAttribute('href') : '';
+          if (!href || href === '#') continue;
 
-          if (href && imgSrc) {
-            const fullUrl = href.startsWith('http') ? href : BAOZI_BASE + href;
-            htmlStr += `
-              <div class="comic-card" onclick="loadComicDetail('${fullUrl}')">
-                <img class="comic-card-img" src="${imgSrc}" alt="${titleText}" loading="lazy" referrerpolicy="no-referrer">
-                <div class="comic-card-info">
-                  <div class="comic-card-title">${titleText}</div>
-                </div>
-              </div>
-            `;
+          var titleEls = card.querySelectorAll('[class*="title"], h3, h4');
+          var titleText = '';
+          for (var t = 0; t < titleEls.length; t++) {
+            var txt = titleEls[t].textContent.trim();
+            if (txt && txt.length > 1 && txt.length < 50) {
+              titleText = txt;
+              break;
+            }
           }
-        });
+
+          var img = card.querySelector('amp-img') || card.querySelector('img');
+          var imgSrc = getImgSrc(img);
+
+          if (href && imgSrc && titleText) {
+            var fullUrl = href.indexOf('http') === 0 ? href : (BAOZI_DOMAINS[currentDomainIndex] + href);
+            htmlStr +=
+              '<div class="comic-card" onclick=\'loadComicDetail("' + fullUrl.replace(/'/g, "\\'") + '","' + titleText.replace(/"/g, '&quot;') + '")\'>' +
+                '<img class="comic-card-img" src="' + imgSrc + '" alt="' + titleText + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display=\'none\'">' +
+                '<div class="comic-card-info">' +
+                  '<div class="comic-card-title">' + titleText + '</div>' +
+                '</div>' +
+              '</div>';
+            count++;
+          }
+        }
         htmlStr += '</div>';
+
+        if (count === 0) {
+          content.innerHTML =
+            '<div class="comic-error">' +
+              '<i data-lucide="search-x"></i>' +
+              '<p>未找到 "' + keyword + '" 相关漫画</p>' +
+            '</div>';
+          lucide.createIcons();
+          return;
+        }
+
         content.innerHTML = htmlStr;
+        showSourceInfo('找到 ' + count + ' 个结果', 'ok');
       } catch (e) {
-        content.innerHTML = `
-          <div class="comic-error">
-            <i data-lucide="wifi-off"></i>
-            <p>搜索失败，请稍后重试</p>
-          </div>
-        `;
-        lucide.createIcons();
+        showErrorWithActions('搜索失败', e.message, true);
       }
     }
 
     // ==================== 漫画详情 ====================
-    async function loadComicDetail(comicUrl) {
+    async function loadComicDetail(comicUrl, fallbackTitle) {
       currentView = 'detail';
       currentComicUrl = comicUrl;
-      const content = document.getElementById('comicContent');
-      content.innerHTML = '<div class="comic-loading"><div class="spinner"></div><p>加载详情...</p></div>';
+      currentComicTitle = fallbackTitle || '';
+      var content = document.getElementById('comicContent');
+      content.innerHTML =
+        '<div class="comic-loading">' +
+          '<div class="spinner"></div>' +
+          '<p>正在加载漫画详情...</p>' +
+        '</div>';
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
       try {
-        const html = await proxyFetch(comicUrl);
-        const doc = parseHTML(html);
+        var html = await fetchComicHTML(comicUrl);
+        var doc = parseHTML(html);
 
-        const title = doc.querySelector('.comics-detail__title');
-        const titleText = title ? title.textContent.trim() : '未知漫画';
-        const author = doc.querySelector('.comics-detail__author');
-        const authorText = author ? author.textContent.trim() : '';
-        const desc = doc.querySelector('.comics-detail__desc');
-        const descText = desc ? desc.textContent.trim() : '';
-        const coverImg = doc.querySelector('.pure-u-1-1 amp-img, .pure-u-1-1 img');
-        const coverSrc = coverImg ? getImgSrc(coverImg) : '';
-
-        // 提取标签
-        const tagList = doc.querySelectorAll('.tag-list .tag, .comics-detail__tag');
-        let tagsHtml = '';
-        tagList.forEach(t => {
-          const tText = t.textContent.trim();
-          if (tText) tagsHtml += `<span class="comic-detail-tag">${tText}</span>`;
-        });
-
-        // 提取章节列表
-        const chapterLinks = doc.querySelectorAll('.comics-chapters a');
-        currentChapters = [];
-        chapterLinks.forEach(a => {
-          const href = a.getAttribute('href');
-          const text = a.textContent.trim();
-          if (href && text) {
-            const fullUrl = href.startsWith('http') ? href : BAOZI_BASE + href;
-            currentChapters.push({ url: fullUrl, title: text });
+        var titleText = '';
+        var titleSelectors = ['.comics-detail__title', '.comic-title', 'h1', '.detail-title', '[class*="detail"][class*="title"]'];
+        for (var t = 0; t < titleSelectors.length; t++) {
+          var tel = doc.querySelector(titleSelectors[t]);
+          if (tel && tel.textContent.trim()) {
+            titleText = tel.textContent.trim();
+            break;
           }
-        });
+        }
+        if (!titleText) titleText = fallbackTitle || '未知漫画';
 
-        // 反转章节顺序（包子漫画默认倒序）
-        currentChapters.reverse();
+        var authorText = '';
+        var authorSelectors = ['.comics-detail__author', '.comic-author', '.author', '[class*="author"]'];
+        for (var a = 0; a < authorSelectors.length; a++) {
+          var ael = doc.querySelector(authorSelectors[a]);
+          if (ael && ael.textContent.trim() && ael.textContent.trim().length < 50) {
+            authorText = ael.textContent.trim();
+            break;
+          }
+        }
 
-        let chapterHtml = '';
-        currentChapters.forEach((ch, i) => {
-          chapterHtml += `<div class="chapter-item" onclick="loadChapter(${i})">${ch.title}</div>`;
-        });
+        var descText = '';
+        var descSelectors = ['.comics-detail__desc', '.comic-desc', '.description', '[class*="desc"]', '[class*="intro"]'];
+        for (var d = 0; d < descSelectors.length; d++) {
+          var del = doc.querySelector(descSelectors[d]);
+          if (del && del.textContent.trim() && del.textContent.trim().length > 10) {
+            descText = del.textContent.trim();
+            break;
+          }
+        }
 
-        content.innerHTML = `
-          <div class="comic-detail">
-            <button class="comic-back-btn" onclick="goBackToList()">
-              <i data-lucide="arrow-left" style="width:16px;height:16px;"></i>
-              返回列表
-            </button>
-            <div class="comic-detail-header">
-              ${coverSrc ? `<img class="comic-detail-cover" src="${coverSrc}" alt="${titleText}" referrerpolicy="no-referrer">` : ''}
-              <div class="comic-detail-meta">
-                <div class="comic-detail-title">${titleText}</div>
-                ${authorText ? `<div class="comic-detail-author">${authorText}</div>` : ''}
-                <div class="comic-detail-tags">${tagsHtml}</div>
-                ${descText ? `<div class="comic-detail-desc">${descText}</div>` : ''}
-              </div>
-            </div>
-            <h3 style="font-size:1.05rem;margin-bottom:12px;color:var(--text-primary);">章节列表 (${currentChapters.length}话)</h3>
-            <div class="chapter-list">${chapterHtml}</div>
-          </div>
-        `;
+        var coverSrc = '';
+        var coverSelectors = ['.comics-detail__cover amp-img', '.comic-cover amp-img', '.cover amp-img', '[class*="cover"] amp-img', '.pure-u-1-3 amp-img', '.comics-detail__cover img', '.comic-cover img'];
+        for (var ci = 0; ci < coverSelectors.length; ci++) {
+          var cel = doc.querySelector(coverSelectors[ci]);
+          if (cel) {
+            coverSrc = getImgSrc(cel);
+            if (coverSrc) break;
+          }
+        }
+
+        var tagsHtml = '';
+        var tagContainer = doc.querySelector('.tag-list, .comic-tags, [class*="tag"]');
+        if (tagContainer) {
+          var tags = tagContainer.querySelectorAll('span, a, .tag');
+          for (var ti = 0; ti < tags.length; ti++) {
+            var ttxt = tags[ti].textContent.trim();
+            if (ttxt && ttxt.length < 15) {
+              tagsHtml += '<span class="comic-detail-tag">' + ttxt + '</span>';
+            }
+          }
+        }
+
+        var chapterLinks = [];
+        var chapterSelectors = ['.comics-chapters a', '.chapter-list a', '.chaper-list a', '[class*="chapter"] a', '[class*="catalog"] a'];
+        for (var cs = 0; cs < chapterSelectors.length; cs++) {
+          var chs = doc.querySelectorAll(chapterSelectors[cs]);
+          if (chs.length >= 5) {
+            chapterLinks = chs;
+            log('章节选择器: ' + chapterSelectors[cs] + ' (' + chs.length + '章)');
+            break;
+          }
+        }
+
+        currentChapters = [];
+        for (var cl = 0; cl < chapterLinks.length; cl++) {
+          var chLink = chapterLinks[cl];
+          var chref = chLink.getAttribute('href');
+          var chtext = chLink.textContent.trim();
+          if (chref && chtext) {
+            var chFullUrl = chref.indexOf('http') === 0 ? chref : (BAOZI_DOMAINS[currentDomainIndex] + chref);
+            currentChapters.push({ url: chFullUrl, title: chtext });
+          }
+        }
+
+        if (currentChapters.length > 2 && currentChapters[0].title > currentChapters[currentChapters.length - 1].title) {
+          currentChapters.reverse();
+        }
+
+        var chapterHtml = '';
+        for (var ch = 0; ch < currentChapters.length; ch++) {
+          chapterHtml += '<div class="chapter-item" onclick="loadChapter(' + ch + ')">' + currentChapters[ch].title + '</div>';
+        }
+
+        content.innerHTML =
+          '<div class="comic-detail">' +
+            '<button class="comic-back-btn" onclick="goBackToList()">' +
+              '<i data-lucide="arrow-left" style="width:16px;height:16px;"></i>' +
+              '返回列表' +
+            '</button>' +
+            '<div class="comic-detail-header">' +
+              (coverSrc ? '<img class="comic-detail-cover" src="' + coverSrc + '" alt="' + titleText + '" referrerpolicy="no-referrer" onerror="this.style.display=\'none\'">' : '') +
+              '<div class="comic-detail-meta">' +
+                '<div class="comic-detail-title">' + titleText + '</div>' +
+                (authorText ? '<div class="comic-detail-author">' + authorText + '</div>' : '') +
+                '<div class="comic-detail-tags">' + tagsHtml + '</div>' +
+                (descText ? '<div class="comic-detail-desc">' + descText + '</div>' : '') +
+              '</div>' +
+            '</div>' +
+            '<h3 style="font-size:1.05rem;margin-bottom:12px;color:var(--text-primary);">章节列表 (' + currentChapters.length + '话)</h3>' +
+            '<div class="chapter-list">' + chapterHtml + '</div>' +
+          '</div>';
         lucide.createIcons();
       } catch (e) {
-        content.innerHTML = `
-          <div class="comic-error">
-            <i data-lucide="wifi-off"></i>
-            <p>加载详情失败，请稍后重试</p>
-          </div>
-        `;
-        lucide.createIcons();
+        showErrorWithActions('加载详情失败', e.message, true, [
+          { text: '重新加载', action: 'loadComicDetail("' + comicUrl + '", "' + (fallbackTitle || '') + '")' },
+          { text: '返回列表', action: 'goBackToList()' }
+        ]);
       }
     }
 
@@ -806,111 +1101,157 @@
     async function loadChapter(index) {
       currentView = 'reader';
       currentChapterIndex = index;
-      const content = document.getElementById('comicContent');
-      const chapter = currentChapters[index];
-      content.innerHTML = '<div class="comic-loading"><div class="spinner"></div><p>加载章节...</p></div>';
+      var chapter = currentChapters[index];
+      var content = document.getElementById('comicContent');
+      content.innerHTML =
+        '<div class="comic-loading">' +
+          '<div class="spinner"></div>' +
+          '<p>正在加载章节...</p>' +
+          '<p class="comic-loading-tips">' + chapter.title + '</p>' +
+        '</div>';
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
       try {
-        const html = await proxyFetch(chapter.url);
-        const doc = parseHTML(html);
+        var html = await fetchComicHTML(chapter.url);
+        var doc = parseHTML(html);
 
-        // 提取漫画图片
-        const comicContain = doc.querySelector('.comic-contain');
-        let images = [];
-        if (comicContain) {
-          const ampImgs = comicContain.querySelectorAll('amp-img, img');
-          ampImgs.forEach(img => {
-            const src = getImgSrc(img);
-            if (src && !src.includes('placeholder')) {
-              images.push(src);
+        var images = [];
+        var containerSelectors = ['.comic-contain', '.comic-images', '.comic-content', '[class*="comic"][class*="content"]', '.main-content', 'article'];
+        for (var cs = 0; cs < containerSelectors.length; cs++) {
+          var container = doc.querySelector(containerSelectors[cs]);
+          if (container) {
+            var imgs = container.querySelectorAll('amp-img, img');
+            for (var i = 0; i < imgs.length; i++) {
+              var src = getImgSrc(imgs[i]);
+              if (src && src.indexOf('http') === 0 && !src.match(/\.(js|css|ico|svg)$/i) && src.indexOf('placeholder') === -1 && src.length > 30) {
+                images.push(src);
+              }
             }
-          });
+            if (images.length >= 3) {
+              log('图片容器: ' + containerSelectors[cs] + ' (' + images.length + '张)');
+              break;
+            }
+          }
         }
 
-        if (images.length === 0) {
-          // 备用：查找所有可能的漫画图片
-          const allImgs = doc.querySelectorAll('amp-img[src*="baozimh"], amp-img[src*="hdslb"], img[src*="baozimh"], img[src*="hdslb"]');
-          allImgs.forEach(img => {
-            const src = getImgSrc(img);
-            if (src) images.push(src);
-          });
+        if (images.length < 3) {
+          var allImgs = doc.querySelectorAll('amp-img[src*="http"], img[src*="http"]');
+          for (var ai = 0; ai < allImgs.length; ai++) {
+            var asrc = getImgSrc(allImgs[ai]);
+            if (asrc && asrc.indexOf('http') === 0 && !asrc.match(/\.(js|css|ico|svg)$/i) && asrc.length > 30) {
+              var dup = false;
+              for (var di = 0; di < images.length; di++) {
+                if (images[di] === asrc) { dup = true; break; }
+              }
+              if (!dup) images.push(asrc);
+            }
+          }
         }
 
-        const prevBtn = index > 0
-          ? `<button onclick="loadChapter(${index - 1})"><i data-lucide="chevron-left" style="width:16px;height:16px;"></i>上一话</button>`
-          : `<button disabled><i data-lucide="chevron-left" style="width:16px;height:16px;"></i>上一话</button>`;
-        const nextBtn = index < currentChapters.length - 1
-          ? `<button onclick="loadChapter(${index + 1})">下一话<i data-lucide="chevron-right" style="width:16px;height:16px;"></i></button>`
-          : `<button disabled>下一话<i data-lucide="chevron-right" style="width:16px;height:16px;"></i></button>`;
+        var prevBtn = index > 0
+          ? '<button onclick="loadChapter(' + (index - 1) + ')"><i data-lucide="chevron-left" style="width:16px;height:16px;"></i>上一话</button>'
+          : '<button disabled><i data-lucide="chevron-left" style="width:16px;height:16px;"></i>上一话</button>';
+        var nextBtn = index < currentChapters.length - 1
+          ? '<button onclick="loadChapter(' + (index + 1) + ')">下一话<i data-lucide="chevron-right" style="width:16px;height:16px;"></i></button>'
+          : '<button disabled>下一话<i data-lucide="chevron-right" style="width:16px;height:16px;"></i></button>';
 
-        let imagesHtml = '';
-        images.forEach(src => {
-          imagesHtml += `<img src="${src}" alt="漫画页" referrerpolicy="no-referrer" loading="lazy">`;
-        });
+        var imagesHtml = '';
+        for (var img = 0; img < images.length; img++) {
+          imagesHtml += '<img src="' + images[img] + '" alt="第' + (img + 1) + '页" referrerpolicy="no-referrer" loading="lazy" onerror="this.style.display=\'none\'">';
+        }
 
-        content.innerHTML = `
-          <div class="comic-reader">
-            <button class="comic-back-btn" onclick="loadComicDetail('${currentComicUrl}')">
-              <i data-lucide="arrow-left" style="width:16px;height:16px;"></i>
-              返回详情
-            </button>
-            <div class="comic-reader-title">${chapter.title}</div>
-            <div class="comic-reader-nav">
-              ${prevBtn}
-              <span class="nav-center">${index + 1} / ${currentChapters.length}</span>
-              ${nextBtn}
-            </div>
-            <div class="comic-reader-images">
-              ${imagesHtml || '<p style="text-align:center;color:var(--text-muted);padding:40px;">本章节无图片数据</p>'}
-            </div>
-            <div class="comic-reader-nav" style="margin-top:24px;">
-              ${prevBtn}
-              <span class="nav-center">${index + 1} / ${currentChapters.length}</span>
-              ${nextBtn}
-            </div>
-          </div>
-        `;
+        content.innerHTML =
+          '<div class="comic-reader">' +
+            '<button class="comic-back-btn" onclick=\'loadComicDetail("' + currentComicUrl.replace(/'/g, "\\'") + '", "' + (currentComicTitle || '').replace(/"/g, '&quot;') + '")\'>' +
+              '<i data-lucide="arrow-left" style="width:16px;height:16px;"></i>' +
+              '返回详情' +
+            '</button>' +
+            '<div class="comic-reader-title">' + chapter.title + '</div>' +
+            '<div class="comic-reader-nav">' + prevBtn +
+              '<span class="nav-center">' + (index + 1) + ' / ' + currentChapters.length + '</span>' +
+              nextBtn +
+            '</div>' +
+            '<div class="comic-reader-images">' +
+              (imagesHtml || '<p style="text-align:center;color:var(--text-muted);padding:40px;">本章节暂无图片数据</p>') +
+            '</div>' +
+            '<div class="comic-reader-nav" style="margin-top:24px;">' + prevBtn +
+              '<span class="nav-center">' + (index + 1) + ' / ' + currentChapters.length + '</span>' +
+              nextBtn +
+            '</div>' +
+          '</div>';
         lucide.createIcons();
       } catch (e) {
-        content.innerHTML = `
-          <div class="comic-error">
-            <i data-lucide="wifi-off"></i>
-            <p>加载章节失败，请稍后重试</p>
-          </div>
-        `;
-        lucide.createIcons();
+        showErrorWithActions('加载章节失败', e.message, true, [
+          { text: '重试', action: 'loadChapter(' + index + ')' },
+          { text: '返回详情', action: 'loadComicDetail(currentComicUrl, currentComicTitle)' }
+        ]);
       }
+    }
+
+    // ==================== 错误展示 ====================
+    function showErrorWithActions(title, detail, showDetail, actions) {
+      var content = document.getElementById('comicContent');
+      showSourceInfo('加载失败', 'error');
+
+      var actionsHtml = '';
+      if (actions && actions.length > 0) {
+        actionsHtml = '<div class="comic-error-actions">';
+        for (var i = 0; i < actions.length; i++) {
+          var btnClass = i === 0 ? 'comic-error-btn primary' : 'comic-error-btn';
+          actionsHtml += '<button class="' + btnClass + '" onclick="' + actions[i].action + '">' + actions[i].text + '</button>';
+        }
+        actionsHtml += '</div>';
+      } else {
+        actionsHtml =
+          '<div class="comic-error-actions">' +
+            '<button class="comic-error-btn primary" onclick="loadComicList(\'recommend\')">' +
+              '<i data-lucide="refresh-cw" style="width:14px;height:14px;"></i>重新加载' +
+            '</button>' +
+            '<a class="comic-error-btn" href="https://www.baozimh.com" target="_blank" rel="noopener">' +
+              '<i data-lucide="external-link" style="width:14px;height:14px;"></i>前往官网' +
+            '</a>' +
+          '</div>';
+      }
+
+      var detailHtml = '';
+      if (showDetail && detail) {
+        detailHtml = '<div class="comic-error-detail">' + (detail.substring(0, 500)) + '</div>';
+      }
+
+      content.innerHTML =
+        '<div class="comic-error">' +
+          '<i data-lucide="wifi-off"></i>' +
+          '<p>' + title + '</p>' +
+          '<p style="font-size:0.82rem;color:var(--text-muted);margin-top:8px;">可能原因：CORS代理不稳定或源站反爬限制</p>' +
+          actionsHtml +
+          detailHtml +
+        '</div>';
+      lucide.createIcons();
     }
 
     // ==================== 导航 ====================
     function goBackToList() {
       currentView = 'list';
-      loadComicList(document.querySelector('.comic-tag.active')?.dataset.type || 'recommend');
+      var activeTag = document.querySelector('.comic-tag.active');
+      loadComicList(activeTag ? activeTag.dataset.type : 'recommend');
     }
 
-    // 分类标签点击
-    document.querySelectorAll('.comic-tag').forEach(tag => {
-      tag.addEventListener('click', () => {
-        document.querySelectorAll('.comic-tag').forEach(t => t.classList.remove('active'));
-        tag.classList.add('active');
-        currentView = 'list';
-        loadComicList(tag.dataset.type);
+    var tagElements = document.querySelectorAll('.comic-tag');
+    for (var ti = 0; ti < tagElements.length; ti++) {
+      tagElements[ti].addEventListener('click', function() {
+        var allTags = document.querySelectorAll('.comic-tag');
+        for (var at = 0; at < allTags.length; at++) {
+          allTags[at].classList.remove('active');
+        }
+        this.classList.add('active');
+        loadComicList(this.dataset.type);
       });
-    });
+    }
 
-    // 浏览器后退
-    window.addEventListener('popstate', (e) => {
-      if (currentView === 'reader') {
-        loadComicDetail(currentComicUrl);
-      } else if (currentView === 'detail') {
-        goBackToList();
-      }
-    });
-
-    // 初始化
+    // ==================== 初始化 ====================
     lucide.createIcons();
-    loadComicList();
+    log('页面初始化，开始加载...');
+    loadComicList('recommend');
   </script>
 </body>
 </html>
