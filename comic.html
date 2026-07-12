@@ -691,6 +691,119 @@
       margin-bottom: 8px;
     }
 
+    /* ==================== 追漫按钮 ==================== */
+    .follow-btn-section {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 12px 0;
+    }
+
+    .follow-comic-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 18px;
+      border-radius: 100px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--bg-tertiary);
+      color: var(--text-primary);
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.25s;
+    }
+
+    .follow-comic-btn:hover {
+      transform: translateY(-1px);
+      border-color: var(--accent-primary);
+    }
+
+    .follow-comic-btn.followed {
+      background: linear-gradient(135deg, #f472b6, #ec4899);
+      color: #fff;
+      border-color: transparent;
+      box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
+    }
+
+    .follow-comic-btn.secondary {
+      background: var(--bg-secondary);
+    }
+
+    /* ==================== 书架卡片 ==================== */
+    .followed-library-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 100px;
+      background: linear-gradient(135deg, #f472b6, #ec4899);
+      border: none;
+      color: #fff;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: transform 0.2s, opacity 0.2s;
+    }
+
+    .followed-library-btn:hover {
+      transform: translateY(-1px);
+      opacity: 0.92;
+    }
+
+    .followed-card {
+      position: relative;
+    }
+
+    .followed-card-badge {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      z-index: 2;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 3px 8px;
+      border-radius: 100px;
+      background: linear-gradient(135deg, #f472b6, #ec4899);
+      color: #fff;
+      font-size: 0.68rem;
+      font-weight: 500;
+    }
+
+    .followed-card-delete {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      z-index: 2;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.55);
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, transform 0.2s;
+    }
+
+    .followed-card-delete:hover {
+      background: #ef4444;
+      transform: scale(1.1);
+    }
+
+    .followed-card-progress {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     .source-info {
       max-width: 1200px;
       margin: 0 auto 12px;
@@ -1457,6 +1570,10 @@
         <button class="comic-theme-btn" onclick="toggleComicTheme();event.stopPropagation();" title="切换主题" style="display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:100px;background:var(--bg-secondary);border:1px solid var(--bg-tertiary);color:var(--text-primary);cursor:pointer;transition:all 0.3s;">
           <i data-lucide="moon" style="width:16px;height:16px;"></i>
         </button>
+        <button class="followed-library-btn" id="followedLibraryBtn" title="我追的漫画">
+          <i data-lucide="heart" style="width:16px;height:16px;"></i>
+          我的书架
+        </button>
         <button class="offline-library-btn" id="offlineLibraryBtn" title="查看已下载的漫画">
           <i data-lucide="library" style="width:16px;height:16px;"></i>
           离线书架
@@ -1780,6 +1897,9 @@
     // bookmarks: { comicUrl: [{ chapterIndex, chapterTitle, note, timestamp }] }
     var bookmarks = {};
     var currentReaderImages = []; // 当前阅读器中的图片列表，供进度条使用
+
+    // 追漫 / 书架：{ comicUrl: { title, cover, url, sourceId, followedAt, lastChapterIndex, lastChapterTitle, lastReadAt } }
+    var followedComics = {};
 
     // 离线下载：存储在浏览器内存中的漫画 { comicUrl: { title, author, desc, tags, cover, sourceName, chapters: [{title, url, images:[blobUrl]}], totalImages, downloadedAt } }
     var offlineLibrary = {};
@@ -2951,6 +3071,92 @@
       safeLucide();
     }
 
+    // ==================== 我的书架（追漫列表） ====================
+    function showFollowedLibrary() {
+      currentView = 'followed';
+      var content = document.getElementById('comicContent');
+      var keys = Object.keys(followedComics);
+      hideSourceInfo();
+
+      if (keys.length === 0) {
+        content.innerHTML =
+          '<div class="offline-empty">' +
+            '<i data-lucide="heart-off"></i>' +
+            '<p>书架还是空的</p>' +
+            '<p style="font-size:0.82rem;margin-top:8px;">在漫画详情页点击"追漫"按钮，把喜欢的漫画加入书架</p>' +
+            '<div class="comic-error-actions" style="margin-top:20px;">' +
+              '<button class="comic-error-btn primary" onclick="loadComicList(\'recommend\')">去发现漫画</button>' +
+            '</div>' +
+          '</div>';
+        safeLucide();
+        return;
+      }
+
+      // 按最后阅读时间倒序，未读过的按追漫时间倒序
+      var items = [];
+      for (var k = 0; k < keys.length; k++) {
+        items.push(followedComics[keys[k]]);
+      }
+      items.sort(function(a, b) {
+        var ta = a.lastReadAt || a.followedAt || 0;
+        var tb = b.lastReadAt || b.followedAt || 0;
+        return tb - ta;
+      });
+
+      var html = '<div class="comic-grid">';
+      for (var i = 0; i < items.length; i++) {
+        var item = items[i];
+        var safeUrl = (item.url || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        var safeTitle = (item.title || '未知漫画').replace(/"/g, '&quot;');
+        var coverHtml = item.cover
+          ? '<img class="comic-card-img" src="' + item.cover + '" alt="' + safeTitle + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">' +
+            '<div class="comic-card-img" style="display:none;align-items:center;justify-content:center;font-size:2rem;">📖</div>'
+          : '<div class="comic-card-img" style="display:flex;align-items:center;justify-content:center;font-size:2rem;">📖</div>';
+
+        // 进度提示
+        var progressHtml = '';
+        if (item.lastChapterIndex >= 0 && item.lastChapterTitle) {
+          progressHtml = '<div class="followed-card-progress"><i data-lucide="bookmark" style="width:10px;height:10px;"></i>看到：' + item.lastChapterTitle.replace(/"/g, '&quot;') + '</div>';
+        }
+
+        html +=
+          '<div class="comic-card followed-card" data-action="open-followed-comic" data-url="' + safeUrl + '" data-source="' + (item.sourceId || '') + '">' +
+            '<button class="followed-card-delete" data-action="unfollow-comic" data-url="' + safeUrl + '" title="取消追漫"><i data-lucide="x" style="width:14px;height:14px;"></i></button>' +
+            '<div class="followed-card-badge"><i data-lucide="heart" style="width:10px;height:10px;fill:currentColor;"></i>追漫</div>' +
+            coverHtml +
+            '<div class="comic-card-info">' +
+              '<div class="comic-card-title">' + safeTitle + '</div>' +
+              progressHtml +
+            '</div>' +
+          '</div>';
+      }
+      html += '</div>';
+      content.innerHTML = html;
+      showSourceInfo('我的书架 · 共 ' + keys.length + ' 部漫画', 'ok');
+      safeLucide();
+    }
+
+    // 打开已追漫画：如果有离线缓存直接打开，否则加载详情页
+    function openFollowedComic(comicUrl, sourceId) {
+      // 优先使用离线缓存
+      if (offlineLibrary[comicUrl]) {
+        openOfflineComic(comicUrl);
+        return;
+      }
+      // 切换到对应来源
+      if (sourceId && currentSource && currentSource.id !== sourceId) {
+        for (var i = 0; i < COMIC_SOURCES.length; i++) {
+          if (COMIC_SOURCES[i].id === sourceId) {
+            currentSource = COMIC_SOURCES[i];
+            currentDomainIndex = 0;
+            break;
+          }
+        }
+      }
+      var item = followedComics[comicUrl];
+      loadComicDetail(comicUrl, item ? item.title : '');
+    }
+
     function openOfflineComic(comicUrl) {
       var comic = offlineLibrary[comicUrl];
       if (!comic) { showOfflineLibrary(); return; }
@@ -3491,6 +3697,20 @@
           }
         }
 
+        // 追漫按钮
+        var followed = isFollowed(comicUrl);
+        var followBtnHtml =
+          '<div class="follow-btn-section">' +
+            '<button class="follow-comic-btn' + (followed ? ' followed' : '') + '" data-action="toggle-follow">' +
+              '<i data-lucide="' + (followed ? 'heart' : 'heart') + '" style="width:18px;height:18px;' + (followed ? 'fill:currentColor;' : '') + '"></i>' +
+              '<span>' + (followed ? '已追漫' : '追漫') + '</span>' +
+            '</button>' +
+            '<button class="follow-comic-btn secondary" data-action="go-shelf" title="打开书架">' +
+              '<i data-lucide="library-big" style="width:18px;height:18px;"></i>' +
+              '<span>书架</span>' +
+            '</button>' +
+          '</div>';
+
         content.innerHTML =
           '<div class="comic-detail">' +
             '<button class="comic-back-btn" data-action="back-list">' +
@@ -3506,6 +3726,7 @@
                 (descText ? '<div class="comic-detail-desc">' + descText.substring(0, 200) + '</div>' : '') +
               '</div>' +
             '</div>' +
+            followBtnHtml +
             historyHtml +
             bookmarkListHtml +
             downloadSectionHtml +
@@ -3614,9 +3835,57 @@
       return false;
     }
 
+    // ==================== 追漫 / 书架 ====================
+    function loadFollowedComics() {
+      try {
+        var saved = localStorage.getItem('suyu-followed-comics');
+        if (saved) followedComics = JSON.parse(saved);
+      } catch(e) { followedComics = {}; }
+    }
+
+    function saveFollowedComics() {
+      try {
+        localStorage.setItem('suyu-followed-comics', JSON.stringify(followedComics));
+      } catch(e) {}
+    }
+
+    function isFollowed(comicUrl) {
+      return !!followedComics[comicUrl];
+    }
+
+    // 追漫：true=已追, false=取消追
+    function toggleFollowComic(comicUrl, title, cover, sourceId, lastChapterIndex, lastChapterTitle) {
+      if (followedComics[comicUrl]) {
+        delete followedComics[comicUrl];
+        saveFollowedComics();
+        return false;
+      }
+      followedComics[comicUrl] = {
+        title: title || '未知漫画',
+        cover: cover || '',
+        url: comicUrl,
+        sourceId: sourceId || (currentSource ? currentSource.id : ''),
+        followedAt: Date.now(),
+        lastChapterIndex: (typeof lastChapterIndex === 'number') ? lastChapterIndex : -1,
+        lastChapterTitle: lastChapterTitle || ''
+      };
+      saveFollowedComics();
+      return true;
+    }
+
+    // 更新已追漫画的最后阅读章节
+    function updateFollowedProgress(comicUrl, chapterIndex, chapterTitle) {
+      if (!followedComics[comicUrl]) return;
+      followedComics[comicUrl].lastChapterIndex = chapterIndex;
+      followedComics[comicUrl].lastChapterTitle = chapterTitle || '';
+      followedComics[comicUrl].lastReadAt = Date.now();
+      saveFollowedComics();
+    }
+
     // 初始化加载
     loadReadingHistory();
     loadBookmarks();
+    loadFollowedComics();
 
     // ==================== 主题切换 ====================
     function initComicTheme() {
@@ -3808,6 +4077,8 @@
         // 记录阅读历史
         try {
           recordReadingHistory(currentComicUrl, currentComicTitle || safeTitle, index, chapter.title);
+          // 同步更新追漫进度
+          updateFollowedProgress(currentComicUrl, index, chapter.title);
         } catch(e) { console.warn('记录阅读历史失败:', e); }
 
         content.innerHTML =
@@ -4207,6 +4478,59 @@
       loadComicDetail(currentComicUrl, currentComicTitle);
     });
 
+    // 追漫 / 取消追漫
+    registerHandler('click', '[data-action="toggle-follow"]', function() {
+      var coverImg = document.querySelector('.comic-detail-cover');
+      var coverSrc = coverImg ? coverImg.getAttribute('src') : '';
+      var srcId = currentSource ? currentSource.id : '';
+      // 带上当前阅读历史
+      var hist = getReadingHistory(currentComicUrl);
+      var lastIdx = hist ? hist.chapterIndex : -1;
+      var lastTitle = hist ? hist.chapterTitle : '';
+      var followed = toggleFollowComic(currentComicUrl, currentComicTitle, coverSrc, srcId, lastIdx, lastTitle);
+      // 更新按钮 UI
+      var span = this.querySelector('span');
+      var icon = this.querySelector('i[data-lucide], svg');
+      if (followed) {
+        this.classList.add('followed');
+        if (span) span.textContent = '已追漫';
+        if (icon && icon.tagName === 'I') {
+          icon.setAttribute('style', 'width:18px;height:18px;fill:currentColor;');
+        }
+      } else {
+        this.classList.remove('followed');
+        if (span) span.textContent = '追漫';
+        if (icon && icon.tagName === 'I') {
+          icon.setAttribute('style', 'width:18px;height:18px;');
+        }
+      }
+      safeLucide();
+    });
+
+    // 打开书架
+    registerHandler('click', '[data-action="go-shelf"]', function() {
+      showFollowedLibrary();
+    });
+
+    // 打开已追漫画
+    registerHandler('click', '[data-action="open-followed-comic"]', function(e) {
+      if (e.target.closest('[data-action="unfollow-comic"]')) return;
+      var url = this.getAttribute('data-url');
+      var sourceId = this.getAttribute('data-source') || '';
+      if (url) openFollowedComic(url, sourceId);
+    });
+
+    // 取消追漫
+    registerHandler('click', '[data-action="unfollow-comic"]', function(e) {
+      e.stopPropagation();
+      var url = this.getAttribute('data-url');
+      if (url && followedComics[url]) {
+        delete followedComics[url];
+        saveFollowedComics();
+        showFollowedLibrary();
+      }
+    });
+
     // 章节搜索防抖处理
     var debouncedFilter = debounce(filterChapters, 200);
     document.addEventListener('input', function(e) {
@@ -4595,14 +4919,16 @@
     function showOfflineNotice() {
       var content = document.getElementById('comicContent');
       var hasOffline = Object.keys(offlineLibrary).length > 0;
-      if (hasOffline) {
+      var hasFollowed = Object.keys(followedComics).length > 0;
+      if (hasOffline || hasFollowed) {
         content.innerHTML =
           '<div class="offline-empty">' +
             '<i data-lucide="wifi-off"></i>' +
             '<p>当前处于离线状态</p>' +
-            '<p style="font-size:0.82rem;margin-top:8px;">已加载 ' + Object.keys(offlineLibrary).length + ' 部离线漫画，可离线观看</p>' +
-            '<div class="comic-error-actions" style="margin-top:20px;">' +
-              '<button class="comic-error-btn primary" onclick="showOfflineLibrary()">打开离线书架</button>' +
+            '<p style="font-size:0.82rem;margin-top:8px;">离线漫画 ' + Object.keys(offlineLibrary).length + ' 部 · 追漫 ' + Object.keys(followedComics).length + ' 部</p>' +
+            '<div class="comic-error-actions" style="margin-top:20px;gap:10px;justify-content:center;">' +
+              (hasFollowed ? '<button class="comic-error-btn primary" onclick="showFollowedLibrary()" style="background:linear-gradient(135deg,#f472b6,#ec4899);">我的书架</button>' : '') +
+              (hasOffline ? '<button class="comic-error-btn primary" onclick="showOfflineLibrary()">离线书架</button>' : '') +
             '</div>' +
           '</div>';
       } else {
@@ -4642,6 +4968,10 @@
     // 离线书架按钮
     document.getElementById('offlineLibraryBtn').addEventListener('click', function() {
       showOfflineLibrary();
+    });
+    // 我的书架按钮
+    document.getElementById('followedLibraryBtn').addEventListener('click', function() {
+      showFollowedLibrary();
     });
     // 取消下载按钮 - 立即中断所有进行中的请求
     document.getElementById('downloadCancelBtn').addEventListener('click', function() {
