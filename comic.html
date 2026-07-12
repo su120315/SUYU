@@ -3650,27 +3650,12 @@
     // ==================== 阅读器触摸手势 ====================
     var touchStartX = 0;
     var touchStartY = 0;
-    var lastTapTime = 0;
     var touchStartTime = 0;
 
     document.addEventListener('touchstart', function(e) {
       touchStartX = e.touches[0].clientX;
       touchStartY = e.touches[0].clientY;
       touchStartTime = Date.now();
-
-      var now = Date.now();
-      if (now - lastTapTime < 300) {
-        e.preventDefault();
-        var target = e.target;
-        while (target) {
-          if (target.tagName === 'IMG' && target.closest('.comic-reader-images')) {
-            toggleImageZoom(target);
-            break;
-          }
-          target = target.parentElement;
-        }
-      }
-      lastTapTime = now;
     }, { passive: true });
 
     document.addEventListener('touchend', function(e) {
@@ -3730,39 +3715,14 @@
       }
     }
 
-    // 桌面端点击翻页（无延迟，双击直接缩放）
-    var readerClickTimer = null;
+    // 桌面端点击翻页（无延迟）
     document.addEventListener('click', function(e) {
       if (currentView !== 'reader') return;
       // 跳过交互元素
       if (e.target.closest('button') || e.target.closest('a') || e.target.closest('input')) return;
-
-      // 双击图片区域：直接放大
-      var imagesContainer = e.target.closest('.comic-reader-images');
-      if (imagesContainer) {
-        var imgEl = e.target.closest('img');
-        if (imgEl && e.detail === 2) {
-          if (readerClickTimer) { clearTimeout(readerClickTimer); readerClickTimer = null; }
-          toggleImageZoom(imgEl);
-          return;
-        }
-      }
-
-      // 单击：立即翻页，无延迟
+      // 单击：立即翻页
       handleReaderTap(e.clientY);
     });
-
-    function toggleImageZoom(img) {
-      if (!img) return;
-      if (img.style.transform && img.style.transform.indexOf('scale') !== -1) {
-        img.style.transform = '';
-        img.style.transition = 'transform 0.3s ease';
-      } else {
-        img.style.transform = 'scale(2)';
-        img.style.transition = 'transform 0.3s ease';
-        img.style.cursor = 'zoom-out';
-      }
-    }
 
     // ==================== 初始化 ====================
     initSourceTabs();
