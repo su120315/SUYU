@@ -34,6 +34,9 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- 离线模式提示条 -->
+  <div class="offline-banner">⚠️ 当前处于离线模式，部分功能不可用</div>
+
   <!-- Navigation -->
   <nav class="navbar">
     <div class="nav-content">
@@ -377,6 +380,10 @@
         <div class="weather-error" id="weatherError" style="display:none;">
           ⚠️ 天气加载失败，请稍后重试
         </div>
+        <div class="weather-offline">
+          <span style="font-size:2rem;">📡</span>
+          <span>离线模式无法获取天气</span>
+        </div>
       </div>
     </div>
   </section>
@@ -418,6 +425,10 @@
             <div class="loading-bar-fill"></div>
           </div>
           <span>加载照片中...</span>
+        </div>
+        <div class="gallery-offline-hint">
+          <span style="font-size:2rem;">📸</span>
+          <span>离线模式无法加载相册</span>
         </div>
         <div class="gallery-empty" id="galleryEmpty" style="display:none;">
           <i data-lucide="image"></i>
@@ -505,6 +516,7 @@
           <span>发布留言</span>
         </button>
       </div>
+      <div class="comments-offline-hint">📡 离线模式无法发布和加载留言</div>
       
       <div class="comments-list" id="commentsList"></div>
     </div>

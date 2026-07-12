@@ -8,6 +8,43 @@ window.addEventListener('unhandledrejection', function(e) {
   return true;
 });
 
+// ==================== 离线检测 ====================
+var isOffline = !navigator.onLine;
+
+function updateOfflineStatus() {
+  isOffline = !navigator.onLine;
+  if (isOffline) {
+    document.body.classList.add('offline-mode');
+    console.log('[离线模式] 已激活');
+  } else {
+    document.body.classList.remove('offline-mode');
+    console.log('[在线模式] 已恢复');
+  }
+}
+
+window.addEventListener('online', function() {
+  updateOfflineStatus();
+  // 恢复在线时重新加载数据
+  if (typeof initGallery === 'function') safeInit(initGallery, 'gallery-reload');
+  if (typeof initComments === 'function') safeInit(initComments, 'comments-reload');
+  if (typeof initWeather === 'function') safeInit(initWeather, 'weather-reload');
+  if (typeof initVisitorCounter === 'function') safeInit(initVisitorCounter, 'visitor-reload');
+});
+
+window.addEventListener('offline', updateOfflineStatus);
+
+// 页面加载时立即检测
+updateOfflineStatus();
+
+// 安全初始化包装器（提前定义，供后续使用）
+function safeInit(fn, name) {
+  try {
+    fn();
+  } catch (e) {
+    console.error('Init error [' + name + ']:', e);
+  }
+}
+
 // Initialize Lucide Icons (with safety check)
 if (typeof lucide !== 'undefined') {
   try { lucide.createIcons(); } catch(e) { console.warn('Lucide init error:', e); }
@@ -286,6 +323,7 @@ function initQuickNav() {
 function initGallery() {
   const galleryGrid = document.getElementById('galleryGrid');
   if (!galleryGrid) return;
+  if (isOffline) { console.log('[离线] 跳过相册加载'); return; }
 
   const photoInput = document.getElementById('photoInput');
   const clearBtn = document.getElementById('clearBtn');
@@ -807,6 +845,7 @@ document.querySelectorAll('.social-link').forEach(link => {
 function initComments() {
   const commentsList = document.getElementById('commentsList');
   if (!commentsList) return;
+  if (isOffline) { console.log('[离线] 跳过留言板加载'); return; }
 
   const commentName = document.getElementById('commentName');
   const commentContent = document.getElementById('commentContent');
@@ -1094,15 +1133,6 @@ function initComments() {
 
 safeInit(initComments, 'comments');
 
-// ==================== 安全初始化包装器 ====================
-function safeInit(fn, name) {
-  try {
-    fn();
-  } catch (e) {
-    console.error('Init error [' + name + ']:', e);
-  }
-}
-
 // ==================== Visitor Counter ====================
 function initVisitorCounter() {
   const TOKEN_PART1 = 'ghp_GMiHyZUI5RkF';
@@ -1116,6 +1146,7 @@ function initVisitorCounter() {
   const counterEl = document.getElementById('visitorCount');
   
   if (!counterEl) return;
+  if (isOffline) { counterEl.textContent = '离线'; console.log('[离线] 跳过访客计数'); return; }
   
   async function getCount() {
     try {
@@ -1204,6 +1235,7 @@ function initWeather() {
   const time = document.getElementById('weatherTime');
   
   if (!loading) return;
+  if (isOffline) { console.log('[离线] 跳过天气加载'); return; }
   
   async function fetchWeather() {
     try {
@@ -1273,6 +1305,7 @@ function initChat() {
   const send = document.getElementById('chatSend');
   const messages = document.getElementById('chatMessages');
   if (!bubble || !dialog) return;
+  if (isOffline) { console.log('[离线] 跳过AI对话'); return; }
 
   const API_KEY = '9be075e9e33940e5b27b287fdf7df184.TJaWcWDHWOKzIMWw';
   const API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
