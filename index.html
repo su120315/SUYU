@@ -35,7 +35,7 @@
 </head>
 <body>
   <!-- 离线模式提示条 -->
-  <div class="offline-banner">⚠️ 当前处于离线模式，部分功能不可用</div>
+  <div class="offline-banner" style="display:none;">⚠️ 当前处于离线模式，部分功能不可用</div>
 
   <!-- Navigation -->
   <nav class="navbar">
@@ -380,7 +380,7 @@
         <div class="weather-error" id="weatherError" style="display:none;">
           ⚠️ 天气加载失败，请稍后重试
         </div>
-        <div class="weather-offline">
+        <div class="weather-offline" style="display:none;">
           <span style="font-size:2rem;">📡</span>
           <span>离线模式无法获取天气</span>
         </div>
@@ -516,7 +516,7 @@
           <span>发布留言</span>
         </button>
       </div>
-      <div class="comments-offline-hint">📡 离线模式无法发布和加载留言</div>
+      <div class="comments-offline-hint" style="display:none;">📡 离线模式无法发布和加载留言</div>
       
       <div class="comments-list" id="commentsList"></div>
     </div>
