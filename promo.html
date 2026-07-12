@@ -110,7 +110,96 @@ a { color: inherit; text-decoration: none; }
 .reveal-delay-5 { transition-delay: 0.5s; }
 .reveal-delay-6 { transition-delay: 0.6s; }
 
-/* ========== HERO SECTION ========== */
+/* ========== HERO ENTRANCE (电影感入场) ========== */
+.hero-badge, .hero-version, .hero-title, .hero-subtitle, .hero-cta, .hero-scroll-hint {
+  opacity: 0;
+  transform: translateY(40px);
+  animation: heroEntrance 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.hero-badge { animation-delay: 0.2s; }
+.hero-version { animation-delay: 0.5s; }
+.hero-title { animation-delay: 0.9s; }
+.hero-subtitle { animation-delay: 1.2s; }
+.hero-cta { animation-delay: 1.5s; }
+.hero-scroll-hint { animation-delay: 2s; }
+
+@keyframes heroEntrance {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 版本号特殊光效入场 */
+.hero-version {
+  animation: heroVersionEntrance 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards,
+             gradientShift 4s ease 1.7s infinite;
+}
+@keyframes heroVersionEntrance {
+  0% { opacity: 0; transform: translateY(60px) scale(0.8); filter: blur(20px); }
+  60% { opacity: 1; filter: blur(0); }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: drop-shadow(0 0 40px rgba(99,102,241,0.3)); }
+}
+
+/* ========== 录屏进度条 ========== */
+.record-progress {
+  position: fixed;
+  top: 0; left: 0;
+  height: 3px;
+  background: var(--gradient-main);
+  background-size: 200% auto;
+  z-index: 9999;
+  width: 0%;
+  transition: width 0.1s linear;
+  animation: gradientShift 3s ease infinite;
+  box-shadow: 0 0 10px rgba(99,102,241,0.5);
+}
+
+/* ========== 自动播放控制提示 ========== */
+.autoplay-hint {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9998;
+  background: rgba(10,10,18,0.9);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  backdrop-filter: blur(20px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  pointer-events: none;
+}
+.autoplay-hint.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+.autoplay-hint.active {
+  border-color: var(--pink);
+  color: var(--pink);
+  box-shadow: 0 0 20px rgba(244,114,182,0.3);
+}
+.autoplay-hint kbd {
+  display: inline-block;
+  padding: 2px 8px;
+  background: var(--bg-card-hover);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  color: var(--text);
+}
+
+/* ========== 数字计数动画 ========== */
+.stat-number.counting {
+  animation: countPulse 0.4s ease;
+}
+@keyframes countPulse {
+  50% { transform: scale(1.15); filter: drop-shadow(0 0 12px var(--cyan)); }
+}
 .hero {
   position: relative;
   min-height: 100vh;
@@ -878,6 +967,13 @@ body::after {
 </style>
 </head>
 <body>
+<!-- 录屏进度条 -->
+<div class="record-progress" id="recordProgress"></div>
+<!-- 自动播放提示 -->
+<div class="autoplay-hint" id="autoplayHint">
+  <kbd>SPACE</kbd>
+  <span id="autoplayText">按空格键自动滚动录屏</span>
+</div>
 
 <!-- Particle Canvas -->
 <canvas id="particles-canvas"></canvas>
@@ -1261,6 +1357,160 @@ body::after {
       hint.style.transition = 'opacity 0.5s ease';
     } else {
       hint.style.opacity = '1';
+    }
+  });
+})();
+
+// ==================== 录屏进度条 ====================
+(function() {
+  const progress = document.getElementById('recordProgress');
+  if (!progress) return;
+  function updateProgress() {
+    const scrollTop = window.scrollY;
+    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    const pct = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+    progress.style.width = Math.min(pct, 100) + '%';
+  }
+  window.addEventListener('scroll', updateProgress, { passive: true });
+  updateProgress();
+})();
+
+// ==================== 数字计数动画 ====================
+(function() {
+  const countItems = document.querySelectorAll('.stat-number[data-count]');
+  if (countItems.length === 0) return;
+
+  function animateCount(el) {
+    const target = parseInt(el.getAttribute('data-count'), 10);
+    if (isNaN(target)) return;
+    const suffix = el.textContent.replace(/[\d]/g, '').trim() || '+';
+    const duration = 1500;
+    const startTime = performance.now();
+    el.classList.add('counting');
+
+    function tick(now) {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // easeOutExpo
+      const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+      const current = Math.round(target * eased);
+      el.textContent = current + suffix;
+      if (progress < 1) {
+        requestAnimationFrame(tick);
+      } else {
+        el.textContent = target + suffix;
+        setTimeout(() => el.classList.remove('counting'), 400);
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+
+  const countObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        animateCount(entry.target);
+        countObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.5 });
+
+  countItems.forEach(el => countObserver.observe(el));
+})();
+
+// ==================== 自动滚动录屏模式 ====================
+(function() {
+  const hint = document.getElementById('autoplayHint');
+  const hintText = document.getElementById('autoplayText');
+  if (!hint) return;
+
+  let autoScrolling = false;
+  let scrollRAF = null;
+  let hintHideTimer = null;
+
+  // 首次显示提示（3秒后显示，停留5秒后隐藏）
+  setTimeout(() => {
+    hint.classList.add('show');
+    hintHideTimer = setTimeout(() => hint.classList.remove('show'), 5000);
+  }, 3000);
+
+  function startAutoScroll() {
+    autoScrolling = true;
+    hint.classList.add('show', 'active');
+    if (hintText) hintText.textContent = '自动滚动中 · 再按空格停止';
+
+    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    const duration = 45000; // 45秒滚完整页
+    const startTime = performance.now();
+    const startScroll = window.scrollY;
+
+    function step(now) {
+      if (!autoScrolling) return;
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // easeInOutCubic
+      const eased = progress < 0.5
+        ? 4 * progress * progress * progress
+        : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+      const targetScroll = startScroll + (docHeight - startScroll) * eased;
+      window.scrollTo(0, targetScroll);
+
+      if (progress < 1 && autoScrolling) {
+        scrollRAF = requestAnimationFrame(step);
+      } else {
+        stopAutoScroll();
+      }
+    }
+    scrollRAF = requestAnimationFrame(step);
+  }
+
+  function stopAutoScroll() {
+    autoScrolling = false;
+    if (scrollRAF) cancelAnimationFrame(scrollRAF);
+    hint.classList.remove('active');
+    if (hintText) hintText.textContent = '按空格键自动滚动录屏';
+    // 3秒后隐藏提示
+    if (hintHideTimer) clearTimeout(hintHideTimer);
+    hintHideTimer = setTimeout(() => hint.classList.remove('show'), 3000);
+  }
+
+  document.addEventListener('keydown', function(e) {
+    // 空格键切换自动滚动
+    if (e.key === ' ' || e.code === 'Space') {
+      // 防止页面默认滚动
+      if (e.target === document.body || e.target === document.documentElement) {
+        e.preventDefault();
+      }
+      // 移除输入框焦点情况
+      const tag = (e.target.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea') return;
+
+      if (autoScrolling) {
+        stopAutoScroll();
+      } else {
+        // 如果不在顶部，先滚回顶部再开始
+        if (window.scrollY > 100) {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          setTimeout(startAutoScroll, 800);
+        } else {
+          startAutoScroll();
+        }
+      }
+    }
+    // 按 H 键显示/隐藏提示
+    if (e.key === 'h' || e.key === 'H') {
+      hint.classList.toggle('show');
+    }
+  });
+
+  // 鼠标移动时显示提示
+  let mouseTimer = null;
+  document.addEventListener('mousemove', () => {
+    if (!autoScrolling) {
+      hint.classList.add('show');
+      if (mouseTimer) clearTimeout(mouseTimer);
+      mouseTimer = setTimeout(() => {
+        if (!autoScrolling) hint.classList.remove('show');
+      }, 2500);
     }
   });
 })();
