@@ -1624,6 +1624,45 @@
         var records = await idbGetAll();
         for (var i = 0; i < records.length; i++) {
           var rec = records[i];
+          var chapters = [];
+          var totalImgs = 0;
+
+          // 新版格式：chaptersMeta + chapterImages（按章分存）
+          if (rec.chaptersMeta && rec.chapterImages) {
+            for (var ci = 0; ci < rec.chaptersMeta.length; ci++) {
+              var chImgs = [];
+              if (rec.chapterImages[ci] && Array.isArray(rec.chapterImages[ci])) {
+                for (var bi = 0; bi < rec.chapterImages[ci].length; bi++) {
+                  if (rec.chapterImages[ci][bi] instanceof Blob) {
+                    chImgs.push(URL.createObjectURL(rec.chapterImages[ci][bi]));
+                  }
+                }
+              }
+              chapters.push({
+                title: rec.chaptersMeta[ci].title,
+                url: rec.chaptersMeta[ci].url || '',
+                images: chImgs
+              });
+              totalImgs += chImgs.length;
+            }
+          } else if (rec.chapters && Array.isArray(rec.chapters)) {
+            // 旧版格式兼容：chapters 数组直接存 imageBlobs
+            for (var c = 0; c < rec.chapters.length; c++) {
+              var chImages = [];
+              if (rec.chapters[c].imageBlobs) {
+                for (var b = 0; b < rec.chapters[c].imageBlobs.length; b++) {
+                  if (rec.chapters[c].imageBlobs[b] instanceof Blob) {
+                    chImages.push(URL.createObjectURL(rec.chapters[c].imageBlobs[b]));
+                  }
+                }
+              }
+              chapters.push({ title: rec.chapters[c].title, url: rec.chapters[c].url || '', images: chImages });
+              totalImgs += chImages.length;
+            }
+          } else {
+            continue;
+          }
+
           var comic = {
             title: rec.title,
             author: rec.author,
@@ -1631,21 +1670,10 @@
             tags: rec.tags || [],
             cover: rec.cover instanceof Blob ? URL.createObjectURL(rec.cover) : (rec.cover || ''),
             sourceName: rec.sourceName,
-            chapters: [],
+            chapters: chapters,
             downloadedAt: rec.downloadedAt,
-            totalImages: rec.totalImages || 0
+            totalImages: totalImgs
           };
-          for (var c = 0; c < rec.chapters.length; c++) {
-            var chImages = [];
-            if (rec.chapters[c].imageBlobs) {
-              for (var b = 0; b < rec.chapters[c].imageBlobs.length; b++) {
-                if (rec.chapters[c].imageBlobs[b] instanceof Blob) {
-                  chImages.push(URL.createObjectURL(rec.chapters[c].imageBlobs[b]));
-                }
-              }
-            }
-            comic.chapters.push({ title: rec.chapters[c].title, url: rec.chapters[c].url || '', images: chImages });
-          }
           offlineLibrary[rec.comicUrl] = comic;
         }
         var count = Object.keys(offlineLibrary).length;
@@ -1656,6 +1684,7 @@
     }
 
     // 保存一部漫画到 IndexedDB（blobUrl → Blob）
+    // 保存整部漫画到 IndexedDB（用于初始保存封面等元信息）
     async function saveComicToIDB(comicUrl) {
       var comic = offlineLibrary[comicUrl];
       if (!comic) return;
@@ -1667,14 +1696,15 @@
           coverBlob = comic.cover;
         }
 
-        var chaptersData = [];
+        // 只存元信息和章节结构，图片单独按章存（避免单条记录过大）
+        var chaptersMeta = [];
         for (var i = 0; i < comic.chapters.length; i++) {
-          var imageBlobs = [];
-          for (var j = 0; j < comic.chapters[i].images.length; j++) {
-            var blob = await blobUrlToBlob(comic.chapters[i].images[j]);
-            if (blob instanceof Blob) imageBlobs.push(blob);
-          }
-          chaptersData.push({ title: comic.chapters[i].title, url: comic.chapters[i].url, imageBlobs: imageBlobs });
+          chaptersMeta.push({
+            title: comic.chapters[i].title,
+            url: comic.chapters[i].url,
+            imageCount: comic.chapters[i].images ? comic.chapters[i].images.length : 0,
+            hasImages: comic.chapters[i].images && comic.chapters[i].images.length > 0
+          });
         }
 
         var record = {
@@ -1685,15 +1715,106 @@
           tags: comic.tags,
           cover: coverBlob,
           sourceName: comic.sourceName,
-          chapters: chaptersData,
+          chaptersMeta: chaptersMeta,
           totalImages: comic.totalImages,
           downloadedAt: comic.downloadedAt
         };
         await idbPut(record);
+
+        // 逐章保存图片（避免单个事务过大）
+        for (var ci = 0; ci < comic.chapters.length; ci++) {
+          if (comic.chapters[ci].images && comic.chapters[ci].images.length > 0) {
+            await saveChapterImagesToIDB(comicUrl, ci, comic.chapters[ci].images);
+          }
+        }
         log('已保存到 IndexedDB: ' + comic.title);
       } catch(e) {
         log('保存到 IndexedDB 失败: ' + e.message);
       }
+    }
+
+    // 单章图片保存到 IDB（独立事务，避免单条记录过大）
+    function chapterImagesStoreKey(comicUrl, chapterIdx) {
+      return comicUrl + '::' + chapterIdx;
+    }
+
+    async function saveChapterImagesToIDB(comicUrl, chapterIdx, imageUrls) {
+      return openIDB().then(function(db) {
+        return new Promise(function(resolve, reject) {
+          var tx = db.transaction(STORE_NAME, 'readwrite');
+          var store = tx.objectStore(STORE_NAME);
+
+          var getReq = store.get(comicUrl);
+          getReq.onsuccess = function() {
+            var record = getReq.result || { comicUrl: comicUrl };
+            if (!record.chapterImages) record.chapterImages = {};
+            // 转 Blob 并保存
+            var blobs = new Array(imageUrls.length);
+            var done = 0;
+            for (var i = 0; i < imageUrls.length; i++) {
+              (function(idx) {
+                blobUrlToBlob(imageUrls[idx]).then(function(b) {
+                  blobs[idx] = b;
+                  done++;
+                  if (done === imageUrls.length) {
+                    record.chapterImages[chapterIdx] = blobs.filter(function(b) { return b instanceof Blob; });
+                    record.totalImages = (record.totalImages || 0);
+                    // 同步更新 chaptersMeta
+                    if (!record.chaptersMeta) record.chaptersMeta = [];
+                    if (record.chaptersMeta[chapterIdx]) {
+                      record.chaptersMeta[chapterIdx].imageCount = record.chapterImages[chapterIdx].length;
+                      record.chaptersMeta[chapterIdx].hasImages = true;
+                    }
+                    var putReq = store.put(record);
+                    putReq.onsuccess = function() { resolve(); };
+                    putReq.onerror = function(e) { reject(e.target.error); };
+                  }
+                }).catch(reject);
+              })(i);
+            }
+          };
+          getReq.onerror = function(e) { reject(e.target.error); };
+          tx.onerror = function(e) { reject(e.target.error); };
+        });
+      });
+    }
+
+    // 更新漫画元信息到 IDB（章节结构、总数等）
+    async function updateComicMetaInIDB(comicUrl) {
+      var comic = offlineLibrary[comicUrl];
+      if (!comic) return;
+      return openIDB().then(function(db) {
+        return new Promise(function(resolve, reject) {
+          var tx = db.transaction(STORE_NAME, 'readwrite');
+          var store = tx.objectStore(STORE_NAME);
+          var getReq = store.get(comicUrl);
+          getReq.onsuccess = function() {
+            var record = getReq.result || { comicUrl: comicUrl };
+            // 更新元信息
+            record.title = comic.title;
+            record.author = comic.author;
+            record.desc = comic.desc;
+            record.tags = comic.tags;
+            record.sourceName = comic.sourceName;
+            record.totalImages = comic.totalImages;
+            record.downloadedAt = comic.downloadedAt;
+            // 更新 chaptersMeta
+            record.chaptersMeta = [];
+            for (var i = 0; i < comic.chapters.length; i++) {
+              record.chaptersMeta.push({
+                title: comic.chapters[i].title,
+                url: comic.chapters[i].url,
+                imageCount: comic.chapters[i].images ? comic.chapters[i].images.length : 0,
+                hasImages: comic.chapters[i].images && comic.chapters[i].images.length > 0
+              });
+            }
+            var putReq = store.put(record);
+            putReq.onsuccess = function() { resolve(); };
+            putReq.onerror = function(e) { reject(e.target.error); };
+          };
+          getReq.onerror = function(e) { reject(e.target.error); };
+        });
+      });
     }
 
     function log(msg) {
@@ -2161,7 +2282,7 @@
 
     // 并行下载图片（batchSize 张一批）
     async function downloadImagesBatch(urls, onProgress, batchSize) {
-      batchSize = batchSize || 8;
+      batchSize = batchSize || 5;
       var results = new Array(urls.length);
       var completed = 0;
       var queue = [];
@@ -2399,13 +2520,13 @@
           continue;
         }
 
-        // 阶段2：并行下载图片（8 张并发）
+        // 阶段2：并行下载图片（5 张并发，避免内存压力过大）
         var chapterStartImages = doneAllImages;
         var blobUrls = await downloadImagesBatch(imageUrls, function(completed, total) {
           if (downloadCancelled) return;
           doneAllImages = chapterStartImages + completed;
           updateDownloadProgress(si, totalToDownload, chapterTitle, completed, total);
-        }, 8);
+        }, 5);
 
         // 过滤掉 null
         var validUrls = [];
@@ -2425,12 +2546,19 @@
           comicData.totalImages += comicData.chapters[ci].images.length;
         }
         log('下载"' + chapterTitle + '"完成: ' + validUrls.length + '/' + imageUrls.length + '张');
+
+        // 每章下载完立即存 IndexedDB（增量保存，避免最后一次性存太多）
+        if (!downloadCancelled && validUrls.length > 0) {
+          updateDownloadProgress(si, totalToDownload, chapterTitle + ' (保存中)', imageUrls.length, imageUrls.length);
+          await saveChapterImagesToIDB(currentComicUrl, chapterIdx, validUrls);
+        }
       }
+
+      // 最后保存一次元信息（确保 chaptersMeta 和 totalImages 是最新的）
+      await updateComicMetaInIDB(currentComicUrl);
 
       hideDownloadProgress();
       log('下载完成: ' + comicData.title + ' · 共' + comicData.totalImages + '张图片');
-      // 持久化到 IndexedDB
-      saveComicToIDB(currentComicUrl);
       loadComicDetail(currentComicUrl, currentComicTitle);
     }
 
@@ -3583,46 +3711,45 @@
       var scrollHeight = document.documentElement.scrollHeight;
       var remaining = scrollHeight - scrollTop - screenHeight;
 
-      if (clickY > screenHeight * 0.5) {
-        // 点击下半屏：向下滚动一段（约80%屏幕高度）
-        var scrollDist = Math.min(screenHeight * 0.8, remaining + 50);
-        if (remaining > 50) {
-          window.scrollBy({ top: scrollDist, behavior: 'smooth' });
+      if (clickY > screenHeight * 0.45) {
+        // 点击下半屏：向下滚动约 75% 屏幕高度（留一点重叠，避免跳失内容）
+        var scrollDist = Math.min(Math.floor(screenHeight * 0.75), remaining);
+        if (remaining > 30) {
+          window.scrollBy({ top: scrollDist, left: 0, behavior: 'smooth' });
         } else if (currentChapterIndex < currentChapters.length - 1) {
-          // 到底了，进入下一章
           loadChapter(currentChapterIndex + 1);
         }
       } else {
-        // 点击上半屏：向上滚动一段
-        var upDist = Math.min(screenHeight * 0.8, scrollTop + 50);
-        if (scrollTop > 50) {
-          window.scrollBy({ top: -upDist, behavior: 'smooth' });
+        // 点击上半屏：向上滚动约 75% 屏幕高度
+        var upDist = Math.min(Math.floor(screenHeight * 0.75), scrollTop);
+        if (scrollTop > 30) {
+          window.scrollBy({ top: -upDist, left: 0, behavior: 'smooth' });
         } else if (currentChapterIndex > 0) {
-          // 到顶了，回到上一章末尾
           loadChapter(currentChapterIndex - 1);
         }
       }
     }
 
-    // 桌面端点击翻页
+    // 桌面端点击翻页（无延迟，双击直接缩放）
+    var readerClickTimer = null;
     document.addEventListener('click', function(e) {
       if (currentView !== 'reader') return;
-      // 只处理图片区域的点击
+      // 跳过交互元素
+      if (e.target.closest('button') || e.target.closest('a') || e.target.closest('input')) return;
+
+      // 双击图片区域：直接放大
       var imagesContainer = e.target.closest('.comic-reader-images');
-      if (!imagesContainer) {
-        // 也允许点击阅读器其他空白区域
-        if (!e.target.closest('.comic-reader-nav') && !e.target.closest('.comic-back-btn') && !e.target.closest('button')) {
-          handleReaderTap(e.clientY);
+      if (imagesContainer) {
+        var imgEl = e.target.closest('img');
+        if (imgEl && e.detail === 2) {
+          if (readerClickTimer) { clearTimeout(readerClickTimer); readerClickTimer = null; }
+          toggleImageZoom(imgEl);
+          return;
         }
-        return;
       }
-      // 点击图片区域：跳过双击放大检测
-      if (e.detail === 1) {
-        // 单击 - 延迟执行以等待可能的双击
-        setTimeout(function() {
-          handleReaderTap(e.clientY);
-        }, 250);
-      }
+
+      // 单击：立即翻页，无延迟
+      handleReaderTap(e.clientY);
     });
 
     function toggleImageZoom(img) {
