@@ -3286,14 +3286,14 @@
 
         var autoScrollControls =
           '<span class="auto-scroll-controls">' +
-            '<button class="auto-scroll-btn auto-scroll-minus-btn" title="减慢速度">' +
+            '<button class="auto-scroll-btn auto-scroll-minus-btn" title="减慢速度" onclick="decreaseAutoScrollSpeed();event.stopPropagation();">' +
               '<i data-lucide="minus" style="width:14px;height:14px;"></i>' +
             '</button>' +
             '<span class="auto-scroll-speed">' + autoScrollSpeed + 'x</span>' +
-            '<button class="auto-scroll-btn auto-scroll-plus-btn" title="加快速度">' +
+            '<button class="auto-scroll-btn auto-scroll-plus-btn" title="加快速度" onclick="increaseAutoScrollSpeed();event.stopPropagation();">' +
               '<i data-lucide="plus" style="width:14px;height:14px;"></i>' +
             '</button>' +
-            '<button class="auto-scroll-btn auto-scroll-play-btn" title="自动滚动">' +
+            '<button class="auto-scroll-btn auto-scroll-play-btn" title="自动滚动" onclick="toggleAutoScroll();event.stopPropagation();">' +
               '<i data-lucide="play" style="width:14px;height:14px;"></i>' +
             '</button>' +
           '</span>';
