@@ -526,6 +526,171 @@
       text-align: center;
     }
 
+    /* ==================== 阅读进度条 ==================== */
+    .reader-progress-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: var(--bg-tertiary);
+      z-index: 200;
+      cursor: pointer;
+    }
+
+    .reader-progress-fill {
+      height: 100%;
+      background: var(--gradient-short);
+      border-radius: 0 4px 4px 0;
+      transition: width 0.1s linear;
+      position: relative;
+    }
+
+    .reader-progress-fill::after {
+      content: '';
+      position: absolute;
+      right: -6px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--accent-primary);
+      box-shadow: 0 0 6px rgba(99,102,241,0.5);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .reader-progress-bar:hover .reader-progress-fill::after {
+      opacity: 1;
+    }
+
+    .reader-progress-label {
+      position: fixed;
+      top: 8px;
+      right: 16px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      z-index: 201;
+      background: var(--bg-secondary);
+      padding: 2px 8px;
+      border-radius: 100px;
+      border: 1px solid var(--bg-tertiary);
+      pointer-events: none;
+    }
+
+    /* ==================== 书签按钮 ==================== */
+    .bookmark-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--bg-secondary);
+      border: 1px solid var(--bg-tertiary);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s;
+      vertical-align: middle;
+    }
+
+    .bookmark-btn:hover {
+      border-color: var(--accent-primary);
+      color: var(--accent-primary);
+    }
+
+    .bookmark-btn.active {
+      color: #f59e0b;
+      border-color: #f59e0b;
+    }
+
+    /* ==================== 继续阅读提示 ==================== */
+    .continue-reading-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 100px;
+      background: var(--gradient-short);
+      color: #fff;
+      font-size: 0.85rem;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .continue-reading-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(99,102,241,0.3);
+    }
+
+    /* ==================== 书签列表 ==================== */
+    .bookmark-list-section {
+      margin-top: 12px;
+      padding: 12px;
+      background: var(--bg-tertiary);
+      border-radius: 12px;
+    }
+
+    .bookmark-list-title {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .bookmark-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      margin-bottom: 4px;
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .bookmark-item:hover {
+      border-left: 3px solid #f59e0b;
+      padding-left: 9px;
+    }
+
+    .bookmark-item-remove {
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .bookmark-item-remove:hover {
+      color: #ef4444;
+    }
+
+    /* ==================== 主题按钮 ==================== */
+    .comic-theme-btn:hover {
+      border-color: var(--accent-primary);
+      transform: scale(1.05);
+    }
+
+    /* ==================== 阅读历史提示 ==================== */
+    .reading-history-hint {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 100px;
+      background: rgba(99,102,241,0.1);
+      border: 1px solid rgba(99,102,241,0.2);
+      font-size: 0.78rem;
+      color: var(--accent-primary);
+      margin-bottom: 8px;
+    }
+
     .source-info {
       max-width: 1200px;
       margin: 0 auto 12px;
@@ -1288,7 +1453,10 @@
         漫画阅读
         <span class="badge">纯净版</span>
       </h1>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <button class="comic-theme-btn" onclick="toggleComicTheme();event.stopPropagation();" title="切换主题" style="display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:100px;background:var(--bg-secondary);border:1px solid var(--bg-tertiary);color:var(--text-primary);cursor:pointer;transition:all 0.3s;">
+          <i data-lucide="moon" style="width:16px;height:16px;"></i>
+        </button>
         <button class="offline-library-btn" id="offlineLibraryBtn" title="查看已下载的漫画">
           <i data-lucide="library" style="width:16px;height:16px;"></i>
           离线书架
@@ -1605,6 +1773,13 @@
     var currentOfflineChapterIndices = null; // 离线模式下，currentChapters[i] 对应原始章节的索引
     var debugLogs = [];
     var lastWorkingProxy = -1;
+
+    // ==================== 阅读历史 & 书签 ====================
+    // readingHistory: { comicUrl: { title, chapterIndex, chapterTitle, scrollPct, timestamp } }
+    var readingHistory = {};
+    // bookmarks: { comicUrl: [{ chapterIndex, chapterTitle, note, timestamp }] }
+    var bookmarks = {};
+    var currentReaderImages = []; // 当前阅读器中的图片列表，供进度条使用
 
     // 离线下载：存储在浏览器内存中的漫画 { comicUrl: { title, author, desc, tags, cover, sourceName, chapters: [{title, url, images:[blobUrl]}], totalImages, downloadedAt } }
     var offlineLibrary = {};
@@ -3270,6 +3445,52 @@
             '</div>';
         }
 
+        // 阅读历史：继续阅读按钮
+        var historyHtml = '';
+        var history = getReadingHistory(comicUrl);
+        if (history && history.chapterIndex < currentChapters.length) {
+          var histTitle = (history.chapterTitle || currentChapters[history.chapterIndex].title || '').replace(/"/g, '&quot;');
+          historyHtml =
+            '<div class="reading-history-hint" style="margin-top:12px;">' +
+              '<i data-lucide="history" style="width:14px;height:14px;"></i>' +
+              '<span>上次阅读：' + histTitle + '</span>' +
+              '<button class="continue-reading-btn" data-action="continue-reading" data-index="' + history.chapterIndex + '">' +
+                '<i data-lucide="play" style="width:14px;height:14px;"></i>' +
+                '继续阅读' +
+              '</button>' +
+            '</div>';
+        }
+
+        // 书签列表
+        var bookmarkListHtml = '';
+        var bms = getBookmarks(comicUrl);
+        if (bms.length > 0) {
+          // 按时间倒序
+          bms = bms.slice().sort(function(a, b) { return b.timestamp - a.timestamp; });
+          var bmsItems = '';
+          for (var bi = 0; bi < bms.length; bi++) {
+            if (bms[bi].chapterIndex >= currentChapters.length) continue;
+            var bmTitle = (bms[bi].chapterTitle || currentChapters[bms[bi].chapterIndex].title || ('第' + (bms[bi].chapterIndex + 1) + '话')).replace(/"/g, '&quot;');
+            bmsItems +=
+              '<div class="bookmark-item" data-action="load-chapter" data-index="' + bms[bi].chapterIndex + '">' +
+                '<span><i data-lucide="bookmark" style="width:12px;height:12px;color:#f59e0b;margin-right:6px;"></i>' + bmTitle + '</span>' +
+                '<span class="bookmark-item-remove" data-action="remove-bookmark" data-index="' + bms[bi].chapterIndex + '" title="移除书签">' +
+                  '<i data-lucide="x" style="width:14px;height:14px;"></i>' +
+                '</span>' +
+              '</div>';
+          }
+          if (bmsItems) {
+            bookmarkListHtml =
+              '<div class="bookmark-list-section">' +
+                '<div class="bookmark-list-title">' +
+                  '<i data-lucide="bookmark" style="width:14px;height:14px;color:#f59e0b;"></i>' +
+                  '我的书签 (' + bms.length + ')' +
+                '</div>' +
+                bmsItems +
+              '</div>';
+          }
+        }
+
         content.innerHTML =
           '<div class="comic-detail">' +
             '<button class="comic-back-btn" data-action="back-list">' +
@@ -3285,6 +3506,8 @@
                 (descText ? '<div class="comic-detail-desc">' + descText.substring(0, 200) + '</div>' : '') +
               '</div>' +
             '</div>' +
+            historyHtml +
+            bookmarkListHtml +
             downloadSectionHtml +
             '<h3 style="font-size:1.05rem;margin-bottom:12px;color:var(--text-primary);">章节列表 (' + currentChapters.length + '话)</h3>' +
             chapterSearchHtml +
@@ -3312,6 +3535,173 @@
 
     function isOfflineMode() {
       return currentOfflineChapterIndices !== null;
+    }
+
+    // ==================== 阅读历史 ====================
+    function loadReadingHistory() {
+      try {
+        var saved = localStorage.getItem('suyu-reading-history');
+        if (saved) readingHistory = JSON.parse(saved);
+      } catch(e) { readingHistory = {}; }
+    }
+
+    function saveReadingHistory() {
+      try {
+        localStorage.setItem('suyu-reading-history', JSON.stringify(readingHistory));
+      } catch(e) {}
+    }
+
+    function recordReadingHistory(comicUrl, title, chapterIndex, chapterTitle) {
+      readingHistory[comicUrl] = {
+        title: title,
+        chapterIndex: chapterIndex,
+        chapterTitle: chapterTitle,
+        timestamp: Date.now()
+      };
+      saveReadingHistory();
+    }
+
+    function getReadingHistory(comicUrl) {
+      return readingHistory[comicUrl] || null;
+    }
+
+    // ==================== 书签 ====================
+    function loadBookmarks() {
+      try {
+        var saved = localStorage.getItem('suyu-bookmarks');
+        if (saved) bookmarks = JSON.parse(saved);
+      } catch(e) { bookmarks = {}; }
+    }
+
+    function saveBookmarks() {
+      try {
+        localStorage.setItem('suyu-bookmarks', JSON.stringify(bookmarks));
+      } catch(e) {}
+    }
+
+    function getBookmarks(comicUrl) {
+      return bookmarks[comicUrl] || [];
+    }
+
+    function toggleBookmark(comicUrl, chapterIndex, chapterTitle) {
+      if (!bookmarks[comicUrl]) bookmarks[comicUrl] = [];
+      var existing = -1;
+      for (var i = 0; i < bookmarks[comicUrl].length; i++) {
+        if (bookmarks[comicUrl][i].chapterIndex === chapterIndex) {
+          existing = i;
+          break;
+        }
+      }
+      if (existing >= 0) {
+        bookmarks[comicUrl].splice(existing, 1);
+      } else {
+        bookmarks[comicUrl].push({
+          chapterIndex: chapterIndex,
+          chapterTitle: chapterTitle,
+          timestamp: Date.now()
+        });
+      }
+      saveBookmarks();
+      return existing < 0; // true=已添加, false=已移除
+    }
+
+    function isBookmarked(comicUrl, chapterIndex) {
+      var bms = bookmarks[comicUrl];
+      if (!bms) return false;
+      for (var i = 0; i < bms.length; i++) {
+        if (bms[i].chapterIndex === chapterIndex) return true;
+      }
+      return false;
+    }
+
+    // 初始化加载
+    loadReadingHistory();
+    loadBookmarks();
+
+    // ==================== 主题切换 ====================
+    function initComicTheme() {
+      var savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+      }
+    }
+
+    function toggleComicTheme() {
+      var isDark = document.body.classList.toggle('dark-mode');
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+      // 更新按钮图标
+      var btns = document.querySelectorAll('.comic-theme-btn svg, .comic-theme-btn i');
+      for (var i = 0; i < btns.length; i++) {
+        if (btns[i].tagName === 'I') {
+          btns[i].setAttribute('data-lucide', isDark ? 'sun' : 'moon');
+        }
+      }
+      if (typeof lucide !== 'undefined' && lucide.createIcons) {
+        safeLucide();
+      }
+    }
+
+    initComicTheme();
+
+    // ==================== 阅读进度条 ====================
+    var readerScrollHandler = null;
+    function initReaderProgressBar() {
+      var bar = document.getElementById('readerProgressBar');
+      var fill = document.getElementById('readerProgressFill');
+      var label = document.getElementById('readerProgressLabel');
+      if (!bar || !fill || !label) return;
+
+      function updateProgress() {
+        var scrollTop = window.scrollY;
+        var docHeight = document.documentElement.scrollHeight - window.innerHeight;
+        var progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+        if (progress < 0) progress = 0;
+        if (progress > 100) progress = 100;
+        fill.style.width = progress + '%';
+        label.textContent = Math.round(progress) + '%';
+      }
+
+      // 移除旧的监听器
+      if (readerScrollHandler) {
+        window.removeEventListener('scroll', readerScrollHandler);
+      }
+      readerScrollHandler = function() {
+        requestAnimationFrame(updateProgress);
+      };
+      window.addEventListener('scroll', readerScrollHandler, { passive: true });
+      updateProgress();
+
+      // 拖拽 / 点击跳转
+      var isDragging = false;
+      function seekToEvent(e) {
+        var rect = bar.getBoundingClientRect();
+        var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        var ratio = (clientX - rect.left) / rect.width;
+        if (ratio < 0) ratio = 0;
+        if (ratio > 1) ratio = 1;
+        var docHeight = document.documentElement.scrollHeight - window.innerHeight;
+        window.scrollTo({ top: ratio * docHeight, behavior: 'auto' });
+        fill.style.width = (ratio * 100) + '%';
+        label.textContent = Math.round(ratio * 100) + '%';
+      }
+      bar.addEventListener('mousedown', function(e) {
+        isDragging = true;
+        seekToEvent(e);
+        e.preventDefault();
+      });
+      document.addEventListener('mousemove', function(e) {
+        if (isDragging) seekToEvent(e);
+      });
+      document.addEventListener('mouseup', function() { isDragging = false; });
+      // 触摸支持
+      bar.addEventListener('touchstart', function(e) {
+        isDragging = true;
+        seekToEvent(e);
+      }, { passive: true });
+      bar.addEventListener('touchmove', function(e) {
+        if (isDragging) seekToEvent(e);
+      }, { passive: true });
+      bar.addEventListener('touchend', function() { isDragging = false; });
     }
 
     async function loadChapter(index) {
@@ -3403,7 +3793,28 @@
 
         var safeUrl = currentComicUrl.replace(/'/g, "\\'");
         var safeTitle = (currentComicTitle || '').replace(/"/g, '&quot;');
+
+        // 书签状态
+        var bookmarked = isBookmarked(currentComicUrl, index);
+        var bookmarkBtnHtml =
+          '<button class="bookmark-btn' + (bookmarked ? ' active' : '') + '" ' +
+            'data-action="toggle-bookmark" data-index="' + index + '" title="' + (bookmarked ? '移除书签' : '添加书签') + '">' +
+            '<i data-lucide="' + (bookmarked ? 'bookmark' : 'bookmark') + '" style="width:18px;height:18px;' + (bookmarked ? 'fill:currentColor;' : '') + '"></i>' +
+          '</button>';
+
+        // 存储当前阅读器图片列表（供进度条使用）
+        currentReaderImages = images;
+
+        // 记录阅读历史
+        try {
+          recordReadingHistory(currentComicUrl, currentComicTitle || safeTitle, index, chapter.title);
+        } catch(e) { console.warn('记录阅读历史失败:', e); }
+
         content.innerHTML =
+          '<div class="reader-progress-bar" id="readerProgressBar">' +
+            '<div class="reader-progress-fill" id="readerProgressFill" style="width:0%;"></div>' +
+          '</div>' +
+          '<div class="reader-progress-label" id="readerProgressLabel">0%</div>' +
           '<div class="comic-reader">' +
             '<button class="comic-back-btn" data-action="back-detail">' +
               '<i data-lucide="arrow-left" style="width:16px;height:16px;"></i>' +
@@ -3411,22 +3822,28 @@
             '</button>' +
             '<div class="comic-reader-title">' +
               chapter.title +
-              '<div style="margin-top:8px;display:flex;justify-content:center;gap:8px;">' + watermarkBadge + sourceBadge +
+              '<div style="margin-top:8px;display:flex;justify-content:center;align-items:center;gap:8px;">' + watermarkBadge + sourceBadge + bookmarkBtnHtml +
               '</div>' +
             '</div>' +
             '<div class="comic-reader-nav">' + prevBtn +
               '<span class="nav-center">' + (index + 1) + ' / ' + currentChapters.length + autoScrollControls + '</span>' +
               nextBtn +
             '</div>' +
-            '<div class="comic-reader-images">' +
+            '<div class="comic-reader-images" id="comicReaderImages">' +
               (imagesHtml || '<p style="text-align:center;color:var(--text-muted);padding:40px;">本章节暂无图片数据</p>') +
             '</div>' +
             '<div class="comic-reader-nav" style="margin-top:24px;">' + prevBtn +
               '<span class="nav-center">' + (index + 1) + ' / ' + currentChapters.length + autoScrollControls + '</span>' +
               nextBtn +
             '</div>' +
+            '<div style="text-align:center;color:var(--text-muted);font-size:0.72rem;margin-top:16px;line-height:1.8;">' +
+              '快捷键：← → 翻页 · 空格 自动滚动 · +/− 调速 · B 书签 · T 主题 · Esc 返回' +
+            '</div>' +
           '</div>';
         safeLucide();
+
+        // 初始化阅读进度条
+        initReaderProgressBar();
 
         // 图片加载后隐藏占位符
         var placeholders = content.querySelectorAll('.comic-image-placeholder');
@@ -3744,6 +4161,52 @@
       toggleChapterGroup(this);
     });
 
+    // 继续阅读按钮
+    registerHandler('click', '[data-action="continue-reading"]', function() {
+      var idx = parseInt(this.getAttribute('data-index'));
+      if (!isNaN(idx) && idx >= 0 && idx < currentChapters.length) {
+        loadChapter(idx);
+      }
+    });
+
+    // 阅读器中的书签按钮
+    registerHandler('click', '[data-action="toggle-bookmark"]', function(e) {
+      e.stopPropagation();
+      var idx = parseInt(this.getAttribute('data-index'));
+      if (isNaN(idx)) return;
+      var chTitle = currentChapters[idx] ? currentChapters[idx].title : ('第' + (idx + 1) + '话');
+      var added = toggleBookmark(currentComicUrl, idx, chTitle);
+      // 更新按钮 UI
+      if (added) {
+        this.classList.add('active');
+        this.title = '移除书签';
+      } else {
+        this.classList.remove('active');
+        this.title = '添加书签';
+      }
+      // 更新图标 fill
+      var icon = this.querySelector('i[data-lucide], svg');
+      if (icon) {
+        if (icon.tagName === 'I') {
+          icon.setAttribute('style', 'width:18px;height:18px;' + (added ? 'fill:currentColor;' : ''));
+        } else {
+          icon.setAttribute('fill', added ? 'currentColor' : 'none');
+        }
+      }
+      safeLucide();
+    });
+
+    // 书签列表中的移除按钮
+    registerHandler('click', '[data-action="remove-bookmark"]', function(e) {
+      e.stopPropagation();
+      var idx = parseInt(this.getAttribute('data-index'));
+      if (isNaN(idx)) return;
+      var chTitle = currentChapters[idx] ? currentChapters[idx].title : '';
+      toggleBookmark(currentComicUrl, idx, chTitle); // 再次 toggle 即移除
+      // 刷新详情页
+      loadComicDetail(currentComicUrl, currentComicTitle);
+    });
+
     // 章节搜索防抖处理
     var debouncedFilter = debounce(filterChapters, 200);
     document.addEventListener('input', function(e) {
@@ -4020,6 +4483,79 @@
     registerHandler('click', '.auto-scroll-minus-btn', function(e) {
       e.stopPropagation();
       decreaseAutoScrollSpeed();
+    });
+
+    // ==================== 键盘快捷键 ====================
+    document.addEventListener('keydown', function(e) {
+      // 只在阅读器视图中生效
+      if (currentView !== 'reader') return;
+      // 在输入框中不触发
+      var tag = (e.target.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || e.target.isContentEditable) return;
+
+      switch (e.key) {
+        case 'ArrowLeft':
+          // 上一话
+          if (currentChapterIndex > 0) {
+            e.preventDefault();
+            loadChapter(currentChapterIndex - 1);
+          }
+          break;
+        case 'ArrowRight':
+          // 下一话
+          if (currentChapterIndex < currentChapters.length - 1) {
+            e.preventDefault();
+            loadChapter(currentChapterIndex + 1);
+          }
+          break;
+        case ' ':
+        case 'Spacebar':
+          // 空格：切换自动滚动
+          e.preventDefault();
+          toggleAutoScroll();
+          break;
+        case '+':
+        case '=':
+          // 加速
+          e.preventDefault();
+          increaseAutoScrollSpeed();
+          break;
+        case '-':
+        case '_':
+          // 减速
+          e.preventDefault();
+          decreaseAutoScrollSpeed();
+          break;
+        case 'b':
+        case 'B':
+          // 切换书签
+          {
+            var bmBtn = document.querySelector('[data-action="toggle-bookmark"]');
+            if (bmBtn) bmBtn.click();
+          }
+          break;
+        case 't':
+        case 'T':
+          // 切换主题
+          e.preventDefault();
+          toggleComicTheme();
+          break;
+        case 'Escape':
+          // 返回详情
+          e.preventDefault();
+          goBackToDetail();
+          break;
+        case 'Home':
+          // 滚动到顶部
+          e.preventDefault();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          break;
+        case 'End':
+          // 滚动到底部
+          e.preventDefault();
+          window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+          break;
+      }
     });
 
     // ==================== 初始化 ====================
