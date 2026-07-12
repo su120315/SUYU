@@ -1204,6 +1204,22 @@
       color: #22c55e;
     }
 
+    .chapter-select-toolbar button.active {
+      background: var(--accent-primary);
+      color: #fff;
+      border-color: var(--accent-primary);
+    }
+
+    .chapter-select-item.range-start {
+      background: rgba(99,102,241,0.2);
+      border: 1px solid var(--accent-primary);
+    }
+
+    .chapter-select-item.range-end {
+      background: rgba(34,197,94,0.15);
+      border: 1px solid #22c55e;
+    }
+
     .chapter-select-footer {
       padding: 16px 24px;
       border-top: 1px solid var(--bg-tertiary);
@@ -1345,6 +1361,7 @@
         <button id="chapterSelectAll">全选</button>
         <button id="chapterSelectNone">全不选</button>
         <button id="chapterSelectInvert">反选</button>
+        <button id="chapterSelectRange">范围选择</button>
         <span class="selected-count" id="chapterSelectCount">已选 0 话</span>
       </div>
       <div class="chapter-select-list" id="chapterSelectList"></div>
@@ -1585,6 +1602,7 @@
     var currentComicTitle = '';
     var currentChapters = [];
     var currentChapterIndex = 0;
+    var currentOfflineChapterIndices = null; // 离线模式下，currentChapters[i] 对应原始章节的索引
     var debugLogs = [];
     var lastWorkingProxy = -1;
 
@@ -2396,6 +2414,7 @@
       var countEl = document.getElementById('chapterSelectCount');
       var confirmBtn = document.getElementById('chapterSelectConfirm');
       var titleEl = document.getElementById('chapterSelectTitle');
+      var rangeBtn = document.getElementById('chapterSelectRange');
 
       titleEl.textContent = currentComicTitle + ' · 共 ' + currentChapters.length + ' 话';
 
@@ -2407,13 +2426,16 @@
         var downloadedCls = isDownloaded ? ' downloaded' : '';
         var downloadedTag = isDownloaded ? '<span class="downloaded-tag">已下载</span>' : '';
         html +=
-          '<label class="chapter-select-item' + downloadedCls + '">' +
+          '<label class="chapter-select-item' + downloadedCls + '" data-idx="' + i + '">' +
             '<input type="checkbox" value="' + i + '" ' + checked + ' ' + (isDownloaded ? 'disabled' : '') + '>' +
             '<span>' + currentChapters[i].title + '</span>' +
             downloadedTag +
           '</label>';
       }
       listEl.innerHTML = html;
+
+      var rangeMode = false;
+      var rangeStart = -1;
 
       function updateCount() {
         var checked = listEl.querySelectorAll('input[type="checkbox"]:checked').length;
@@ -2423,6 +2445,69 @@
       updateCount();
 
       listEl.onchange = updateCount;
+
+      // 范围选择模式
+      rangeBtn.onclick = function() {
+        rangeMode = !rangeMode;
+        if (rangeMode) {
+          rangeBtn.classList.add('active');
+          rangeBtn.textContent = '取消范围';
+          rangeStart = -1;
+          countEl.textContent = '范围选择：请点击首章';
+        } else {
+          rangeBtn.classList.remove('active');
+          rangeBtn.textContent = '范围选择';
+          // 清除高亮
+          var highlights = listEl.querySelectorAll('.chapter-select-item.range-start, .chapter-select-item.range-end');
+          for (var h = 0; h < highlights.length; h++) {
+            highlights[h].classList.remove('range-start', 'range-end');
+          }
+          updateCount();
+        }
+      };
+
+      // 范围选择：点击label（非checkbox）时触发
+      listEl.addEventListener('click', function(e) {
+        if (!rangeMode) return;
+        var label = e.target.closest('.chapter-select-item');
+        if (!label) return;
+        var cb = label.querySelector('input[type="checkbox"]');
+        if (cb && cb.disabled) return; // 已下载的跳过
+        var idx = parseInt(label.getAttribute('data-idx'));
+
+        if (rangeStart === -1) {
+          // 第一次点击：设置起点
+          rangeStart = idx;
+          label.classList.add('range-start');
+          countEl.textContent = '范围选择：请点击末章（从 ' + currentChapters[idx].title + ' 开始）';
+        } else {
+          // 第二次点击：设置终点，选中范围内所有未下载章节
+          var start = Math.min(rangeStart, idx);
+          var end = Math.max(rangeStart, idx);
+          var allCbs = listEl.querySelectorAll('input[type="checkbox"]:not(:disabled)');
+          for (var c = 0; c < allCbs.length; c++) {
+            var cbIdx = parseInt(allCbs[c].value);
+            if (cbIdx >= start && cbIdx <= end) {
+              allCbs[c].checked = true;
+            }
+          }
+          label.classList.add('range-end');
+          rangeMode = false;
+          rangeBtn.classList.remove('active');
+          rangeBtn.textContent = '范围选择';
+          rangeStart = -1;
+          updateCount();
+          // 清除高亮
+          setTimeout(function() {
+            var highlights = listEl.querySelectorAll('.chapter-select-item.range-start, .chapter-select-item.range-end');
+            for (var h = 0; h < highlights.length; h++) {
+              highlights[h].classList.remove('range-start', 'range-end');
+            }
+          }, 1000);
+        }
+        e.preventDefault();
+        e.stopPropagation();
+      }, true); // 使用捕获阶段，在checkbox默认行为之前拦截
 
       document.getElementById('chapterSelectAll').onclick = function() {
         var cbs = listEl.querySelectorAll('input[type="checkbox"]:not(:disabled)');
@@ -2698,7 +2783,18 @@
       currentView = 'detail';
       currentComicUrl = comicUrl;
       currentComicTitle = comic.title;
-      currentChapters = comic.chapters.map(function(ch) { return { url: ch.url || '', title: ch.title }; });
+      // 只保留已下载的章节
+      var downloadedChapters = [];
+      var downloadedIndices = [];
+      for (var i = 0; i < comic.chapters.length; i++) {
+        if (comic.chapters[i].images && comic.chapters[i].images.length > 0) {
+          downloadedChapters.push({ url: comic.chapters[i].url || '', title: comic.chapters[i].title });
+          downloadedIndices.push(i);
+        }
+      }
+      currentChapters = downloadedChapters;
+      // 保存原始索引映射，用于阅读时查找对应图片
+      currentOfflineChapterIndices = downloadedIndices;
 
       var content = document.getElementById('comicContent');
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2750,12 +2846,12 @@
               '<div class="comic-detail-tags">' + tagsHtml + '</div>' +
               (comic.desc ? '<div class="comic-detail-desc">' + comic.desc + '</div>' : '') +
               '<div style="margin-top:8px;font-size:0.78rem;color:var(--text-muted);">' +
-                '<i data-lucide="package" style="width:12px;height:12px;vertical-align:middle;"></i> 共 ' + comic.chapters.length + '话 · ' + comic.totalImages + ' 张图片 · 来源: ' + (comic.sourceName || '未知') +
+                '<i data-lucide="package" style="width:12px;height:12px;vertical-align:middle;"></i> 已下载 ' + downloadedChapters.length + '/' + comic.chapters.length + '话 · ' + comic.totalImages + ' 张图片 · 来源: ' + (comic.sourceName || '未知') +
               '</div>' +
             '</div>' +
           '</div>' +
           downloadSectionHtml +
-          '<h3 style="font-size:1.05rem;margin-bottom:12px;color:var(--text-primary);">章节列表 (' + currentChapters.length + '话)</h3>' +
+          '<h3 style="font-size:1.05rem;margin-bottom:12px;color:var(--text-primary);">章节列表 (' + downloadedChapters.length + '/' + comic.chapters.length + '话已下载)</h3>' +
           chapterSearchHtml +
           '<div class="chapter-list" id="chapterList">' + chapterHtml + '</div>' +
         '</div>';
@@ -3053,6 +3149,7 @@
       currentView = 'detail';
       currentComicUrl = comicUrl;
       currentComicTitle = fallbackTitle || '';
+      currentOfflineChapterIndices = null; // 非离线模式
       if (!currentSource) currentSource = COMIC_SOURCES[0];
       var src = currentSource;
 
@@ -3213,6 +3310,10 @@
       }
     }
 
+    function isOfflineMode() {
+      return currentOfflineChapterIndices !== null;
+    }
+
     async function loadChapter(index) {
       currentView = 'reader';
       currentChapterIndex = index;
@@ -3236,8 +3337,10 @@
 
         // 优先检查离线缓存
         var offlineComic = offlineLibrary[currentComicUrl];
-        if (offlineComic && offlineComic.chapters[index] && offlineComic.chapters[index].images.length > 0) {
-          images = offlineComic.chapters[index].images;
+        // 离线模式下需要将 currentChapters 的索引映射回原始章节索引
+        var originalIndex = (currentOfflineChapterIndices && isOfflineMode()) ? currentOfflineChapterIndices[index] : index;
+        if (offlineComic && offlineComic.chapters[originalIndex] && offlineComic.chapters[originalIndex].images.length > 0) {
+          images = offlineComic.chapters[originalIndex].images;
           hasWatermark = false;
           isOffline = true;
           log('使用离线缓存: ' + chapter.title);
