@@ -3867,10 +3867,24 @@
       for (var i = 0; i < btns.length; i++) {
         if (autoScrollActive) {
           btns[i].classList.add('active');
-          btns[i].innerHTML = '<i data-lucide="pause" style="width:14px;height:14px;"></i>';
+          var icon = btns[i].querySelector('svg, i');
+          if (icon) {
+            if (icon.tagName === 'I') {
+              icon.setAttribute('data-lucide', 'pause');
+            } else if (icon.tagName === 'SVG') {
+              icon.innerHTML = '<path d="M10 18h4V6h-4v12zm8-12v12h4V6h-4z"/>';
+            }
+          }
         } else {
           btns[i].classList.remove('active');
-          btns[i].innerHTML = '<i data-lucide="play" style="width:14px;height:14px;"></i>';
+          var icon = btns[i].querySelector('svg, i');
+          if (icon) {
+            if (icon.tagName === 'I') {
+              icon.setAttribute('data-lucide', 'play');
+            } else if (icon.tagName === 'SVG') {
+              icon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+            }
+          }
         }
       }
       var speedLabels = document.querySelectorAll('.auto-scroll-speed');
