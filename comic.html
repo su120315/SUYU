@@ -718,7 +718,7 @@
       display: block;
     }
 
-    .comic-image-wrap img + .comic-image-placeholder {
+    .comic-image-wrap img.loaded + .comic-image-placeholder {
       display: none;
     }
 
@@ -3274,7 +3274,7 @@
             '<div class="comic-image-wrap" data-src="' + imgSrc + '" data-backup-src="" data-index="' + img + '" style="min-height:200px;">' +
               '<img src="' + imgSrc + '" alt="第' + (img + 1) + '页" referrerpolicy="no-referrer" ' +
                    'onerror="retryComicImage(this)" ' +
-                   'onload="this.parentElement.style.minHeight=\'\'" ' +
+                   'onload="this.classList.add(\'loaded\');this.parentElement.style.minHeight=\'\'" ' +
                    'style="width:100%;display:block;">' +
               '<div class="comic-image-placeholder">' +
                 '<span class="mini-spinner"></span>加载中...' +
@@ -3331,15 +3331,17 @@
         for (var li = 0; li < loadedImgs.length; li++) {
           (function(imgEl, phEl) {
             if (imgEl.complete && imgEl.naturalWidth > 0) {
+              imgEl.classList.add('loaded');
               if (phEl) phEl.style.display = 'none';
               imgEl.parentElement.style.minHeight = '';
             } else {
               imgEl.addEventListener('load', function() {
+                imgEl.classList.add('loaded');
                 if (phEl) phEl.style.display = 'none';
                 imgEl.parentElement.style.minHeight = '';
               });
               imgEl.addEventListener('error', function() {
-                if (phEl) phEl.style.display = 'none';
+                if (phEl) phEl.style.display = 'flex';
               });
             }
           })(loadedImgs[li], placeholders[li]);
