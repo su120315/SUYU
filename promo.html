@@ -378,14 +378,14 @@ button{font-family:inherit}
 <div class="bg-grid"></div>
 <div class="bg-noise"></div>
 
-<!-- Top UI -->
-<div class="top-progress"><div class="top-progress-fill" id="progressFill"></div></div>
-<div class="top-bar">
+<!-- Top UI (录屏时隐藏) -->
+<div class="top-progress" style="display:none;"><div class="top-progress-fill" id="progressFill"></div></div>
+<div class="top-bar" style="display:none;">
   <div class="brand"><span class="brand-dot"></span>SUYU</div>
   <div class="slide-counter"><b id="counterCur">01</b> / <span id="counterTotal">09</span></div>
 </div>
-<div class="dots" id="dots"></div>
-<div class="hint" id="hint">
+<div class="dots" id="dots" style="display:none;"></div>
+<div class="hint hide" id="hint" style="display:none;">
   <span class="play-dot" id="playDot" style="display:none"></span>
   <kbd>Space</kbd><span id="hintText">自动播放</span>
   <span style="opacity:.5">·</span>
@@ -407,7 +407,7 @@ button{font-family:inherit}
       </h1>
       <div class="s0-sub anim from-up" style="--i:5">个人网站<span class="sep">·</span>多功能聚合</div>
       <div class="s0-tagline anim from-blur" style="--i:6">一个站点，整合漫画 / 小说 / 工具 / 相册 / 留言 / AI 对话</div>
-      <div class="s0-cta-hint anim from-down" style="--i:7">
+      <div class="s0-cta-hint anim from-down" style="--i:7;display:none;">
         <i data-lucide="timer" style="width:16px;height:16px"></i>
         5 秒后自动开始演示
       </div>
