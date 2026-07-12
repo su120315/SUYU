@@ -408,8 +408,8 @@ button{font-family:inherit}
       <div class="s0-sub anim from-up" style="--i:5">个人网站<span class="sep">·</span>多功能聚合</div>
       <div class="s0-tagline anim from-blur" style="--i:6">一个站点，整合漫画 / 小说 / 工具 / 相册 / 留言 / AI 对话</div>
       <div class="s0-cta-hint anim from-down" style="--i:7">
-        <kbd>Space</kbd> 开始演示
-        <i data-lucide="chevrons-down" style="width:16px;height:16px"></i>
+        <i data-lucide="timer" style="width:16px;height:16px"></i>
+        5 秒后自动开始演示
       </div>
     </div>
   </section>
@@ -986,6 +986,11 @@ if (window.lucide) lucide.createIcons();
       onEnter(slides[0], 0);
     });
   });
+
+  // ===== 首屏停留 5 秒后自动开始播放 =====
+  setTimeout(() => {
+    startAuto();
+  }, 5000);
 
   // expose for debugging
   window.__deck = { goTo, next, prev, startAuto, stopAuto, get current(){return current;} };
