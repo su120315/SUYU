@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SUYU 5.0 — 史诗级更新</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+/* ========== RESET & VARIABLES ========== */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --indigo: #6366f1;
+  --cyan: #22d3ee;
+  --pink: #f472b6;
+  --bg: #07070d;
+  --bg-card: rgba(255,255,255,0.04);
+  --bg-card-hover: rgba(255,255,255,0.08);
+  --text: #e8e8f0;
+  --text-muted: #8888a8;
+  --border: rgba(255,255,255,0.08);
+  --gradient-main: linear-gradient(135deg, var(--indigo), var(--cyan), var(--pink));
+  --gradient-text: linear-gradient(90deg, var(--indigo), var(--cyan), var(--pink), var(--indigo));
+  --font-display: 'Orbitron', sans-serif;
+  --font-body: 'Noto Sans SC', sans-serif;
+}
+html { scroll-behavior: smooth; font-size: 16px; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+a { color: inherit; text-decoration: none; }
+
+/* ========== CANVAS PARTICLES ========== */
+#particles-canvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ========== GLOBAL ANIMATIONS ========== */
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+@keyframes pulse-glow {
+  0%, 100% { filter: drop-shadow(0 0 8px var(--indigo)) drop-shadow(0 0 20px var(--cyan)); }
+  50% { filter: drop-shadow(0 0 16px var(--pink)) drop-shadow(0 0 40px var(--indigo)); }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(60px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-80px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(80px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+@keyframes borderGlow {
+  0%, 100% { border-color: rgba(99,102,241,0.3); }
+  33% { border-color: rgba(34,211,238,0.3); }
+  66% { border-color: rgba(244,114,182,0.3); }
+}
+@keyframes rotateHue {
+  0% { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+
+/* Scroll reveal base */
+.reveal {
+  opacity: 0;
+  transform: translateY(50px);
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reveal-delay-1 { transition-delay: 0.1s; }
+.reveal-delay-2 { transition-delay: 0.2s; }
+.reveal-delay-3 { transition-delay: 0.3s; }
+.reveal-delay-4 { transition-delay: 0.4s; }
+.reveal-delay-5 { transition-delay: 0.5s; }
+.reveal-delay-6 { transition-delay: 0.6s; }
+
+/* ========== HERO SECTION ========== */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -50%; left: -50%;
+  width: 200%; height: 200%;
+  background: radial-gradient(ellipse at 30% 20%, rgba(99,102,241,0.15) 0%, transparent 50%),
+              radial-gradient(ellipse at 70% 60%, rgba(244,114,182,0.1) 0%, transparent 50%),
+              radial-gradient(ellipse at 50% 80%, rgba(34,211,238,0.08) 0%, transparent 40%);
+  animation: gradientShift 12s ease infinite;
+  z-index: 0;
+}
+.hero-content {
+  position: relative;
+  z-index: 1;
+}
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 1.2rem;
+  background: rgba(99,102,241,0.12);
+  border: 1px solid rgba(99,102,241,0.3);
+  border-radius: 100px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--cyan);
+  letter-spacing: 0.05em;
+  margin-bottom: 2rem;
+  animation: borderGlow 4s ease infinite;
+  backdrop-filter: blur(10px);
+}
+.hero-badge-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 12px var(--cyan);
+  animation: pulse-glow 2s ease infinite;
+}
+.hero-version {
+  font-family: var(--font-display);
+  font-size: clamp(4rem, 14vw, 10rem);
+  font-weight: 900;
+  line-height: 1;
+  background: var(--gradient-text);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradientShift 4s ease infinite;
+  filter: drop-shadow(0 0 40px rgba(99,102,241,0.3));
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.02em;
+}
+.hero-title {
+  font-size: clamp(1.2rem, 3.5vw, 2.2rem);
+  font-weight: 900;
+  margin-bottom: 1rem;
+  letter-spacing: 0.15em;
+}
+.hero-title .epic {
+  background: var(--gradient-main);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 3s linear infinite;
+}
+.hero-subtitle {
+  font-size: clamp(0.95rem, 2vw, 1.15rem);
+  color: var(--text-muted);
+  max-width: 600px;
+  margin: 0 auto 2.5rem;
+  font-weight: 300;
+  line-height: 1.8;
+}
+.hero-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1rem 2.5rem;
+  background: var(--gradient-main);
+  background-size: 200% auto;
+  border: none;
+  border-radius: 14px;
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  animation: gradientShift 3s ease infinite;
+  box-shadow: 0 4px 24px rgba(99,102,241,0.3), 0 0 60px rgba(99,102,241,0.1);
+  position: relative;
+  overflow: hidden;
+}
+.hero-cta::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.6s ease;
+}
+.hero-cta:hover::before { left: 100%; }
+.hero-cta:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 8px 36px rgba(99,102,241,0.4), 0 0 80px rgba(99,102,241,0.15);
+}
+.hero-scroll-hint {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  animation: float 3s ease infinite;
+  z-index: 1;
+}
+.hero-scroll-hint svg { width: 20px; height: 20px; }
+
+/* Decorative rings */
+.hero-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid;
+  pointer-events: none;
+  z-index: 0;
+}
+.hero-ring-1 {
+  width: 500px; height: 500px;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  border-color: rgba(99,102,241,0.06);
+  animation: rotateHue 20s linear infinite;
+}
+.hero-ring-2 {
+  width: 700px; height: 700px;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  border-color: rgba(34,211,238,0.04);
+  animation: rotateHue 30s linear infinite reverse;
+}
+.hero-ring-3 {
+  width: 350px; height: 350px;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  border-color: rgba(244,114,182,0.05);
+  border-style: dashed;
+  animation: rotateHue 15s linear infinite;
+}
+
+/* ========== STATS BAR ========== */
+.stats-bar {
+  position: relative;
+  z-index: 1;
+  padding: 3rem 2rem;
+  background: linear-gradient(180deg, rgba(99,102,241,0.06) 0%, transparent 100%);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.stats-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+}
+.stat-item {
+  text-align: center;
+  padding: 1.5rem 1rem;
+  border-radius: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  transition: all 0.3s ease;
+}
+.stat-item:hover {
+  background: var(--bg-card-hover);
+  border-color: rgba(99,102,241,0.2);
+  transform: translateY(-4px);
+}
+.stat-number {
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-weight: 800;
+  background: var(--gradient-main);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.2;
+}
+.stat-label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 0.4rem;
+  font-weight: 500;
+}
+
+/* ========== SECTION COMMON ========== */
+.section {
+  position: relative;
+  z-index: 1;
+  padding: 6rem 2rem;
+}
+.section-header {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+.section-tag {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  margin-bottom: 0.8rem;
+  padding: 0.3rem 1rem;
+  border: 1px solid rgba(34,211,238,0.2);
+  border-radius: 100px;
+  background: rgba(34,211,238,0.06);
+}
+.section-title {
+  font-size: clamp(1.8rem, 5vw, 3rem);
+  font-weight: 900;
+  line-height: 1.2;
+  margin-bottom: 1rem;
+}
+.section-desc {
+  font-size: 1rem;
+  color: var(--text-muted);
+  max-width: 600px;
+  margin: 0 auto;
+  font-weight: 300;
+  line-height: 1.8;
+}
+
+/* ========== FEATURE GRID ========== */
+.features-grid {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+.feature-card {
+  position: relative;
+  padding: 2rem;
+  border-radius: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+.feature-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 3px;
+  background: var(--gradient-main);
+  background-size: 200% auto;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.feature-card:hover::before { opacity: 1; }
+.feature-card:hover {
+  background: var(--bg-card-hover);
+  border-color: rgba(99,102,241,0.2);
+  transform: translateY(-6px);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3), 0 0 40px rgba(99,102,241,0.05);
+}
+.feature-icon {
+  width: 52px; height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  margin-bottom: 1.2rem;
+  background: rgba(99,102,241,0.1);
+  border: 1px solid rgba(99,102,241,0.15);
+  transition: all 0.3s ease;
+}
+.feature-icon svg { width: 24px; height: 24px; stroke: var(--indigo); transition: stroke 0.3s; }
+.feature-card:nth-child(2) .feature-icon { background: rgba(34,211,238,0.1); border-color: rgba(34,211,238,0.15); }
+.feature-card:nth-child(2) .feature-icon svg { stroke: var(--cyan); }
+.feature-card:nth-child(3) .feature-icon { background: rgba(244,114,182,0.1); border-color: rgba(244,114,182,0.15); }
+.feature-card:nth-child(3) .feature-icon svg { stroke: var(--pink); }
+.feature-card:nth-child(4) .feature-icon { background: rgba(244,114,182,0.1); border-color: rgba(244,114,182,0.15); }
+.feature-card:nth-child(4) .feature-icon svg { stroke: var(--pink); }
+.feature-card:nth-child(5) .feature-icon { background: rgba(34,211,238,0.1); border-color: rgba(34,211,238,0.15); }
+.feature-card:nth-child(5) .feature-icon svg { stroke: var(--cyan); }
+.feature-card:nth-child(6) .feature-icon { background: rgba(99,102,241,0.1); border-color: rgba(99,102,241,0.15); }
+.feature-card:nth-child(6) .feature-icon svg { stroke: var(--indigo); }
+.feature-card:hover .feature-icon {
+  transform: scale(1.1);
+  box-shadow: 0 0 20px rgba(99,102,241,0.2);
+}
+.feature-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 0.6rem;
+}
+.feature-desc {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  line-height: 1.7;
+  font-weight: 300;
+}
+.feature-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 1rem;
+}
+.feature-tag {
+  font-size: 0.72rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  background: rgba(99,102,241,0.08);
+  border: 1px solid rgba(99,102,241,0.12);
+  color: var(--indigo);
+  font-weight: 500;
+}
+
+/* ========== COMIC SPOTLIGHT ========== */
+.comic-spotlight {
+  position: relative;
+  z-index: 1;
+  padding: 6rem 2rem;
+  background: linear-gradient(180deg, transparent, rgba(99,102,241,0.04) 50%, transparent);
+  overflow: hidden;
+}
+.comic-spotlight::before {
+  content: '';
+  position: absolute;
+  top: 0; right: -10%;
+  width: 600px; height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(34,211,238,0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+.comic-spotlight-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: center;
+}
+.comic-visual {
+  position: relative;
+  aspect-ratio: 4/3;
+  border-radius: 24px;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(34,211,238,0.1), rgba(244,114,182,0.08));
+  border: 1px solid var(--border);
+  box-shadow: 0 30px 80px rgba(0,0,0,0.4), 0 0 60px rgba(99,102,241,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.comic-visual-inner {
+  width: 85%; height: 75%;
+  border-radius: 16px;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,255,255,0.06);
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+.comic-mock-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.8rem;
+  background: rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.comic-mock-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+}
+.comic-mock-dot:nth-child(1) { background: #ef4444; }
+.comic-mock-dot:nth-child(2) { background: #eab308; }
+.comic-mock-dot:nth-child(3) { background: #22c55e; }
+.comic-mock-content {
+  flex: 1;
+  padding: 1rem;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 0.5rem;
+}
+.comic-mock-chapter {
+  font-size: 0.65rem;
+  color: var(--cyan);
+  padding: 0.3rem 0.6rem;
+  background: rgba(34,211,238,0.1);
+  border-radius: 6px;
+  width: fit-content;
+}
+.comic-mock-pages {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+}
+.comic-mock-page {
+  background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(244,114,182,0.08));
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.04);
+}
+.comic-mock-progress {
+  height: 4px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.comic-mock-progress-bar {
+  height: 100%;
+  width: 65%;
+  background: var(--gradient-main);
+  border-radius: 2px;
+}
+.comic-float-card {
+  position: absolute;
+  padding: 0.6rem 1rem;
+  border-radius: 12px;
+  background: rgba(15,15,25,0.9);
+  border: 1px solid rgba(99,102,241,0.2);
+  backdrop-filter: blur(10px);
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  animation: float 4s ease infinite;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  white-space: nowrap;
+}
+.comic-float-card svg { width: 14px; height: 14px; }
+.comic-float-1 { top: 10%; right: -15%; animation-delay: 0s; }
+.comic-float-2 { bottom: 15%; left: -12%; animation-delay: 1.5s; }
+
+.comic-info { display: flex; flex-direction: column; gap: 1.5rem; }
+.comic-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.8rem;
+  background: rgba(244,114,182,0.1);
+  border: 1px solid rgba(244,114,182,0.2);
+  border-radius: 8px;
+  font-size: 0.78rem;
+  color: var(--pink);
+  font-weight: 600;
+  width: fit-content;
+}
+.comic-heading {
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  font-weight: 900;
+  line-height: 1.3;
+}
+.comic-heading span {
+  background: var(--gradient-main);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.comic-desc {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  line-height: 1.8;
+  font-weight: 300;
+}
+.comic-features {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem;
+}
+.comic-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 0.5rem 0.8rem;
+  border-radius: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  transition: all 0.3s ease;
+}
+.comic-feature-item:hover {
+  background: var(--bg-card-hover);
+  border-color: rgba(34,211,238,0.2);
+}
+.comic-feature-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+.comic-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+.shortcut-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 0.4rem;
+  border-radius: 6px;
+  background: rgba(99,102,241,0.1);
+  border: 1px solid rgba(99,102,241,0.2);
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--indigo);
+}
+.shortcut-desc {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* ========== CHANGELOG ========== */
+.changelog {
+  position: relative;
+  z-index: 1;
+  padding: 6rem 2rem;
+  background: linear-gradient(180deg, transparent, rgba(244,114,182,0.03) 50%, transparent);
+}
+.changelog-timeline {
+  max-width: 700px;
+  margin: 0 auto;
+  position: relative;
+  padding-left: 3rem;
+}
+.changelog-timeline::before {
+  content: '';
+  position: absolute;
+  left: 12px; top: 0;
+  width: 2px; height: 100%;
+  background: linear-gradient(180deg, var(--indigo), var(--cyan), var(--pink), transparent);
+}
+.changelog-item {
+  position: relative;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  border-radius: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  transition: all 0.3s ease;
+}
+.changelog-item:hover {
+  background: var(--bg-card-hover);
+  border-color: rgba(99,102,241,0.15);
+  transform: translateX(4px);
+}
+.changelog-item::before {
+  content: '';
+  position: absolute;
+  left: -2.35rem; top: 1.8rem;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 2px solid var(--indigo);
+  box-shadow: 0 0 12px rgba(99,102,241,0.4);
+}
+.changelog-item:nth-child(2)::before { border-color: var(--cyan); box-shadow: 0 0 12px rgba(34,211,238,0.4); }
+.changelog-item:nth-child(3)::before { border-color: var(--pink); box-shadow: 0 0 12px rgba(244,114,182,0.4); }
+.changelog-item:nth-child(4)::before { border-color: var(--cyan); box-shadow: 0 0 12px rgba(34,211,238,0.4); }
+.changelog-version {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--cyan);
+  margin-bottom: 0.4rem;
+}
+.changelog-item:nth-child(1) .changelog-version { color: var(--pink); }
+.changelog-item:nth-child(3) .changelog-version { color: var(--indigo); }
+.changelog-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+.changelog-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.changelog-list li {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  font-weight: 300;
+  padding-left: 1.2rem;
+  position: relative;
+  line-height: 1.7;
+}
+.changelog-list li::before {
+  content: '›';
+  position: absolute;
+  left: 0;
+  color: var(--indigo);
+  font-weight: 700;
+}
+.changelog-item:nth-child(2) .changelog-list li::before { color: var(--cyan); }
+.changelog-item:nth-child(3) .changelog-list li::before { color: var(--pink); }
+
+/* ========== CTA SECTION ========== */
+.cta-section {
+  position: relative;
+  z-index: 1;
+  padding: 8rem 2rem;
+  text-align: center;
+  overflow: hidden;
+}
+.cta-section::before {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 600px; height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(99,102,241,0.08) 0%, rgba(244,114,182,0.04) 40%, transparent 70%);
+  pointer-events: none;
+}
+.cta-content { position: relative; z-index: 1; }
+.cta-title {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 900;
+  margin-bottom: 1rem;
+}
+.cta-title span {
+  background: var(--gradient-main);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.cta-desc {
+  font-size: 1.05rem;
+  color: var(--text-muted);
+  max-width: 500px;
+  margin: 0 auto 2.5rem;
+  font-weight: 300;
+  line-height: 1.8;
+}
+.cta-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 1.1rem 3rem;
+  background: var(--gradient-main);
+  background-size: 200% auto;
+  border: none;
+  border-radius: 16px;
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  animation: gradientShift 3s ease infinite;
+  box-shadow: 0 6px 30px rgba(99,102,241,0.35), 0 0 80px rgba(99,102,241,0.1);
+  position: relative;
+  overflow: hidden;
+}
+.cta-button::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.6s ease;
+}
+.cta-button:hover::before { left: 100%; }
+.cta-button:hover {
+  transform: translateY(-4px) scale(1.04);
+  box-shadow: 0 10px 44px rgba(99,102,241,0.45), 0 0 100px rgba(99,102,241,0.15);
+}
+.cta-button svg { width: 22px; height: 22px; }
+
+/* ========== FOOTER ========== */
+.footer {
+  position: relative;
+  z-index: 1;
+  padding: 3rem 2rem;
+  text-align: center;
+  border-top: 1px solid var(--border);
+  background: rgba(0,0,0,0.3);
+}
+.footer-love {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+.footer-love span {
+  background: var(--gradient-main);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.footer-credit {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 300;
+}
+.footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+.footer-links a {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  transition: color 0.3s;
+}
+.footer-links a:hover { color: var(--cyan); }
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 900px) {
+  .features-grid { grid-template-columns: repeat(2, 1fr); }
+  .comic-spotlight-inner { grid-template-columns: 1fr; gap: 2.5rem; }
+  .comic-visual { max-width: 500px; margin: 0 auto; }
+  .comic-float-card { display: none; }
+  .stats-container { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+  .features-grid { grid-template-columns: 1fr; }
+  .stats-container { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+  .comic-features { grid-template-columns: 1fr; }
+  .section { padding: 4rem 1.2rem; }
+  .changelog-timeline { padding-left: 2.5rem; }
+  .changelog-item::before { left: -2.1rem; }
+  .hero-ring { display: none; }
+}
+
+/* ========== NOISE OVERLAY ========== */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.015;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px;
+}
+</style>
+</head>
+<body>
+
+<!-- Particle Canvas -->
+<canvas id="particles-canvas"></canvas>
+
+<!-- ==================== HERO ==================== -->
+<section class="hero">
+  <div class="hero-ring hero-ring-1"></div>
+  <div class="hero-ring hero-ring-2"></div>
+  <div class="hero-ring hero-ring-3"></div>
+  <div class="hero-content">
+    <div class="hero-badge">
+      <span class="hero-badge-dot"></span>
+      2025 全新大版本
+    </div>
+    <div class="hero-version">SUYU 5.0</div>
+    <h1 class="hero-title"><span class="epic">史诗级更新</span> · 为爱发电</h1>
+    <p class="hero-subtitle">
+      由汇文中学初二学生独立打造的个人网站<br>
+      PWA离线 · 多源漫画 · 暗黑模式 · 仅6MB
+    </p>
+    <a href="https://su120315.github.io/SUYU/" target="_blank" class="hero-cta">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      立即体验
+    </a>
+  </div>
+  <div class="hero-scroll-hint">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
+    向下滚动探索
+  </div>
+</section>
+
+<!-- ==================== STATS BAR ==================== -->
+<section class="stats-bar">
+  <div class="stats-container">
+    <div class="stat-item reveal">
+      <div class="stat-number" data-count="8">8+</div>
+      <div class="stat-label">功能模块</div>
+    </div>
+    <div class="stat-item reveal reveal-delay-1">
+      <div class="stat-number" data-count="5">5+</div>
+      <div class="stat-label">漫画源</div>
+    </div>
+    <div class="stat-item reveal reveal-delay-2">
+      <div class="stat-number">6MB</div>
+      <div class="stat-label">极致轻量</div>
+    </div>
+    <div class="stat-item reveal reveal-delay-3">
+      <div class="stat-number">PWA</div>
+      <div class="stat-label">离线支持</div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== FEATURES ==================== -->
+<section class="section" id="features">
+  <div class="section-header">
+    <div class="section-tag reveal">Features</div>
+    <h2 class="section-title reveal reveal-delay-1">全方位 · 一站式体验</h2>
+    <p class="section-desc reveal reveal-delay-2">从个人主页到漫画阅读，从工具箱到留言互动，SUYU 5.0 重新定义个人网站的可能性</p>
+  </div>
+  <div class="features-grid">
+    <div class="feature-card reveal">
+      <div class="feature-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
+      <div class="feature-title">个人主页</div>
+      <div class="feature-desc">自定义头像、技能进度条、项目展示、兴趣爱好、社交链接、访客计数器、AI 智能对话</div>
+      <div class="feature-tags">
+        <span class="feature-tag">AI聊天</span>
+        <span class="feature-tag">技能条</span>
+        <span class="feature-tag">访客计数</span>
+      </div>
+    </div>
+    <div class="feature-card reveal reveal-delay-1">
+      <div class="feature-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+      </div>
+      <div class="feature-title">漫画阅读器</div>
+      <div class="feature-desc">5+漫画源自动切换、离线下载、阅读历史、书签管理、进度拖拽、键盘快捷操作</div>
+      <div class="feature-tags">
+        <span class="feature-tag">多源切换</span>
+        <span class="feature-tag">离线阅读</span>
+        <span class="feature-tag">追漫书架</span>
+      </div>
+    </div>
+    <div class="feature-card reveal reveal-delay-2">
+      <div class="feature-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      </div>
+      <div class="feature-title">小说阅读</div>
+      <div class="feature-desc">沉浸式小说阅读体验，舒适排版，深色模式适配，让你的阅读时光更加惬意</div>
+      <div class="feature-tags">
+        <span class="feature-tag">沉浸阅读</span>
+        <span class="feature-tag">暗色适配</span>
+      </div>
+    </div>
+    <div class="feature-card reveal">
+      <div class="feature-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+      </div>
+      <div class="feature-title">工具箱</div>
+      <div class="feature-desc">计算器、计时器、二维码生成、密码生成器、文本工具…一站满足日常需求</div>
+      <div class="feature-tags">
+        <span class="feature-tag">计算器</span>
+        <span class="feature-tag">二维码</span>
+        <span class="feature-tag">密码生成</span>
+      </div>
+    </div>
+    <div class="feature-card reveal reveal-delay-1">
+      <div class="feature-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+      </div>
+      <div class="feature-title">相册</div>
+      <div class="feature-desc">分类浏览、灯箱查看、精美展示，记录每一个精彩瞬间</div>
+      <div class="feature-tags">
+        <span class="feature-tag">分类浏览</span>
+        <span class="feature-tag">灯箱查看</span>
+      </div>
+    </div>
+    <div class="feature-card reveal reveal-delay-2">
+      <div class="feature-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+      </div>
+      <div class="feature-title">留言板</div>
+      <div class="feature-desc">畅所欲言的互动空间，与站主和其他访客实时交流</div>
+      <div class="feature-tags">
+        <span class="feature-tag">互动交流</span>
+        <span class="feature-tag">实时留言</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== COMIC SPOTLIGHT ==================== -->
+<section class="comic-spotlight">
+  <div class="comic-spotlight-inner">
+    <div class="comic-visual reveal">
+      <div class="comic-visual-inner">
+        <div class="comic-mock-bar">
+          <span class="comic-mock-dot"></span>
+          <span class="comic-mock-dot"></span>
+          <span class="comic-mock-dot"></span>
+        </div>
+        <div class="comic-mock-content">
+          <span class="comic-mock-chapter">第 42 话 · 最终决战</span>
+          <div class="comic-mock-pages">
+            <div class="comic-mock-page"></div>
+            <div class="comic-mock-page"></div>
+          </div>
+          <div class="comic-mock-progress">
+            <div class="comic-mock-progress-bar"></div>
+          </div>
+        </div>
+      </div>
+      <div class="comic-float-card comic-float-1">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="m16.2 7.8 2.9-2.9"/><path d="M18 12h4"/><path d="m16.2 16.2 2.9 2.9"/><path d="M12 18v4"/><path d="m4.9 19.1 2.9-2.9"/><path d="M2 12h4"/><path d="m4.9 4.9 2.9 2.9"/></svg>
+        <span style="color:var(--cyan);">源已切换</span>
+      </div>
+      <div class="comic-float-card comic-float-2">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#f472b6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        <span style="color:var(--pink);">已加入书架</span>
+      </div>
+    </div>
+    <div class="comic-info reveal reveal-delay-2">
+      <div class="comic-badge">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        旗舰功能
+      </div>
+      <h3 class="comic-heading">多源<span>漫画阅读器</span><br>你的私人漫库</h3>
+      <p class="comic-desc">
+        5+ 漫画源自动切换，告别"源不可用"烦恼。支持离线下载到 IndexedDB，无网络也能畅读。追漫书架、阅读历史、书签系统，打造沉浸式追漫体验。
+      </p>
+      <div class="comic-features">
+        <div class="comic-feature-item">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="m16.2 7.8 2.9-2.9"/><path d="M18 12h4"/><path d="m16.2 16.2 2.9 2.9"/><path d="M12 18v4"/><path d="m4.9 19.1 2.9-2.9"/><path d="M2 12h4"/><path d="m4.9 4.9 2.9 2.9"/></svg>
+          5+源自动切换
+        </div>
+        <div class="comic-feature-item">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="var(--pink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+          离线下载阅读
+        </div>
+        <div class="comic-feature-item">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="var(--indigo)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+          书架 & 书签
+        </div>
+        <div class="comic-feature-item">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          历史记录
+        </div>
+        <div class="comic-feature-item">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="var(--pink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+          暗色模式
+        </div>
+        <div class="comic-feature-item">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="var(--indigo)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          自动滚动
+        </div>
+      </div>
+      <div style="margin-top:1rem;">
+        <div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:0.5rem;font-weight:500;">⌨️ 键盘快捷键</div>
+        <div class="comic-shortcuts">
+          <span class="shortcut-desc"><span class="shortcut-key">←</span><span class="shortcut-key">→</span> 翻页</span>
+          <span class="shortcut-desc"><span class="shortcut-key">Space</span> 自动滚动</span>
+          <span class="shortcut-desc"><span class="shortcut-key">B</span> 书签</span>
+          <span class="shortcut-desc"><span class="shortcut-key">T</span> 切换主题</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== CHANGELOG ==================== -->
+<section class="changelog" id="changelog">
+  <div class="section-header">
+    <div class="section-tag reveal">Changelog</div>
+    <h2 class="section-title reveal reveal-delay-1">版本迭代 · 步步为营</h2>
+    <p class="section-desc reveal reveal-delay-2">每一次更新都饱含热爱，从零到五，持续进化</p>
+  </div>
+  <div class="changelog-timeline">
+    <div class="changelog-item reveal">
+      <div class="changelog-version">v5.0 · CURRENT</div>
+      <div class="changelog-title">史诗级更新</div>
+      <ul class="changelog-list">
+        <li>全新漫画阅读器重构，多源切换引擎</li>
+        <li>PWA 完整支持，可安装到桌面</li>
+        <li>IndexedDB 离线漫画存储</li>
+        <li>暗色/亮色模式全局 CSS 变量系统</li>
+        <li>追漫书架系统上线</li>
+        <li>键盘快捷键全面支持</li>
+      </ul>
+    </div>
+    <div class="changelog-item reveal reveal-delay-1">
+      <div class="changelog-version">v4.0</div>
+      <div class="changelog-title">功能大爆发</div>
+      <ul class="changelog-list">
+        <li>工具箱模块上线（计算器、计时器、二维码等）</li>
+        <li>相册模块新增分类与灯箱</li>
+        <li>留言板互动系统</li>
+        <li>移动端响应式全面适配</li>
+      </ul>
+    </div>
+    <div class="changelog-item reveal reveal-delay-2">
+      <div class="changelog-version">v3.0</div>
+      <div class="changelog-title">阅读体验升级</div>
+      <ul class="changelog-list">
+        <li>小说阅读模块上线</li>
+        <li>漫画阅读器初版发布</li>
+        <li>localStorage 数据持久化</li>
+        <li>个人主页技能条与项目展示</li>
+      </ul>
+    </div>
+    <div class="changelog-item reveal reveal-delay-3">
+      <div class="changelog-version">v1.0 · GENESIS</div>
+      <div class="changelog-title">一切的开始</div>
+      <ul class="changelog-list">
+        <li>个人网站初版上线</li>
+        <li>基础页面框架搭建</li>
+        <li>汇文中学初二学生独立开发</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== CTA ==================== -->
+<section class="cta-section">
+  <div class="cta-content">
+    <h2 class="cta-title reveal">准备好了吗？<br><span>开启你的 SUYU 之旅</span></h2>
+    <p class="cta-desc reveal reveal-delay-1">
+      由初中生用热爱与代码搭建的个人网站宇宙<br>
+      6MB 极致轻量 · PWA 离线可用 · 为爱发电
+    </p>
+    <a href="https://su120315.github.io/SUYU/" target="_blank" class="cta-button reveal reveal-delay-2">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      立即体验
+    </a>
+  </div>
+</section>
+
+<!-- ==================== FOOTER ==================== -->
+<footer class="footer">
+  <div class="footer-love">❤️ <span>为爱发电</span> · 持续更新</div>
+  <div class="footer-credit">SUYU · 由汇文中学初二学生独立开发</div>
+  <div class="footer-links">
+    <a href="https://su120315.github.io/SUYU/" target="_blank">访问网站</a>
+    <a href="https://github.com/su120315/SUYU" target="_blank">GitHub</a>
+  </div>
+</footer>
+
+<script>
+// ==================== PARTICLES ====================
+(function() {
+  const canvas = document.getElementById('particles-canvas');
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+  let w, h;
+  const COLORS = ['#6366f1','#22d3ee','#f472b6','#818cf8','#67e8f9','#f9a8d4'];
+
+  function resize() {
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  class Particle {
+    constructor() { this.reset(); }
+    reset() {
+      this.x = Math.random() * w;
+      this.y = Math.random() * h;
+      this.size = Math.random() * 2 + 0.5;
+      this.speedX = (Math.random() - 0.5) * 0.4;
+      this.speedY = (Math.random() - 0.5) * 0.4;
+      this.opacity = Math.random() * 0.5 + 0.1;
+      this.color = COLORS[Math.floor(Math.random() * COLORS.length)];
+    }
+    update() {
+      this.x += this.speedX;
+      this.y += this.speedY;
+      if (this.x < 0 || this.x > w || this.y < 0 || this.y > h) this.reset();
+    }
+    draw() {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      ctx.fillStyle = this.color;
+      ctx.globalAlpha = this.opacity;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  const count = Math.min(Math.floor(w * h / 8000), 120);
+  for (let i = 0; i < count; i++) particles.push(new Particle());
+
+  function animate() {
+    ctx.clearRect(0, 0, w, h);
+    particles.forEach(p => { p.update(); p.draw(); });
+
+    // Draw connections
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 120) {
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.strokeStyle = particles[i].color;
+          ctx.globalAlpha = (1 - dist / 120) * 0.08;
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+      }
+    }
+    requestAnimationFrame(animate);
+  }
+  animate();
+})();
+
+// ==================== SCROLL REVEAL ====================
+(function() {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+})();
+
+// ==================== SMOOTH SCROLL HINT ====================
+(function() {
+  const hint = document.querySelector('.hero-scroll-hint');
+  if (!hint) return;
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 100) {
+      hint.style.opacity = '0';
+      hint.style.transition = 'opacity 0.5s ease';
+    } else {
+      hint.style.opacity = '1';
+    }
+  });
+})();
+</script>
+</body>
+</html>
