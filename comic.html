@@ -473,6 +473,57 @@
       text-align: center;
       font-size: 0.85rem;
       color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .auto-scroll-controls {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background: var(--bg-secondary);
+      border-radius: 100px;
+      border: 1px solid var(--bg-tertiary);
+    }
+
+    .auto-scroll-btn {
+      width: 28px;
+      height: 28px;
+      padding: 0 !important;
+      border-radius: 50% !important;
+      display: inline-flex !important;
+      align-items: center;
+      justify-content: center;
+      background: transparent !important;
+      border: none !important;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: all 0.2s;
+    }
+
+    .auto-scroll-btn:hover {
+      background: var(--accent-primary) !important;
+      color: #fff !important;
+    }
+
+    .auto-scroll-btn.active {
+      background: var(--accent-primary) !important;
+      color: #fff !important;
+    }
+
+    .auto-scroll-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .auto-scroll-speed {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      min-width: 32px;
+      text-align: center;
     }
 
     .source-info {
@@ -3154,6 +3205,7 @@
 
     // ==================== 阅读器 ====================
     function goBackToDetail() {
+      stopAutoScroll();
       if (offlineLibrary[currentComicUrl]) {
         openOfflineComic(currentComicUrl);
       } else {
@@ -3230,6 +3282,22 @@
             '</div>';
         }
 
+        stopAutoScroll();
+
+        var autoScrollControls =
+          '<span class="auto-scroll-controls">' +
+            '<button class="auto-scroll-btn auto-scroll-minus-btn" title="减慢速度">' +
+              '<i data-lucide="minus" style="width:14px;height:14px;"></i>' +
+            '</button>' +
+            '<span class="auto-scroll-speed">' + autoScrollSpeed + 'x</span>' +
+            '<button class="auto-scroll-btn auto-scroll-plus-btn" title="加快速度">' +
+              '<i data-lucide="plus" style="width:14px;height:14px;"></i>' +
+            '</button>' +
+            '<button class="auto-scroll-btn auto-scroll-play-btn" title="自动滚动">' +
+              '<i data-lucide="play" style="width:14px;height:14px;"></i>' +
+            '</button>' +
+          '</span>';
+
         var safeUrl = currentComicUrl.replace(/'/g, "\\'");
         var safeTitle = (currentComicTitle || '').replace(/"/g, '&quot;');
         content.innerHTML =
@@ -3244,14 +3312,14 @@
               '</div>' +
             '</div>' +
             '<div class="comic-reader-nav">' + prevBtn +
-              '<span class="nav-center">' + (index + 1) + ' / ' + currentChapters.length + '</span>' +
+              '<span class="nav-center">' + (index + 1) + ' / ' + currentChapters.length + autoScrollControls + '</span>' +
               nextBtn +
             '</div>' +
             '<div class="comic-reader-images">' +
               (imagesHtml || '<p style="text-align:center;color:var(--text-muted);padding:40px;">本章节暂无图片数据</p>') +
             '</div>' +
             '<div class="comic-reader-nav" style="margin-top:24px;">' + prevBtn +
-              '<span class="nav-center">' + (index + 1) + ' / ' + currentChapters.length + '</span>' +
+              '<span class="nav-center">' + (index + 1) + ' / ' + currentChapters.length + autoScrollControls + '</span>' +
               nextBtn +
             '</div>' +
           '</div>';
@@ -3722,6 +3790,117 @@
       if (e.target.closest('button') || e.target.closest('a') || e.target.closest('input')) return;
       // 单击：立即翻页
       handleReaderTap(e.clientY);
+    });
+
+    // ==================== 自动滚动 ====================
+    var autoScrollActive = false;
+    var autoScrollSpeed = 2;
+    var autoScrollRafId = null;
+    var autoScrollSpeeds = [1, 2, 3, 5, 8];
+    var autoScrollSpeedIndex = 1;
+
+    function startAutoScroll() {
+      if (autoScrollActive) return;
+      autoScrollActive = true;
+      updateAutoScrollUI();
+      autoScrollLoop();
+    }
+
+    function stopAutoScroll() {
+      autoScrollActive = false;
+      if (autoScrollRafId) {
+        cancelAnimationFrame(autoScrollRafId);
+        autoScrollRafId = null;
+      }
+      updateAutoScrollUI();
+    }
+
+    function toggleAutoScroll() {
+      if (autoScrollActive) {
+        stopAutoScroll();
+      } else {
+        startAutoScroll();
+      }
+    }
+
+    function autoScrollLoop() {
+      if (!autoScrollActive) return;
+
+      var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      var scrollHeight = document.documentElement.scrollHeight;
+      var screenHeight = window.innerHeight;
+      var remaining = scrollHeight - scrollTop - screenHeight;
+
+      if (remaining > 5) {
+        window.scrollBy(0, autoScrollSpeed);
+        autoScrollRafId = requestAnimationFrame(autoScrollLoop);
+      } else {
+        if (currentChapterIndex < currentChapters.length - 1) {
+          stopAutoScroll();
+          loadChapter(currentChapterIndex + 1);
+        } else {
+          stopAutoScroll();
+        }
+      }
+    }
+
+    function increaseAutoScrollSpeed() {
+      if (autoScrollSpeedIndex < autoScrollSpeeds.length - 1) {
+        autoScrollSpeedIndex++;
+        autoScrollSpeed = autoScrollSpeeds[autoScrollSpeedIndex];
+        updateAutoScrollUI();
+      }
+    }
+
+    function decreaseAutoScrollSpeed() {
+      if (autoScrollSpeedIndex > 0) {
+        autoScrollSpeedIndex--;
+        autoScrollSpeed = autoScrollSpeeds[autoScrollSpeedIndex];
+        updateAutoScrollUI();
+      }
+    }
+
+    function updateAutoScrollUI() {
+      var btns = document.querySelectorAll('.auto-scroll-play-btn');
+      for (var i = 0; i < btns.length; i++) {
+        if (autoScrollActive) {
+          btns[i].classList.add('active');
+          btns[i].innerHTML = '<i data-lucide="pause" style="width:14px;height:14px;"></i>';
+        } else {
+          btns[i].classList.remove('active');
+          btns[i].innerHTML = '<i data-lucide="play" style="width:14px;height:14px;"></i>';
+        }
+      }
+      var speedLabels = document.querySelectorAll('.auto-scroll-speed');
+      for (var j = 0; j < speedLabels.length; j++) {
+        speedLabels[j].textContent = autoScrollSpeed + 'x';
+      }
+      var minusBtns = document.querySelectorAll('.auto-scroll-minus-btn');
+      for (var k = 0; k < minusBtns.length; k++) {
+        minusBtns[k].disabled = autoScrollSpeedIndex === 0;
+      }
+      var plusBtns = document.querySelectorAll('.auto-scroll-plus-btn');
+      for (var l = 0; l < plusBtns.length; l++) {
+        plusBtns[l].disabled = autoScrollSpeedIndex === autoScrollSpeeds.length - 1;
+      }
+      if (typeof lucide !== 'undefined' && lucide.createIcons) {
+        safeLucide();
+      }
+    }
+
+    registerHandler('click', '.auto-scroll-play-btn', function(e) {
+      e.stopPropagation();
+      toggleAutoScroll();
+    });
+
+    registerHandler('click', '.auto-scroll-plus-btn', function(e) {
+      e.stopPropagation();
+      increaseAutoScrollSpeed();
+    });
+
+    registerHandler('click', '.auto-scroll-minus-btn', function(e) {
+      e.stopPropagation();
+      decreaseAutoScrollSpeed();
     });
 
     // ==================== 初始化 ====================
