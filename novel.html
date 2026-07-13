@@ -724,7 +724,9 @@
     const CORS_PROXIES = [
       function(url) { return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url); },
       function(url) { return 'https://corsproxy.io/?url=' + encodeURIComponent(url); },
-      function(url) { return 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(url); }
+      function(url) { return 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(url); },
+      function(url) { return 'https://api.allorigins.win/get?url=' + encodeURIComponent(url); },
+      function(url) { return 'https://api.whateverorigin.org/get?url=' + encodeURIComponent(url); }
     ];
     const content = document.getElementById('novelContent');
     const searchInput = document.getElementById('novelSearchInput');
@@ -919,27 +921,63 @@
       }
     }
 
-    async function fetchWithProxy(url) {
-      var lastErr = null;
-      for (var i = 0; i < CORS_PROXIES.length; i++) {
-        try {
-          var proxyUrl = CORS_PROXIES[i](url);
-          var resp = await fetch(proxyUrl, {
-            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
-          });
-          if (resp.ok) {
-            var text = await resp.text();
-            try {
-              return JSON.parse(text);
-            } catch(e) {
-              lastErr = e;
-            }
-          }
-        } catch(e) {
-          lastErr = e;
+    function promiseAny(promises) {
+      return new Promise(function(resolve, reject) {
+        var errors = [];
+        var remaining = promises.length;
+        if (remaining === 0) { reject(new Error('no promises')); return; }
+        for (var i = 0; i < promises.length; i++) {
+          (function(idx) {
+            Promise.resolve(promises[idx]).then(function(val) {
+              resolve(val);
+            }, function(err) {
+              errors[idx] = err;
+              remaining--;
+              if (remaining === 0) reject(new Error('all failed'));
+            });
+          })(i);
         }
+      });
+    }
+
+    async function fetchWithProxy(url) {
+      var controllers = [];
+      var promises = CORS_PROXIES.map(function(proxyFn, proxyIdx) {
+        var controller = new AbortController();
+        controllers.push(controller);
+        var timeoutId = setTimeout(function() { controller.abort(); }, 15000);
+        return fetch(proxyFn(url), { signal: controller.signal })
+          .then(function(resp) {
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            return resp.text();
+          })
+          .then(function(text) {
+            try {
+              var json = JSON.parse(text);
+              if (json && json.contents) text = json.contents;
+              else if (json && typeof json.data === 'string') text = json.data;
+              else if (json && json.html) text = json.html;
+            } catch(e) {}
+            try {
+              var data = JSON.parse(text);
+              if (data && data.code !== undefined) {
+                clearTimeout(timeoutId);
+                return { data: data, proxyIdx: proxyIdx };
+              }
+            } catch(e) {}
+            throw new Error('内容无效');
+          });
+      });
+
+      try {
+        var result = await promiseAny(promises);
+        for (var c = 0; c < controllers.length; c++) {
+          try { controllers[c].abort(); } catch(e) {}
+        }
+        return result.data;
+      } catch(e) {
+        throw new Error('所有代理均不可用');
       }
-      throw lastErr || new Error('所有代理均失败');
     }
 
     async function fetchNovelSearch(keyword) {
