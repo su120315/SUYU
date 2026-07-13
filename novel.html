@@ -916,7 +916,9 @@
 
     async function fetchNovelSearch(keyword) {
       var url = NOVEL_API + '?qskey=' + encodeURIComponent(API_KEY) + '&ar=' + encodeURIComponent(keyword);
-      var resp = await fetch(url);
+      var resp = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+      });
       var data = await resp.json();
       if (data.code !== 200 || !data.data || data.data.length === 0) return [];
       var results = [];
@@ -1068,7 +1070,9 @@
             + '&ar=' + encodeURIComponent(currentNovel.searchKey.split('_')[0])
             + '&n=' + currentNovel.nIndex
             + '&z=' + ch.index;
-          var resp = await fetch(url);
+          var resp = await fetch(url, {
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+          });
           var data = await resp.json();
           if (data.code === 200 && data.data && data.data[0]) {
             chapterContent = data.data[0].article_body || '';

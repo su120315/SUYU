@@ -4655,16 +4655,6 @@
       var diffY = touchEndY - touchStartY;
       var duration = Date.now() - touchStartTime;
 
-      // 水平滑动切章
-      if (Math.abs(diffX) > 50 && Math.abs(diffX) > Math.abs(diffY)) {
-        if (diffX > 0 && currentChapterIndex > 0) {
-          loadChapter(currentChapterIndex - 1);
-        } else if (diffX < 0 && currentChapterIndex < currentChapters.length - 1) {
-          loadChapter(currentChapterIndex + 1);
-        }
-        return;
-      }
-
       // 点击翻页：移动距离小 + 时间短 = 点击
       if (Math.abs(diffX) < 10 && Math.abs(diffY) < 10 && duration < 300) {
         var target = e.target;
