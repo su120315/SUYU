@@ -1986,6 +1986,7 @@
     async function restoreOfflineLibrary() {
       try {
         var records = await idbGetAll();
+        var restoredCount = 0;
         for (var i = 0; i < records.length; i++) {
           var rec = records[i];
           var chapters = [];
@@ -1997,8 +1998,10 @@
               var chImgs = [];
               if (rec.chapterImages[ci] && Array.isArray(rec.chapterImages[ci])) {
                 for (var bi = 0; bi < rec.chapterImages[ci].length; bi++) {
-                  if (rec.chapterImages[ci][bi] instanceof Blob) {
-                    chImgs.push(URL.createObjectURL(rec.chapterImages[ci][bi]));
+                  var blob = rec.chapterImages[ci][bi];
+                  // 放宽 Blob 检查：Safari 等浏览器返回的可能是 File 或其他 BlobLike 对象
+                  if (blob && (blob instanceof Blob || typeof blob.size === 'number')) {
+                    chImgs.push(URL.createObjectURL(blob));
                   }
                 }
               }
@@ -2010,13 +2013,14 @@
               totalImgs += chImgs.length;
             }
           } else if (rec.chapters && Array.isArray(rec.chapters)) {
-            // 旧版格式兼容：chapters 数组直接存 imageBlobs
+            // 旧版格式兼容
             for (var c = 0; c < rec.chapters.length; c++) {
               var chImages = [];
               if (rec.chapters[c].imageBlobs) {
                 for (var b = 0; b < rec.chapters[c].imageBlobs.length; b++) {
-                  if (rec.chapters[c].imageBlobs[b] instanceof Blob) {
-                    chImages.push(URL.createObjectURL(rec.chapters[c].imageBlobs[b]));
+                  var blob2 = rec.chapters[c].imageBlobs[b];
+                  if (blob2 && (blob2 instanceof Blob || typeof blob2.size === 'number')) {
+                    chImages.push(URL.createObjectURL(blob2));
                   }
                 }
               }
@@ -2027,18 +2031,29 @@
             continue;
           }
 
+          var coverBlobUrl = '';
+          if (rec.cover) {
+            if (rec.cover instanceof Blob || typeof rec.cover.size === 'number') {
+              coverBlobUrl = URL.createObjectURL(rec.cover);
+            } else {
+              coverBlobUrl = rec.cover;
+            }
+          }
+
           var comic = {
             title: rec.title,
             author: rec.author,
             desc: rec.desc,
             tags: rec.tags || [],
-            cover: rec.cover instanceof Blob ? URL.createObjectURL(rec.cover) : (rec.cover || ''),
+            cover: coverBlobUrl,
             sourceName: rec.sourceName,
             chapters: chapters,
             downloadedAt: rec.downloadedAt,
             totalImages: totalImgs
           };
           offlineLibrary[rec.comicUrl] = comic;
+          restoredCount++;
+          log('恢复 "' + rec.title + '" · ' + chapters.length + '章 · ' + totalImgs + '张');
         }
         var count = Object.keys(offlineLibrary).length;
         if (count > 0) log('从 IndexedDB 恢复 ' + count + ' 部离线漫画');
@@ -2109,24 +2124,31 @@
           var tx = db.transaction(STORE_NAME, 'readwrite');
           var store = tx.objectStore(STORE_NAME);
 
+          // 用 tx.oncomplete 确认数据真正写入磁盘，而不是 putReq.onsuccess（那只是放入队列）
+          tx.oncomplete = function() { resolve(); };
+          tx.onabort = function() { reject(new Error('IndexedDB 事务被中止，可能超出存储配额')); };
+          tx.onerror = function(e) { reject(e.target.error || new Error('IndexedDB 事务错误')); };
+
           var getReq = store.get(comicUrl);
           getReq.onsuccess = function() {
             var record = getReq.result || { comicUrl: comicUrl };
             if (!record.chapterImages) record.chapterImages = {};
             // 直接保存原始 Blob（已经是 Blob 对象，无需 fetch 转换）
             record.chapterImages[chapterIdx] = blobs.filter(function(b) { return b instanceof Blob; });
-            // 同步更新 chaptersMeta
+            // 同步更新 chaptersMeta（确保 title/url 也有，否则恢复时找不到章节）
             if (!record.chaptersMeta) record.chaptersMeta = [];
-            if (record.chaptersMeta[chapterIdx]) {
-              record.chaptersMeta[chapterIdx].imageCount = record.chapterImages[chapterIdx].length;
-              record.chaptersMeta[chapterIdx].hasImages = true;
-            }
+            var chapterTitle = currentChapters[chapterIdx] ? currentChapters[chapterIdx].title : '';
+            var chapterUrl = currentChapters[chapterIdx] ? currentChapters[chapterIdx].url : '';
+            record.chaptersMeta[chapterIdx] = {
+              title: chapterTitle,
+              url: chapterUrl,
+              imageCount: record.chapterImages[chapterIdx].length,
+              hasImages: record.chapterImages[chapterIdx].length > 0
+            };
             var putReq = store.put(record);
-            putReq.onsuccess = function() { resolve(); };
             putReq.onerror = function(e) { reject(e.target.error); };
           };
           getReq.onerror = function(e) { reject(e.target.error); };
-          tx.onerror = function(e) { reject(e.target.error); };
         });
       });
     }
@@ -2139,6 +2161,11 @@
         return new Promise(function(resolve, reject) {
           var tx = db.transaction(STORE_NAME, 'readwrite');
           var store = tx.objectStore(STORE_NAME);
+
+          tx.oncomplete = function() { resolve(); };
+          tx.onabort = function() { reject(new Error('元信息保存事务被中止')); };
+          tx.onerror = function(e) { reject(e.target.error || new Error('IndexedDB 事务错误')); };
+
           var getReq = store.get(comicUrl);
           getReq.onsuccess = function() {
             var record = getReq.result || { comicUrl: comicUrl };
@@ -2150,18 +2177,18 @@
             record.sourceName = comic.sourceName;
             record.totalImages = comic.totalImages;
             record.downloadedAt = comic.downloadedAt;
-            // 更新 chaptersMeta
-            record.chaptersMeta = [];
+            // 更新 chaptersMeta（保留已有的 imageCount/hasImages，防止覆盖 saveChapterImagesToIDB 写入的章节信息）
+            if (!record.chaptersMeta) record.chaptersMeta = [];
             for (var i = 0; i < comic.chapters.length; i++) {
-              record.chaptersMeta.push({
+              var existing = record.chaptersMeta[i] || {};
+              record.chaptersMeta[i] = {
                 title: comic.chapters[i].title,
                 url: comic.chapters[i].url,
-                imageCount: comic.chapters[i].images ? comic.chapters[i].images.length : 0,
-                hasImages: comic.chapters[i].images && comic.chapters[i].images.length > 0
-              });
+                imageCount: existing.imageCount || (comic.chapters[i].images ? comic.chapters[i].images.length : 0),
+                hasImages: existing.hasImages || (comic.chapters[i].images && comic.chapters[i].images.length > 0)
+              };
             }
             var putReq = store.put(record);
-            putReq.onsuccess = function() { resolve(); };
             putReq.onerror = function(e) { reject(e.target.error); };
           };
           getReq.onerror = function(e) { reject(e.target.error); };
@@ -2645,7 +2672,7 @@
     // 并行下载图片（batchSize 张一批）
     // 返回 { url: blobUrl, blob: originalBlob } 数组，避免后续 fetch 绕弯子
     async function downloadImagesBatch(urls, onProgress, batchSize) {
-      batchSize = batchSize || 5;
+      batchSize = batchSize || 3;
       var results = new Array(urls.length);
       var completed = 0;
       var queue = [];
@@ -2974,13 +3001,13 @@
           continue;
         }
 
-        // 阶段2：并行下载图片（5 张并发，避免内存压力过大）
+        // 阶段2：并行下载图片（3 张并发，平衡速度与内存）
         var chapterStartImages = doneAllImages;
         var downloadResults = await downloadImagesBatch(imageUrls, function(completed, total) {
           if (downloadCancelled) return;
           doneAllImages = chapterStartImages + completed;
           updateDownloadProgress(si, totalToDownload, chapterTitle, completed, total);
-        }, 5);
+        }, 3);
 
         // 过滤掉 null，拆分为 blobUrl 数组和原始 Blob 数组
         var validUrls = [];
