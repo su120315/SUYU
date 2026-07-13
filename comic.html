@@ -2102,7 +2102,8 @@
       return comicUrl + '::' + chapterIdx;
     }
 
-    async function saveChapterImagesToIDB(comicUrl, chapterIdx, imageUrls) {
+    // blobs 参数是原始 Blob 数组（由 downloadImagesBatch 直接返回），不再 fetch(blobUrl) 绕弯子
+    async function saveChapterImagesToIDB(comicUrl, chapterIdx, blobs) {
       return openIDB().then(function(db) {
         return new Promise(function(resolve, reject) {
           var tx = db.transaction(STORE_NAME, 'readwrite');
@@ -2112,46 +2113,17 @@
           getReq.onsuccess = function() {
             var record = getReq.result || { comicUrl: comicUrl };
             if (!record.chapterImages) record.chapterImages = {};
-            // 转 Blob 并保存
-            var blobs = new Array(imageUrls.length);
-            var done = 0;
-            for (var i = 0; i < imageUrls.length; i++) {
-              (function(idx) {
-                blobUrlToBlob(imageUrls[idx]).then(function(b) {
-                  blobs[idx] = b;
-                  done++;
-                  if (done === imageUrls.length) {
-                    record.chapterImages[chapterIdx] = blobs.filter(function(b) { return b instanceof Blob; });
-                    record.totalImages = (record.totalImages || 0);
-                    // 同步更新 chaptersMeta
-                    if (!record.chaptersMeta) record.chaptersMeta = [];
-                    if (record.chaptersMeta[chapterIdx]) {
-                      record.chaptersMeta[chapterIdx].imageCount = record.chapterImages[chapterIdx].length;
-                      record.chaptersMeta[chapterIdx].hasImages = true;
-                    }
-                    var putReq = store.put(record);
-                    putReq.onsuccess = function() { resolve(); };
-                    putReq.onerror = function(e) { reject(e.target.error); };
-                  }
-                }).catch(function() {
-                  // 单个图片失败不卡住整个保存，继续处理其他图片
-                  blobs[idx] = null;
-                  done++;
-                  if (done === imageUrls.length) {
-                    record.chapterImages[chapterIdx] = blobs.filter(function(b) { return b instanceof Blob; });
-                    record.totalImages = (record.totalImages || 0);
-                    if (!record.chaptersMeta) record.chaptersMeta = [];
-                    if (record.chaptersMeta[chapterIdx]) {
-                      record.chaptersMeta[chapterIdx].imageCount = record.chapterImages[chapterIdx].length;
-                      record.chaptersMeta[chapterIdx].hasImages = true;
-                    }
-                    var putReq = store.put(record);
-                    putReq.onsuccess = function() { resolve(); };
-                    putReq.onerror = function(e) { reject(e.target.error); };
-                  }
-                });
-              })(i);
+            // 直接保存原始 Blob（已经是 Blob 对象，无需 fetch 转换）
+            record.chapterImages[chapterIdx] = blobs.filter(function(b) { return b instanceof Blob; });
+            // 同步更新 chaptersMeta
+            if (!record.chaptersMeta) record.chaptersMeta = [];
+            if (record.chaptersMeta[chapterIdx]) {
+              record.chaptersMeta[chapterIdx].imageCount = record.chapterImages[chapterIdx].length;
+              record.chaptersMeta[chapterIdx].hasImages = true;
             }
+            var putReq = store.put(record);
+            putReq.onsuccess = function() { resolve(); };
+            putReq.onerror = function(e) { reject(e.target.error); };
           };
           getReq.onerror = function(e) { reject(e.target.error); };
           tx.onerror = function(e) { reject(e.target.error); };
@@ -2661,6 +2633,7 @@
     }
 
     // 并行下载图片（batchSize 张一批）
+    // 返回 { url: blobUrl, blob: originalBlob } 数组，避免后续 fetch 绕弯子
     async function downloadImagesBatch(urls, onProgress, batchSize) {
       batchSize = batchSize || 5;
       var results = new Array(urls.length);
@@ -2674,7 +2647,7 @@
           if (idx === undefined) break;
           try {
             var blob = await fetchImageAsBlob(urls[idx]);
-            results[idx] = blob ? URL.createObjectURL(blob) : null;
+            results[idx] = blob ? { url: URL.createObjectURL(blob), blob: blob } : null;
           } catch(e) {
             results[idx] = null;
           }
@@ -2969,16 +2942,20 @@
 
         // 阶段2：并行下载图片（5 张并发，避免内存压力过大）
         var chapterStartImages = doneAllImages;
-        var blobUrls = await downloadImagesBatch(imageUrls, function(completed, total) {
+        var downloadResults = await downloadImagesBatch(imageUrls, function(completed, total) {
           if (downloadCancelled) return;
           doneAllImages = chapterStartImages + completed;
           updateDownloadProgress(si, totalToDownload, chapterTitle, completed, total);
         }, 5);
 
-        // 过滤掉 null
+        // 过滤掉 null，拆分为 blobUrl 数组和原始 Blob 数组
         var validUrls = [];
-        for (var k = 0; k < blobUrls.length; k++) {
-          if (blobUrls[k]) validUrls.push(blobUrls[k]);
+        var blobsForSave = [];
+        for (var k = 0; k < downloadResults.length; k++) {
+          if (downloadResults[k]) {
+            validUrls.push(downloadResults[k].url);
+            blobsForSave.push(downloadResults[k].blob);
+          }
         }
 
         // 如果已有旧图片，先释放
@@ -2995,13 +2972,13 @@
         log('下载"' + chapterTitle + '"完成: ' + validUrls.length + '/' + imageUrls.length + '张');
 
         // 每章下载完立即存 IndexedDB（增量保存，避免最后一次性存太多）
-        if (!downloadCancelled && validUrls.length > 0) {
-          updateDownloadProgress(si, totalToDownload, chapterTitle + ' (保存中)', imageUrls.length, imageUrls.length);
+        // 直接用下载时得到的原始 Blob，避免 fetch(blobUrl) 绕弯子卡住
+        if (!downloadCancelled && blobsForSave.length > 0) {
+          updateDownloadProgress(si, totalToDownload, chapterTitle + ' (保存中)', blobsForSave.length, blobsForSave.length);
           try {
-            await saveChapterImagesToIDB(currentComicUrl, chapterIdx, validUrls);
+            await saveChapterImagesToIDB(currentComicUrl, chapterIdx, blobsForSave);
           } catch(e) {
             log('保存"' + chapterTitle + '"到 IndexedDB 失败: ' + (e.message || e));
-            // 保存失败不阻塞继续下载下一章
           }
         }
       }
