@@ -2618,6 +2618,15 @@
         }
         return blob;
       } catch(e) {
+        // 所有代理都失败时，最后尝试直连（长超时，部分 CDN 响应慢）
+        try {
+          var finalController = createTimeoutController(15000);
+          var finalResp = await fetch(url, { signal: finalController.signal, mode: 'cors', credentials: 'omit' });
+          if (finalResp.ok) {
+            var finalBlob = await finalResp.blob();
+            if (isValidImageBlob(finalBlob)) return finalBlob;
+          }
+        } catch(e2) {}
         return null;
       }
     }
@@ -2629,7 +2638,8 @@
       if (blob.type && blob.type.indexOf('image') === -1) return false;
       if (blob.type && blob.type.indexOf('image') !== -1) return true;
       // 没有 MIME 类型但体积够大，大概率是图片（代理服务器可能返回空类型）
-      return blob.size > 5000;
+      // 部分代理返回的图片 MIME 为空但体积较小，放宽到 2KB
+      return blob.size > 2000;
     }
 
     // 并行下载图片（batchSize 张一批）
@@ -2660,6 +2670,30 @@
       var workers = [];
       for (var w = 0; w < batchSize; w++) workers.push(worker());
       await Promise.all(workers);
+
+      // 第二轮：重试失败的图片（偶尔代理超时，重试一次往往能成功）
+      if (!downloadCancelled) {
+        var retryQueue = [];
+        for (var ri = 0; ri < results.length; ri++) {
+          if (!results[ri]) retryQueue.push(ri);
+        }
+        if (retryQueue.length > 0) {
+          log('重试 ' + retryQueue.length + ' 张失败图片...');
+          for (var rj = 0; rj < retryQueue.length; rj++) {
+            if (downloadCancelled) break;
+            var idx = retryQueue[rj];
+            try {
+              var blob = await fetchImageAsBlob(urls[idx]);
+              if (blob) {
+                results[idx] = { url: URL.createObjectURL(blob), blob: blob };
+                completed++;
+                if (onProgress) onProgress(completed, urls.length);
+              }
+            } catch(e) {}
+          }
+        }
+      }
+
       return results;
     }
 
