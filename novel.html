@@ -987,36 +987,59 @@
       var results = [];
       for (var i = 0; i < data.data.length; i++) {
         var item = data.data[i];
-        var numChapters = item.numberchapters && item.numberchapters.length ? item.numberchapters.length : 0;
-        var chapters = [];
-        if (item.numberchapters && item.numberchapters.length) {
-          for (var j = 0; j < item.numberchapters.length; j++) {
-            var ch = item.numberchapters[j];
-            var keys = Object.keys(ch);
-            keys.sort(function(a,b){return parseInt(a)-parseInt(b);});
-            for (var k = 0; k < keys.length; k++) {
-              chapters.push({ index: parseInt(keys[k]), title: ch[keys[k]] });
-            }
-          }
-        }
-        var cover = item.img;
-        if (cover && cover.startsWith('/')) cover = 'https://www.99xs.vip' + cover;
         results.push({
           title: item.title,
           author: item.author,
-          cover: cover,
-          category: item.category,
-          desc: item.introduction,
-          lastChapter: item.chapter && item.chapter[0] || '',
-          totalChapters: numChapters,
-          update: item.update,
-          nIndex: i + 1,
+          cover: '',
+          category: item.category || '',
+          desc: '',
+          lastChapter: item.chapter || '',
+          totalChapters: 0,
+          update: item.update || '',
+          nIndex: item.n || (i + 1),
           webId: data.web_ID || '1',
-          chapters: chapters,
-          searchKey: keyword + '_' + (i+1)
+          chapters: [],
+          searchKey: keyword + '_' + (item.n || (i+1))
         });
       }
       return results;
+    }
+
+    async function fetchNovelDetail(searchKey) {
+      var parts = searchKey.split('_');
+      var keyword = parts[0];
+      var nIndex = parts[1] || 1;
+      var url = NOVEL_API + '?qskey=' + encodeURIComponent(API_KEY) + '&ar=' + encodeURIComponent(keyword) + '&n=' + nIndex;
+      var data = await fetchWithProxy(url);
+      if (data.code !== 200 || !data.data) return null;
+      var item = data.data;
+      var chapters = [];
+      if (item.numberchapters && item.numberchapters.length) {
+        for (var j = 0; j < item.numberchapters.length; j++) {
+          var ch = item.numberchapters[j];
+          var keys = Object.keys(ch);
+          keys.sort(function(a,b){return parseInt(a)-parseInt(b);});
+          for (var k = 0; k < keys.length; k++) {
+            chapters.push({ index: parseInt(keys[k]), title: ch[keys[k]] });
+          }
+        }
+      }
+      var cover = item.img;
+      if (cover && cover.startsWith('/')) cover = 'https://www.99xs.vip' + cover;
+      return {
+        title: item.title,
+        author: item.author,
+        cover: cover,
+        category: item.category || '',
+        desc: item.introduction || '',
+        lastChapter: item.chapter && item.chapter[0] || '',
+        totalChapters: chapters.length,
+        update: item.update || '',
+        nIndex: parseInt(nIndex),
+        webId: data.web_ID || '1',
+        chapters: chapters,
+        searchKey: searchKey
+      };
     }
 
     function renderSearchResults(results, keyword) {
@@ -1282,10 +1305,21 @@
       showShelf();
     });
 
-    registerHandler('click', '[data-action="novel-detail"]', function(e, el) {
+    registerHandler('click', '[data-action="novel-detail"]', async function(e, el) {
       var idx = parseInt(el.dataset.index);
       if (currentSearchResults[idx]) {
-        showNovelDetail(currentSearchResults[idx]);
+        showLoading();
+        try {
+          var detail = await fetchNovelDetail(currentSearchResults[idx].searchKey);
+          if (detail) {
+            showNovelDetail(detail);
+          } else {
+            showEmpty('获取小说详情失败');
+          }
+        } catch(e) {
+          console.error('获取详情失败:', e);
+          showEmpty('获取小说详情失败');
+        }
       }
     });
 

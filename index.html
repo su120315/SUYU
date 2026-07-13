@@ -63,13 +63,6 @@
         <li class="quick-access">
           <a href="https://www.zhihu.com" target="_blank" rel="noopener">知乎</a>
         </li>
-        <li class="quick-access">
-          <button class="global-search-btn" id="globalSearchBtn" title="全站搜索 (Ctrl+K)">
-            <i data-lucide="search" style="width:14px;height:14px;"></i>
-            搜索
-            <kbd style="margin-left:6px;font-size:0.65rem;background:rgba(255,255,255,0.2);padding:1px 5px;border-radius:4px;">⌘K</kbd>
-          </button>
-        </li>
         <li>
           <button class="theme-toggle" id="themeToggleDesktop" title="切换主题">
             <i data-lucide="moon"></i>
@@ -84,24 +77,6 @@
     </div>
   </nav>
   <div class="nav-overlay" id="navOverlay"></div>
-
-  <!-- Global Search Modal -->
-  <div class="global-search-modal" id="globalSearchModal">
-    <div class="global-search-backdrop" data-action="close-search"></div>
-    <div class="global-search-box">
-      <div class="global-search-input-row">
-        <i data-lucide="search" class="global-search-icon"></i>
-        <input type="text" class="global-search-input" id="globalSearchInput" placeholder="搜索页面、功能或跳转..." autocomplete="off">
-        <kbd class="global-search-esc">Esc</kbd>
-      </div>
-      <div class="global-search-results" id="globalSearchResults"></div>
-      <div class="global-search-footer">
-        <span><kbd>↑↓</kbd> 选择</span>
-        <span><kbd>Enter</kbd> 跳转</span>
-        <span><kbd>Esc</kbd> 关闭</span>
-      </div>
-    </div>
-  </div>
 
   <!-- Progress Bar -->
   <div class="progress-bar">
