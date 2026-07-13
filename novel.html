@@ -721,6 +721,11 @@
 
     const NOVEL_API = 'https://api.qster.top/API/v2/NovelSearch';
     const API_KEY = 'qstertop';
+    const CORS_PROXIES = [
+      function(url) { return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url); },
+      function(url) { return 'https://corsproxy.io/?url=' + encodeURIComponent(url); },
+      function(url) { return 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(url); }
+    ];
     const content = document.getElementById('novelContent');
     const searchInput = document.getElementById('novelSearchInput');
     const searchWrap = document.getElementById('novelSearchWrap');
@@ -914,12 +919,32 @@
       }
     }
 
+    async function fetchWithProxy(url) {
+      var lastErr = null;
+      for (var i = 0; i < CORS_PROXIES.length; i++) {
+        try {
+          var proxyUrl = CORS_PROXIES[i](url);
+          var resp = await fetch(proxyUrl, {
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+          });
+          if (resp.ok) {
+            var text = await resp.text();
+            try {
+              return JSON.parse(text);
+            } catch(e) {
+              lastErr = e;
+            }
+          }
+        } catch(e) {
+          lastErr = e;
+        }
+      }
+      throw lastErr || new Error('所有代理均失败');
+    }
+
     async function fetchNovelSearch(keyword) {
       var url = NOVEL_API + '?qskey=' + encodeURIComponent(API_KEY) + '&ar=' + encodeURIComponent(keyword);
-      var resp = await fetch(url, {
-        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
-      });
-      var data = await resp.json();
+      var data = await fetchWithProxy(url);
       if (data.code !== 200 || !data.data || data.data.length === 0) return [];
       var results = [];
       for (var i = 0; i < data.data.length; i++) {
@@ -1070,10 +1095,7 @@
             + '&ar=' + encodeURIComponent(currentNovel.searchKey.split('_')[0])
             + '&n=' + currentNovel.nIndex
             + '&z=' + ch.index;
-          var resp = await fetch(url, {
-            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
-          });
-          var data = await resp.json();
+          var data = await fetchWithProxy(url);
           if (data.code === 200 && data.data && data.data[0]) {
             chapterContent = data.data[0].article_body || '';
             cacheChapter(currentNovel.searchKey, ch.index, chapterTitle, chapterContent);
