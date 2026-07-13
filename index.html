@@ -262,10 +262,10 @@
               <span>JavaScript</span>
             </div>
             <div class="project-links">
-              <a href="#" class="project-link" title="在线预览">
+              <a href="https://su120315.github.io/SUYU/" target="_blank" rel="noopener" class="project-link" title="在线预览">
                 <i data-lucide="external-link"></i>
               </a>
-              <a href="https://github.com/" target="_blank" rel="noopener" class="project-link" title="源码">
+              <a href="https://github.com/su120315/SUYU" target="_blank" rel="noopener" class="project-link" title="源码">
                 <i data-lucide="git-branch"></i>
               </a>
             </div>
@@ -287,10 +287,10 @@
               <span>游戏开发</span>
             </div>
             <div class="project-links">
-              <a href="https://github.com/" target="_blank" rel="noopener" class="project-link" title="源码">
+              <a href="https://github.com/su120315/SUYU" target="_blank" rel="noopener" class="project-link" title="源码">
                 <i data-lucide="git-branch"></i>
               </a>
-              <a href="#" class="project-link" title="下载">
+              <a href="https://github.com/su120315/SUYU/archive/refs/heads/main.zip" target="_blank" rel="noopener" class="project-link" title="下载">
                 <i data-lucide="download"></i>
               </a>
             </div>
@@ -510,8 +510,10 @@
       <p class="comments-desc">想说点什么？留个言吧～ 💬</p>
       
       <div class="comment-form">
-        <input type="text" id="commentName" placeholder="你的名字" maxlength="20">
-        <textarea id="commentContent" placeholder="想说点什么..." maxlength="500"></textarea>
+        <label for="commentName" class="comment-label">你的名字</label>
+        <input type="text" id="commentName" placeholder="你的名字" maxlength="20" required>
+        <label for="commentContent" class="comment-label">留言内容</label>
+        <textarea id="commentContent" placeholder="想说点什么..." maxlength="500" required></textarea>
         <button class="comment-submit" id="commentSubmit">
           <i data-lucide="send"></i>
           <span>发布留言</span>
