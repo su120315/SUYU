@@ -2133,7 +2133,23 @@
                     putReq.onsuccess = function() { resolve(); };
                     putReq.onerror = function(e) { reject(e.target.error); };
                   }
-                }).catch(reject);
+                }).catch(function() {
+                  // 单个图片失败不卡住整个保存，继续处理其他图片
+                  blobs[idx] = null;
+                  done++;
+                  if (done === imageUrls.length) {
+                    record.chapterImages[chapterIdx] = blobs.filter(function(b) { return b instanceof Blob; });
+                    record.totalImages = (record.totalImages || 0);
+                    if (!record.chaptersMeta) record.chaptersMeta = [];
+                    if (record.chaptersMeta[chapterIdx]) {
+                      record.chaptersMeta[chapterIdx].imageCount = record.chapterImages[chapterIdx].length;
+                      record.chaptersMeta[chapterIdx].hasImages = true;
+                    }
+                    var putReq = store.put(record);
+                    putReq.onsuccess = function() { resolve(); };
+                    putReq.onerror = function(e) { reject(e.target.error); };
+                  }
+                });
               })(i);
             }
           };
@@ -2981,12 +2997,21 @@
         // 每章下载完立即存 IndexedDB（增量保存，避免最后一次性存太多）
         if (!downloadCancelled && validUrls.length > 0) {
           updateDownloadProgress(si, totalToDownload, chapterTitle + ' (保存中)', imageUrls.length, imageUrls.length);
-          await saveChapterImagesToIDB(currentComicUrl, chapterIdx, validUrls);
+          try {
+            await saveChapterImagesToIDB(currentComicUrl, chapterIdx, validUrls);
+          } catch(e) {
+            log('保存"' + chapterTitle + '"到 IndexedDB 失败: ' + (e.message || e));
+            // 保存失败不阻塞继续下载下一章
+          }
         }
       }
 
       // 最后保存一次元信息（确保 chaptersMeta 和 totalImages 是最新的）
-      await updateComicMetaInIDB(currentComicUrl);
+      try {
+        await updateComicMetaInIDB(currentComicUrl);
+      } catch(e) {
+        log('更新元信息失败: ' + (e.message || e));
+      }
 
       hideDownloadProgress();
       log('下载完成: ' + comicData.title + ' · 共' + comicData.totalImages + '张图片');
