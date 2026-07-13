@@ -994,22 +994,199 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function renderCad(container) {
+    function v1(code, mode) {
+      try {
+        if (mode === "adb") {
+          const i1 = parseInt(code.substring(0, 2));
+          const i2 = parseInt(code.substring(2, 4));
+          const i3 = parseInt(code.substring(4, 6));
+          const i4 = parseInt(code.substring(6, 8));
+          const i5 = parseInt(code.substring(8));
+          const i6 = i5 ^ (i3 + i4);
+          const i7 = i4 ^ i6;
+          const i8 = i3 ^ i6;
+          const i9 = i1 ^ i6;
+          const i10 = i2 ^ i6;
+          let i = "";
+          for (const x of [i9, i10, i8, i7, i6]) {
+            i += x.toString().length === 1 ? "0" + x.toString() : x.toString();
+          }
+          const i1_2 = parseInt(i.substring(0, 2));
+          const i2_2 = parseInt(i.substring(2, 4));
+          const i3_2 = parseInt(i.substring(4, 6));
+          const i4_2 = parseInt(i.substring(6, 8));
+          const i5_2 = parseInt(i.substring(8));
+          const i6_2 = i4_2 ^ i3_2;
+          const i7_2 = i5_2 ^ i3_2;
+          const i8_2 = i3_2 ^ (i6_2 + i7_2);
+          const i9_2 = i1_2 ^ i7_2;
+          const i10_2 = i2_2 ^ i7_2;
+          let i2_result = "";
+          for (const x of [i9_2, i10_2, i6_2, i7_2, i8_2]) {
+            i2_result += x.toString().length === 1 ? "0" + x.toString() : x.toString();
+          }
+          return i2_result;
+        } else if (mode === "zj") {
+          const i1 = parseInt(code.substring(0, 2));
+          const i2 = parseInt(code.substring(2, 4));
+          const i3 = parseInt(code.substring(4));
+          const i5 = i3 ^ (i1 + i2);
+          const i6 = i1 ^ i5;
+          const i4 = i2 ^ i5;
+          let i = "";
+          for (const x of [i6, i4, i5]) {
+            i += x.toString().length === 1 ? "0" + x.toString() : x.toString();
+          }
+          const i1_2 = parseInt(i.substring(0, 2));
+          const i2_2 = parseInt(i.substring(2, 4));
+          const i3_2 = parseInt(i.substring(4));
+          const i5_2 = i2_2 ^ i1_2;
+          const i6_2 = i3_2 ^ i1_2;
+          const i4_2 = i1_2 ^ (i5_2 + i6_2);
+          let i2_result = "";
+          for (const x of [i5_2, i6_2, i4_2]) {
+            i2_result += x.toString().length === 1 ? "0" + x.toString() : x.toString();
+          }
+          return i2_result;
+        }
+      } catch(e) { return ""; }
+      return "";
+    }
+
+    function v2(code, mode) {
+      try {
+        const num = mode === "adb" ? 2 : 1;
+        if (/^\d+$/.test(code)) {
+          const key = parseInt(code[7]) ^ num;
+          const v7 = (parseInt(code[key]) - key + 10) % 10;
+          let result1 = "";
+          for (let i = 0; i < 7; i++) {
+            const curKey = v7;
+            result1 += i === key ? v7.toString() : ((parseInt(code[i]) + 10 - curKey) % 10).toString();
+          }
+          const keyId = Math.floor(Math.random() * 7);
+          const keyValue = parseInt(result1[keyId]);
+          let result = "";
+          for (let i = 0; i < 7; i++) {
+            const curKey = i === keyId ? keyId : keyValue;
+            result += ((parseInt(result1[i]) + curKey) % 10).toString();
+          }
+          result += (num ^ keyId).toString();
+          return result;
+        }
+      } catch(e) { return ""; }
+      return "";
+    }
+
+    function getCode(code, mode) {
+      if (code.length === 8) {
+        let result = null;
+        while (true) {
+          result = v2(code, mode);
+          if (result != null && result != code) break;
+        }
+        return result;
+      } else {
+        return v1(code, mode);
+      }
+    }
+
     container.innerHTML = `
-      <div class="cad-iframe-container">
-        <iframe src="http://tiantech.zjjsw.com/xtc/XTCADBCode-Web-main/index.html" 
-                class="cad-iframe"
-                frameborder="0"
-                sandbox="allow-scripts allow-forms allow-popups allow-top-navigation allow-modals"
-                title="CAD工具箱">
-        </iframe>
-        <div class="cad-notice">
-          <i data-lucide="info"></i>
-          <span>此工具由外部网站提供，可能无法在部分浏览器中使用</span>
+      <div class="cad-calculator">
+        <div class="cad-header">
+          <h2>小天才校验码计算器</h2>
+          <p>输入校验码后，点击计算即可获取结果</p>
+          <p class="cad-source">
+            <i data-lucide="github"></i>
+            源码来源：<a href="https://github.com/OnesoftQwQ/XTCADBCode-Web" target="_blank" rel="noopener">OnesoftQwQ/XTCADBCode-Web</a>
+          </p>
+        </div>
+
+        <div class="cad-input-group">
+          <label for="cadCodeInput" class="cad-label">输入校验码：</label>
+          <input type="text" id="cadCodeInput" class="cad-input" placeholder="请输入校验码..." maxlength="20">
+        </div>
+
+        <div class="cad-mode-selector">
+          <button type="button" class="cad-mode-btn active" data-mode="adb">ADB</button>
+          <button type="button" class="cad-mode-btn" data-mode="zj">自检</button>
+        </div>
+
+        <button type="button" class="cad-calc-btn" id="cadCalcBtn">计算</button>
+
+        <div id="cadResult" class="cad-result hidden">
+          <div class="cad-result-title" id="cadResultTitle"></div>
+          <div class="cad-result-value" id="cadResultValue"></div>
+        </div>
+
+        <div class="cad-tips">
+          <h3><i data-lucide="alert-circle"></i> 提示</h3>
+          <p>如果你的手表在输入校验码后提示"验证中"，代表你的手表已经升级到V3版本校验码，V3校验码当前除了小天才官方外无法计算。</p>
         </div>
       </div>
     `;
+
     if (typeof lucide !== 'undefined') {
       try { lucide.createIcons(); } catch(e) {}
     }
+
+    let currentMode = 'adb';
+    const codeInput = container.querySelector('#cadCodeInput');
+    const calcBtn = container.querySelector('#cadCalcBtn');
+    const adbBtn = container.querySelector('.cad-mode-btn[data-mode="adb"]');
+    const zjBtn = container.querySelector('.cad-mode-btn[data-mode="zj"]');
+    const resultEl = container.querySelector('#cadResult');
+    const resultTitle = container.querySelector('#cadResultTitle');
+    const resultValue = container.querySelector('#cadResultValue');
+
+    function setMode(mode) {
+      currentMode = mode;
+      if (mode === 'adb') {
+        adbBtn.classList.add('active');
+        zjBtn.classList.remove('active');
+      } else {
+        adbBtn.classList.remove('active');
+        zjBtn.classList.add('active');
+      }
+    }
+
+    function showError(msg) {
+      resultEl.className = 'cad-result cad-error';
+      resultTitle.textContent = '错误';
+      resultValue.textContent = msg;
+      resultEl.classList.remove('hidden');
+    }
+
+    function showSuccess(result) {
+      resultEl.className = 'cad-result cad-success';
+      resultTitle.textContent = '计算结果';
+      resultValue.textContent = result;
+      resultEl.classList.remove('hidden');
+    }
+
+    function calculate() {
+      const code = codeInput.value.trim();
+      if (!code) {
+        showError('请输入校验码');
+        return;
+      }
+      if (!/^\d+$/.test(code)) {
+        showError('校验码必须为数字');
+        return;
+      }
+      const result = getCode(code, currentMode);
+      if (result === '') {
+        showError('计算失败，请检查输入格式');
+      } else {
+        showSuccess(result);
+      }
+    }
+
+    calcBtn.addEventListener('click', calculate);
+    adbBtn.addEventListener('click', () => setMode('adb'));
+    zjBtn.addEventListener('click', () => setMode('zj'));
+    codeInput.addEventListener('keypress', e => {
+      if (e.key === 'Enter') calculate();
+    });
   }
 });
