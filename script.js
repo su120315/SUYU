@@ -1500,4 +1500,58 @@ function copyQQ() {
   });
 }
 
+// ==================== 返回顶部按钮 ====================
+(function initBackToTop() {
+  const backToTopBtn = document.getElementById('backToTop');
+  if (!backToTopBtn) return;
+
+  function toggleBackToTop() {
+    if (window.scrollY > 500) {
+      backToTopBtn.classList.add('visible');
+    } else {
+      backToTopBtn.classList.remove('visible');
+    }
+  }
+
+  backToTopBtn.addEventListener('click', () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  });
+
+  window.addEventListener('scroll', toggleBackToTop, { passive: true });
+  toggleBackToTop();
+})();
+
+// ==================== 图片懒加载 ====================
+(function initLazyLoad() {
+  const images = document.querySelectorAll('img[loading="lazy"]');
+  
+  if ('IntersectionObserver' in window) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const img = entry.target;
+          const src = img.getAttribute('data-src') || img.src;
+          img.src = src;
+          img.removeAttribute('data-src');
+          observer.unobserve(img);
+        }
+      });
+    }, {
+      rootMargin: '100px',
+      threshold: 0.1
+    });
+
+    images.forEach(img => observer.observe(img));
+  } else {
+    images.forEach(img => {
+      const src = img.getAttribute('data-src') || img.src;
+      img.src = src;
+      img.removeAttribute('data-src');
+    });
+  }
+})();
+
 
