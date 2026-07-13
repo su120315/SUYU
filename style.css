@@ -2150,6 +2150,42 @@ section {
   animation: modalIn 0.3s ease;
 }
 
+.tool-modal-content.cad-mode {
+  max-width: 90vw;
+  max-height: 95vh;
+}
+
+.cad-iframe-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.cad-iframe {
+  flex: 1;
+  width: 100%;
+  border: none;
+  background: white;
+}
+
+.cad-notice {
+  padding: 10px 16px;
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-top: 1px solid var(--border-color);
+}
+
+.cad-notice i {
+  width: 14px;
+  height: 14px;
+}
+
 @keyframes modalIn {
   from {
     opacity: 0;

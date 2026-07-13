@@ -47,7 +47,8 @@ document.addEventListener('DOMContentLoaded', function() {
     password: { title: '密码生成器', render: renderPassword },
     qrcode: { title: '二维码生成', render: renderQrcode },
     typing: { title: '打字速度测试', render: renderTyping },
-    quote: { title: '随机名言', render: renderQuote }
+    quote: { title: '随机名言', render: renderQuote },
+    cad: { title: 'CAD工具箱', render: renderCad }
   };
 
   function openTool(toolName) {
@@ -56,6 +57,11 @@ document.addEventListener('DOMContentLoaded', function() {
     modalTitle.textContent = tool.title;
     modalBody.innerHTML = '';
     tool.render(modalBody);
+    if (toolName === 'cad') {
+      modal.querySelector('.tool-modal-content').classList.add('cad-mode');
+    } else {
+      modal.querySelector('.tool-modal-content').classList.remove('cad-mode');
+    }
     modal.classList.add('active');
     if (typeof lucide !== 'undefined') {
       lucide.createIcons();
@@ -985,5 +991,25 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     btnEl.addEventListener('click', showRandomQuote);
+  }
+
+  function renderCad(container) {
+    container.innerHTML = `
+      <div class="cad-iframe-container">
+        <iframe src="http://tiantech.zjjsw.com/xtc/XTCADBCode-Web-main/index.html" 
+                class="cad-iframe"
+                frameborder="0"
+                sandbox="allow-scripts allow-forms allow-popups allow-top-navigation allow-modals"
+                title="CAD工具箱">
+        </iframe>
+        <div class="cad-notice">
+          <i data-lucide="info"></i>
+          <span>此工具由外部网站提供，可能无法在部分浏览器中使用</span>
+        </div>
+      </div>
+    `;
+    if (typeof lucide !== 'undefined') {
+      try { lucide.createIcons(); } catch(e) {}
+    }
   }
 });
