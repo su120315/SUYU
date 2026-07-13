@@ -360,12 +360,14 @@ function initGallery() {
   const galleryLoading = document.getElementById('galleryLoading');
   const catContainer = document.getElementById('galleryCategories');
 
-  // GitHub Token - 用于保存照片
+  const BOLTP_API_URL = 'https://www.boltp.com/api/v2/upload';
+  
+  // GitHub Token - 仅用于 Gist 存储相册索引（不再用于图片上传）
   const TOKEN_PART1 = 'ghp_GMiHyZUI5RkF';
   const TOKEN_PART2 = 'DIFadXOlohhXN9nvl63RzsQM';
   const GITHUB_TOKEN = TOKEN_PART1 + TOKEN_PART2;
   
-  // Gist ID 和直链
+  // Gist ID 和直链 - 用于存储相册索引
   const GIST_ID = '070c70e1da8ce50d80a1e805a3e5491d';
   const GIST_FILENAME = 'gallery-photos.json';
   
@@ -648,14 +650,43 @@ function initGallery() {
     });
   }
 
+  async function uploadToBoltp(file) {
+    const formData = new FormData();
+    formData.append('image', file);
+    
+    const response = await fetch(BOLTP_API_URL, {
+      method: 'POST',
+      body: formData,
+      credentials: 'include'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`上传失败: ${response.status}`);
+    }
+    
+    const text = await response.text();
+    try {
+      const data = JSON.parse(text);
+      if (data.status === 'success' && data.data && data.data.url) {
+        return data.data.url;
+      }
+      throw new Error(data.message || '上传返回无效数据');
+    } catch (e) {
+      if (text.includes('html')) {
+        throw new Error('服务器返回异常，请检查网络');
+      }
+      throw e;
+    }
+  }
+
   photoInput.addEventListener('change', async (e) => {
     if (isUploading) return;
     
     const files = Array.from(e.target.files);
     
     for (const file of files) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert('图片太大了，请选择 5MB 以下的图片');
+      if (file.size > 7 * 1024 * 1024) {
+        alert('图片太大了，请选择 7MB 以下的图片');
         continue;
       }
 
@@ -673,15 +704,9 @@ function initGallery() {
         galleryEmpty.style.display = 'none';
         galleryGrid.appendChild(loadingItem);
 
-        const base64 = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
-
-        const compressedBase64 = await compressImage(base64);
-        photos.push(compressedBase64);
+        const imageUrl = await uploadToBoltp(file);
+        
+        photos.push(imageUrl);
         categories[currentCategory] = photos;
         await saveCategoryStructure();
         
