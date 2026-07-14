@@ -1189,6 +1189,11 @@
             if (data.code === 200 && data.data && data.data[0]) {
               chapterContent = data.data[0].article_body || '';
               chapterContent = chapterContent.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+              // 检测API是否返回重复内容（当前API的z参数有bug，所有章节返回同样内容）
+              var prevContent = currentChapterIndex > 0 ? getCachedChapter(currentNovel.searchKey, currentChapters[currentChapterIndex-1].index) : null;
+              if (prevContent && prevContent.content === chapterContent) {
+                chapterContent = chapterContent + '\n\n[提示：当前小说数据源暂不支持分章获取，所有章节显示相同内容。请尝试搜索其他小说或稍后再试。]';
+              }
               cacheChapter(currentNovel.searchKey, ch.index, chapterTitle, chapterContent);
               renderReader(chapterTitle, chapterContent, chapterIndex);
             } else {
