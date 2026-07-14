@@ -20,14 +20,16 @@
     .novel-container {
       max-width: 900px;
       margin: 0 auto;
-      padding: 100px 24px 60px;
+      padding: 180px 24px 60px;
     }
     .novel-header-bar {
-      position: sticky;
-      top: 64px;
-      z-index: 10;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
       background: var(--bg-primary);
-      padding: 16px 0;
+      padding: 16px 24px;
       border-bottom: 1px solid var(--bg-tertiary);
     }
     .novel-search-row {
@@ -650,7 +652,7 @@
           <i data-lucide="arrow-left" style="width:18px;height:18px;"></i>
         </button>
         <div class="novel-search-wrap" id="novelSearchWrap">
-          <i data-lucide="search" class="novel-search-icon" style="width:18px;height:18px;"></i>
+          <i data-lucide="search" class="novel-search-icon" style="width:18px;height:18px;cursor:pointer;" data-action="novel-search"></i>
           <input type="text" class="novel-search-input" id="novelSearchInput" placeholder="搜索小说名称..." onkeydown="if(event.key==='Enter') doNovelSearch()">
         </div>
         <button class="novel-shelf-btn" data-action="novel-shelf">
@@ -1019,6 +1021,7 @@
 
     async function fetchNovelDetail(searchKey) {
       var bookId = searchKey.replace('zh_', '');
+      
       // 1. 获取章节列表（bookapi支持CORS，直接调用）
       var chapterData;
       try {
@@ -1059,23 +1062,29 @@
         }
       }
 
-      // 2. 获取书籍信息（通过代理抓取书籍页）
-      var title = '未知', author = '未知', cover = '', desc = '', category = '';
-      try {
-        var bookHtml = await fetchWithProxy('https://book.zongheng.com/book/' + bookId + '.html', false);
-        var m;
-        m = bookHtml.match(/property="og:title"\s+content="([^"]*)"/); if (m) title = m[1];
-        m = bookHtml.match(/property="og:novel:author"\s+content="([^"]*)"/); if (m) author = m[1];
-        m = bookHtml.match(/property="og:image"\s+content="([^"]*)"/); if (m) cover = m[1];
-        m = bookHtml.match(/property="og:description"\s+content="([^"]*)"/); if (m) desc = m[1];
-        m = bookHtml.match(/property="og:novel:category"\s+content="([^"]*)"/); if (m) category = m[1];
-        // 备用提取
-        if (title === '未知') { m = bookHtml.match(/class="book-name"[^>]*>([\s\S]*?)</); if (m) title = m[1].trim(); }
-        if (author === '未知') { m = bookHtml.match(/class="au-name"[^>]*>([\s\S]*?)</); if (m) author = m[1].trim(); }
-        if (!cover) { m = bookHtml.match(/class="book-img"[^>]*>[\s\S]*?src="([^"]*)"/); if (m) cover = m[1]; }
-        if (!desc) { m = bookHtml.match(/class="book-dec"[^>]*>([\s\S]*?)<\/div>/); if (m) desc = m[1].replace(/<[^>]+>/g, '').trim(); }
-      } catch(e) {
-        console.warn('获取书籍信息失败，使用默认值');
+      // 2. 先尝试从搜索结果中获取书籍信息
+      var title = '未知', author = '未知', cover = '', desc = '', category = '', update = '';
+      for (var i = 0; i < currentSearchResults.length; i++) {
+        if (currentSearchResults[i].searchKey === searchKey) {
+          var cached = currentSearchResults[i];
+          title = cached.title;
+          author = cached.author;
+          cover = cached.cover;
+          desc = cached.desc;
+          category = cached.category;
+          update = cached.update;
+          break;
+        }
+      }
+
+      // 3. 如果搜索结果中没有，尝试从书架中获取
+      if (title === '未知' && followedNovels[searchKey]) {
+        var shelfNovel = followedNovels[searchKey];
+        title = shelfNovel.title;
+        author = shelfNovel.author;
+        cover = shelfNovel.cover;
+        desc = shelfNovel.desc;
+        category = shelfNovel.category;
       }
 
       return {
@@ -1086,7 +1095,7 @@
         desc: desc,
         lastChapter: chapters.length > 0 ? chapters[chapters.length - 1].title : '',
         totalChapters: chapters.length,
-        update: '',
+        update: update,
         bookId: bookId,
         chapters: chapters,
         searchKey: searchKey
@@ -1367,6 +1376,10 @@
 
     registerHandler('click', '[data-action="novel-shelf"]', function() {
       showShelf();
+    });
+
+    registerHandler('click', '[data-action="novel-search"]', function() {
+      doNovelSearch();
     });
 
     registerHandler('click', '[data-action="novel-detail"]', async function(e, el) {
