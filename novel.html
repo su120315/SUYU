@@ -432,9 +432,14 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 12px 0;
+      padding: 12px 16px;
       border-bottom: 1px solid var(--bg-tertiary);
-      margin-bottom: 20px;
+      position: fixed;
+      top: 81px;
+      left: 0;
+      right: 0;
+      z-index: 99;
+      background: var(--bg-primary);
     }
     .novel-reader-title {
       flex: 1;
@@ -471,7 +476,7 @@
     .novel-reader-content {
       max-width: 700px;
       margin: 0 auto;
-      padding: 70px 0 80px;
+      padding: 150px 16px 80px;
       line-height: 1.9;
       font-size: 18px;
       color: var(--text-primary);
@@ -616,7 +621,7 @@
       }
       .novel-reader-content {
         font-size: 16px;
-        padding: 64px 4px 60px;
+        padding: 140px 4px 60px;
       }
     }
   </style>
@@ -1200,7 +1205,9 @@
       showBack(true);
       searchWrap.style.display = 'none';
       progressBar.style.display = 'block';
-      document.body.style.paddingTop = '3px';
+      document.body.style.paddingTop = '';
+      var headerBar = document.querySelector('.novel-header-bar');
+      if (headerBar) headerBar.style.display = 'none';
 
       var cached = getCachedChapter(currentNovel.searchKey, ch.chapterId);
       var chapterTitle = ch.title || '';
@@ -1343,6 +1350,8 @@
 
     function goBack() {
       settingsPanel.classList.remove('show');
+      var headerBar = document.querySelector('.novel-header-bar');
+      if (headerBar) headerBar.style.display = '';
       if (currentView === 'reader') {
         currentView = 'detail';
         progressBar.style.display = 'none';
