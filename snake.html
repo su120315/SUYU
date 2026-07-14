@@ -238,6 +238,38 @@
       color: white;
       transform: translateX(-2px);
     }
+    .snake-dpad {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      margin-top: 8px;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .dpad-row {
+      display: flex;
+      gap: 4px;
+    }
+    .dpad-btn {
+      width: 56px;
+      height: 56px;
+      border-radius: 12px;
+      border: 1px solid var(--bg-tertiary);
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .dpad-btn:active {
+      background: var(--accent-primary);
+      color: white;
+      transform: scale(0.92);
+    }
     @media (max-width: 500px) {
       :root {
         --cell-size: 18px;
@@ -327,6 +359,25 @@
         <button class="diff-btn active" data-diff="slow">慢速</button>
         <button class="diff-btn" data-diff="normal">正常</button>
         <button class="diff-btn" data-diff="fast">快速</button>
+      </div>
+    </div>
+
+    <div class="snake-dpad" id="snakeDpad">
+      <div class="dpad-row">
+        <button class="dpad-btn" data-dir="up">
+          <i data-lucide="chevron-up" style="width:24px;height:24px;"></i>
+        </button>
+      </div>
+      <div class="dpad-row">
+        <button class="dpad-btn" data-dir="left">
+          <i data-lucide="chevron-left" style="width:24px;height:24px;"></i>
+        </button>
+        <button class="dpad-btn" data-dir="down">
+          <i data-lucide="chevron-down" style="width:24px;height:24px;"></i>
+        </button>
+        <button class="dpad-btn" data-dir="right">
+          <i data-lucide="chevron-right" style="width:24px;height:24px;"></i>
+        </button>
       </div>
     </div>
 
@@ -546,6 +597,38 @@
 
       document.addEventListener('keydown', handleKeyDown);
       gridEl.addEventListener('touchstart', handleTouch, { passive: false });
+
+      // 虚拟方向键
+      document.querySelectorAll('.dpad-btn').forEach(function(btn) {
+        btn.addEventListener('touchstart', function(e) {
+          e.preventDefault();
+          handleDpad(this.dataset.dir);
+        }, { passive: false });
+        btn.addEventListener('click', function(e) {
+          e.preventDefault();
+          handleDpad(this.dataset.dir);
+        });
+      });
+
+      function handleDpad(dir) {
+        switch(dir) {
+          case 'up':
+            if (direction.y !== 1) nextDirection = { x: 0, y: -1 };
+            break;
+          case 'down':
+            if (direction.y !== -1) nextDirection = { x: 0, y: 1 };
+            break;
+          case 'left':
+            if (direction.x !== 1) nextDirection = { x: -1, y: 0 };
+            break;
+          case 'right':
+            if (direction.x !== -1) nextDirection = { x: 1, y: 0 };
+            break;
+        }
+        if (!gameRunning && (dir === 'up' || dir === 'down' || dir === 'left' || dir === 'right')) {
+          startGame();
+        }
+      }
 
       initHighscore();
       createGrid();
