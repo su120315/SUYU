@@ -720,7 +720,7 @@
     }
 
     const ZH_API = 'https://bookapi.zongheng.com/api/chapter/getChapterList';
-    const ZH_SEARCH_URL = 'https://search.zongheng.com/s';
+    const ZH_SEARCH_URL = 'https://search.zongheng.com/search/book';
     const ZH_READ_URL = 'https://read.zongheng.com/chapter/';
     const CORS_PROXIES = [
       function(url) { return 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(url); },
@@ -980,57 +980,38 @@
     }
 
     async function fetchNovelSearch(keyword) {
-      var url = ZH_SEARCH_URL + '?keyword=' + encodeURIComponent(keyword);
-      var html = await fetchWithProxy(url, false);
+      var url = ZH_SEARCH_URL + '?keyword=' + encodeURIComponent(keyword) + '&pageNo=1&pageNum=20';
+      var resp, data;
+      // 该接口支持CORS，优先直接请求
+      try {
+        resp = await fetch(url, { method: 'GET', credentials: 'omit', headers: { 'Accept': 'application/json' } });
+        data = await resp.json();
+      } catch (e) {
+        console.warn('直连搜索失败，尝试代理', e);
+        var proxyUrl = await fetchWithProxy(url, true);
+        data = proxyUrl;
+      }
       var results = [];
-      // 解析搜索结果HTML
-      var bookRegex = /book\.zongheng\.com\/book\/(\d+)\.html/g;
-      var titleRegex = /class="tit[^"]*"[^>]*><a[^>]*>([\s\S]*?)<\/a>/g;
-      var authorRegex = /class="bookinfo"[^>]*>[\s\S]*?<a[^>]*>([\s\S]*?)<\/a>/g;
-      var descRegex = /class="se-result-infos"[^>]*>[\s\S]*?<p>([\s\S]*?)<\/p>/g;
-      var coverRegex = /<img[^>]+src="([^"]*(?:img\.zongheng|fm\.zongheng)[^"]*)"[^>]*>/g;
-
-      var bookIds = [];
-      var match;
-      while ((match = bookRegex.exec(html)) !== null) {
-        var bid = match[1];
-        if (bookIds.indexOf(bid) === -1) bookIds.push(bid);
+      if (!data || data.code !== 0 || !data.data || !data.data.datas || !data.data.datas.list) {
+        return results;
       }
-
-      var titles = [];
-      while ((match = titleRegex.exec(html)) !== null) {
-        titles.push(match[1].replace(/<[^>]+>/g, '').trim());
-      }
-
-      var authors = [];
-      while ((match = authorRegex.exec(html)) !== null) {
-        authors.push(match[1].replace(/<[^>]+>/g, '').trim());
-      }
-
-      var descs = [];
-      while ((match = descRegex.exec(html)) !== null) {
-        descs.push(match[1].replace(/<[^>]+>/g, '').trim());
-      }
-
-      var covers = [];
-      while ((match = coverRegex.exec(html)) !== null) {
-        covers.push(match[1]);
-      }
-
-      var count = Math.min(bookIds.length, titles.length);
-      for (var i = 0; i < count; i++) {
+      var list = data.data.datas.list;
+      for (var i = 0; i < list.length; i++) {
+        var item = list[i];
+        var cover = item.coverUrl || '';
+        if (cover && cover.charAt(0) === '/') cover = 'https://static.zongheng.com' + cover;
         results.push({
-          title: titles[i] || '未知',
-          author: authors[i] || '未知作者',
-          cover: covers[i] || '',
-          category: '',
-          desc: descs[i] || '',
-          lastChapter: '',
+          title: (item.name || '未知').replace(/<[^>]+>/g, '').trim(),
+          author: item.authorName || '未知作者',
+          cover: cover,
+          category: item.cateFineName || '',
+          desc: item.description || '',
+          lastChapter: item.chapterName || '',
           totalChapters: 0,
-          update: '',
-          bookId: bookIds[i],
+          update: item.updateTime ? item.updateTime.split('T')[0] : '',
+          bookId: String(item.bookId),
           chapters: [],
-          searchKey: 'zh_' + bookIds[i]
+          searchKey: 'zh_' + item.bookId
         });
       }
       return results;
