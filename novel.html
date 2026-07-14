@@ -454,10 +454,10 @@
       padding: 12px 16px;
       border-bottom: 1px solid var(--bg-tertiary);
       position: fixed;
-      top: 81px;
+      top: 0;
       left: 0;
       right: 0;
-      z-index: 99;
+      z-index: 10001;
       background: var(--bg-primary);
     }
     .novel-reader-title {
@@ -495,7 +495,7 @@
     .novel-reader-content {
       max-width: 700px;
       margin: 0 auto;
-      padding: 150px 16px 80px;
+      padding: 80px 16px 80px;
       line-height: 1.9;
       font-size: 18px;
       color: var(--text-primary);
@@ -640,7 +640,7 @@
       }
       .novel-reader-content {
         font-size: 16px;
-        padding: 140px 4px 60px;
+        padding: 70px 4px 60px;
       }
     }
   </style>
@@ -1141,12 +1141,13 @@
         var coverHtml = novel.cover
           ? '<img src="' + escapeHtml(novel.cover) + '" alt="' + safeTitle + '" referrerpolicy="no-referrer" onerror="this.parentElement.innerHTML=\'<span style=font-size:2rem;>📖</span>\'">'
           : '<span style="font-size:2.5rem;">📖</span>';
+        var metaText = novel.category || (novel.update ? '更新于 ' + novel.update : '');
         html += '<div class="novel-card" data-action="novel-detail" data-index="' + i + '">'
           + '<div class="novel-card-cover">' + coverHtml + '</div>'
           + '<div class="novel-card-info">'
           + '<div class="novel-card-title">' + safeTitle + '</div>'
           + '<div class="novel-card-author">' + safeAuthor + '</div>'
-          + '<div class="novel-card-progress">' + (novel.totalChapters || '?') + ' 章</div>'
+          + '<div class="novel-card-progress">' + (metaText || '纵横中文网') + '</div>'
           + '</div></div>';
       }
       html += '</div>';
