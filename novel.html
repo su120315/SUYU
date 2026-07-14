@@ -723,10 +723,12 @@
     const API_KEY = 'qstertop';
     const CORS_PROXIES = [
       function(url) { return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url); },
-      function(url) { return 'https://corsproxy.io/?url=' + encodeURIComponent(url); },
       function(url) { return 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(url); },
       function(url) { return 'https://api.allorigins.win/get?url=' + encodeURIComponent(url); },
-      function(url) { return 'https://api.whateverorigin.org/get?url=' + encodeURIComponent(url); }
+      function(url) { return 'https://api.whateverorigin.org/get?url=' + encodeURIComponent(url); },
+      function(url) { return 'https://cors-anywhere.herokuapp.com/' + url; },
+      function(url) { return 'https://cors.bridged.cc/' + url; },
+      function(url) { return 'https://corsproxy.io/?url=' + encodeURIComponent(url); }
     ];
     const content = document.getElementById('novelContent');
     const searchInput = document.getElementById('novelSearchInput');
@@ -942,11 +944,15 @@
 
     async function fetchWithProxy(url) {
       var controllers = [];
+      var headers = {
+        'Referer': 'https://www.99xs.vip/',
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15'
+      };
       var promises = CORS_PROXIES.map(function(proxyFn, proxyIdx) {
         var controller = new AbortController();
         controllers.push(controller);
-        var timeoutId = setTimeout(function() { controller.abort(); }, 15000);
-        return fetch(proxyFn(url), { signal: controller.signal })
+        var timeoutId = setTimeout(function() { controller.abort(); }, 12000);
+        return fetch(proxyFn(url), { signal: controller.signal, headers: headers })
           .then(function(resp) {
             if (!resp.ok) throw new Error('HTTP ' + resp.status);
             return resp.text();
@@ -976,7 +982,24 @@
         }
         return result.data;
       } catch(e) {
-        throw new Error('所有代理均不可用');
+        console.warn('代理全部失败，尝试直连:', e.message);
+        try {
+          var resp = await fetch(url, { 
+            mode: 'cors', 
+            credentials: 'omit', 
+            cache: 'no-cache',
+            headers: headers
+          });
+          if (!resp.ok) throw new Error('HTTP ' + resp.status);
+          var text = await resp.text();
+          try {
+            var data = JSON.parse(text);
+            if (data && data.code !== undefined) return data;
+          } catch(e2) {}
+          throw new Error('直连也失败，内容无效');
+        } catch(e2) {
+          throw new Error('所有方式均失败，请检查网络或稍后重试');
+        }
       }
     }
 
@@ -1147,28 +1170,29 @@
       var chapterContent = '';
 
       if (cached) {
-        chapterContent = cached.content;
-        renderReader(chapterTitle, chapterContent, chapterIndex);
-      } else {
-        showLoading();
-        try {
-          var url = NOVEL_API + '?qskey=' + encodeURIComponent(API_KEY)
-            + '&ar=' + encodeURIComponent(currentNovel.searchKey.split('_')[0])
-            + '&n=' + currentNovel.nIndex
-            + '&z=' + ch.index;
-          var data = await fetchWithProxy(url);
-          if (data.code === 200 && data.data && data.data[0]) {
-            chapterContent = data.data[0].article_body || '';
-            cacheChapter(currentNovel.searchKey, ch.index, chapterTitle, chapterContent);
-            renderReader(chapterTitle, chapterContent, chapterIndex);
-          } else {
-            showEmpty('章节加载失败');
+          chapterContent = cached.content;
+          renderReader(chapterTitle, chapterContent, chapterIndex);
+        } else {
+          showLoading();
+          try {
+            var url = NOVEL_API + '?qskey=' + encodeURIComponent(API_KEY)
+              + '&ar=' + encodeURIComponent(currentNovel.searchKey.split('_')[0])
+              + '&n=' + currentNovel.nIndex
+              + '&z=' + ch.index;
+            var data = await fetchWithProxy(url);
+            if (data.code === 200 && data.data && data.data[0]) {
+              chapterContent = data.data[0].article_body || '';
+              chapterContent = chapterContent.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+              cacheChapter(currentNovel.searchKey, ch.index, chapterTitle, chapterContent);
+              renderReader(chapterTitle, chapterContent, chapterIndex);
+            } else {
+              showEmpty('章节加载失败');
+            }
+          } catch(e) {
+            console.error('加载章节失败:', e);
+            showEmpty('加载失败，请检查网络');
           }
-        } catch(e) {
-          console.error('加载章节失败:', e);
-          showEmpty('加载失败，请检查网络');
         }
-      }
 
       recordHistory(currentNovel.searchKey, currentNovel.title, ch.index, chapterTitle);
       updateFollowProgress(currentNovel.searchKey, ch.index, chapterTitle);
