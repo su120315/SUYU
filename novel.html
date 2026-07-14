@@ -719,15 +719,14 @@
       }
     }
 
-    const NOVEL_API = 'https://api.qster.top/API/v2/NovelSearch/';
-    const API_KEY = 'qstertop';
+    const ZH_API = 'https://bookapi.zongheng.com/api/chapter/getChapterList';
+    const ZH_SEARCH_URL = 'https://search.zongheng.com/s';
+    const ZH_READ_URL = 'https://read.zongheng.com/chapter/';
     const CORS_PROXIES = [
       function(url) { return 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(url); },
       function(url) { return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url); },
       function(url) { return 'https://api.allorigins.win/get?url=' + encodeURIComponent(url); },
       function(url) { return 'https://api.whateverorigin.org/get?url=' + encodeURIComponent(url); },
-      function(url) { return 'https://api.henryxiv.cn/cors/?url=' + encodeURIComponent(url); },
-      function(url) { return 'https://api.alexzh.com/cors/?url=' + encodeURIComponent(url); },
       function(url) { return 'https://cors.bridged.cc/' + url; },
       function(url) { return 'https://corsproxy.io/?url=' + encodeURIComponent(url); }
     ];
@@ -943,33 +942,7 @@
       });
     }
 
-    async function fetchWithProxy(url) {
-      var headers = {
-        'Referer': 'https://www.99xs.vip/',
-        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15'
-      };
-
-      // 策略1：先尝试直连（部分网络环境可能可以直接访问）
-      try {
-        var directResp = await fetch(url, { 
-          mode: 'cors', 
-          credentials: 'omit', 
-          cache: 'no-cache',
-          headers: headers,
-          signal: (function() { var c = new AbortController(); setTimeout(function(){c.abort();}, 10000); return c.signal; })()
-        });
-        if (directResp.ok) {
-          var directText = await directResp.text();
-          try {
-            var data = JSON.parse(directText);
-            if (data && data.code !== undefined) return data;
-          } catch(e) {}
-        }
-      } catch(e) {
-        console.warn('直连失败（可能CORS限制），尝试代理:', e.message);
-      }
-
-      // 策略2：使用代理（竞速模式）
+    async function fetchWithProxy(url, expectJson) {
       var controllers = [];
       var promises = CORS_PROXIES.map(function(proxyFn, proxyIdx) {
         var controller = new AbortController();
@@ -981,20 +954,17 @@
             return resp.text();
           })
           .then(function(text) {
+            clearTimeout(timeoutId);
             try {
               var json = JSON.parse(text);
               if (json && json.contents) text = json.contents;
               else if (json && typeof json.data === 'string') text = json.data;
               else if (json && json.html) text = json.html;
             } catch(e) {}
-            try {
-              var data = JSON.parse(text);
-              if (data && data.code !== undefined) {
-                clearTimeout(timeoutId);
-                return { data: data, proxyIdx: proxyIdx };
-              }
-            } catch(e) {}
-            throw new Error('内容无效');
+            if (expectJson) {
+              try { return { data: JSON.parse(text), proxyIdx: proxyIdx }; } catch(e) {}
+            }
+            return { data: text, proxyIdx: proxyIdx };
           });
       });
 
@@ -1005,67 +975,138 @@
         }
         return result.data;
       } catch(e) {
-        throw new Error('所有方式均失败，请检查网络或稍后重试');
+        throw new Error('网络请求失败，请稍后重试');
       }
     }
 
     async function fetchNovelSearch(keyword) {
-      var url = NOVEL_API + '?qskey=' + encodeURIComponent(API_KEY) + '&ar=' + encodeURIComponent(keyword);
-      var data = await fetchWithProxy(url);
-      if (data.code !== 200 || !data.data || data.data.length === 0) return [];
+      var url = ZH_SEARCH_URL + '?keyword=' + encodeURIComponent(keyword);
+      var html = await fetchWithProxy(url, false);
       var results = [];
-      for (var i = 0; i < data.data.length; i++) {
-        var item = data.data[i];
+      // 解析搜索结果HTML
+      var bookRegex = /book\.zongheng\.com\/book\/(\d+)\.html/g;
+      var titleRegex = /class="tit[^"]*"[^>]*><a[^>]*>([\s\S]*?)<\/a>/g;
+      var authorRegex = /class="bookinfo"[^>]*>[\s\S]*?<a[^>]*>([\s\S]*?)<\/a>/g;
+      var descRegex = /class="se-result-infos"[^>]*>[\s\S]*?<p>([\s\S]*?)<\/p>/g;
+      var coverRegex = /<img[^>]+src="([^"]*(?:img\.zongheng|fm\.zongheng)[^"]*)"[^>]*>/g;
+
+      var bookIds = [];
+      var match;
+      while ((match = bookRegex.exec(html)) !== null) {
+        var bid = match[1];
+        if (bookIds.indexOf(bid) === -1) bookIds.push(bid);
+      }
+
+      var titles = [];
+      while ((match = titleRegex.exec(html)) !== null) {
+        titles.push(match[1].replace(/<[^>]+>/g, '').trim());
+      }
+
+      var authors = [];
+      while ((match = authorRegex.exec(html)) !== null) {
+        authors.push(match[1].replace(/<[^>]+>/g, '').trim());
+      }
+
+      var descs = [];
+      while ((match = descRegex.exec(html)) !== null) {
+        descs.push(match[1].replace(/<[^>]+>/g, '').trim());
+      }
+
+      var covers = [];
+      while ((match = coverRegex.exec(html)) !== null) {
+        covers.push(match[1]);
+      }
+
+      var count = Math.min(bookIds.length, titles.length);
+      for (var i = 0; i < count; i++) {
         results.push({
-          title: item.title,
-          author: item.author,
-          cover: '',
-          category: item.category || '',
-          desc: '',
-          lastChapter: item.chapter || '',
+          title: titles[i] || '未知',
+          author: authors[i] || '未知作者',
+          cover: covers[i] || '',
+          category: '',
+          desc: descs[i] || '',
+          lastChapter: '',
           totalChapters: 0,
-          update: item.update || '',
-          nIndex: item.n || (i + 1),
-          webId: data.web_ID || '1',
+          update: '',
+          bookId: bookIds[i],
           chapters: [],
-          searchKey: keyword + '_' + (item.n || (i+1))
+          searchKey: 'zh_' + bookIds[i]
         });
       }
       return results;
     }
 
     async function fetchNovelDetail(searchKey) {
-      var parts = searchKey.split('_');
-      var keyword = parts[0];
-      var nIndex = parts[1] || 1;
-      var url = NOVEL_API + '?qskey=' + encodeURIComponent(API_KEY) + '&ar=' + encodeURIComponent(keyword) + '&n=' + nIndex;
-      var data = await fetchWithProxy(url);
-      if (data.code !== 200 || !data.data) return null;
-      var item = Array.isArray(data.data) ? data.data[0] : data.data;
-      var chapters = [];
-      if (item.numberchapters && item.numberchapters.length) {
-        for (var j = 0; j < item.numberchapters.length; j++) {
-          var ch = item.numberchapters[j];
-          var keys = Object.keys(ch);
-          keys.sort(function(a,b){return parseInt(a)-parseInt(b);});
-          for (var k = 0; k < keys.length; k++) {
-            chapters.push({ index: parseInt(keys[k]), title: ch[keys[k]] });
-          }
+      var bookId = searchKey.replace('zh_', '');
+      // 1. 获取章节列表（bookapi支持CORS，直接调用）
+      var chapterData;
+      try {
+        var resp = await fetch(ZH_API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Referer': 'https://read.zongheng.com/' },
+          body: 'bookId=' + bookId,
+          credentials: 'omit'
+        });
+        chapterData = await resp.json();
+      } catch(e) {
+        console.warn('直连章节列表失败，尝试代理');
+        var proxyUrl = CORS_PROXIES[0]('https://bookapi.zongheng.com/api/chapter/getChapterList?bookId=' + bookId);
+        var proxyResp = await fetch(proxyUrl);
+        var proxyText = await proxyResp.text();
+        try {
+          var pj = JSON.parse(proxyText);
+          if (pj.contents) proxyText = pj.contents;
+          chapterData = JSON.parse(proxyText);
+        } catch(e2) {
+          throw new Error('获取章节列表失败');
         }
       }
-      var cover = item.img;
-      if (cover && cover.startsWith('/')) cover = 'https://www.99xs.vip' + cover;
+
+      if (!chapterData || chapterData.code !== 0 || !chapterData.result) return null;
+
+      var chapterList = chapterData.result.chapterList || [];
+      var chapters = [];
+      for (var v = 0; v < chapterList.length; v++) {
+        var vol = chapterList[v].chapterViewList || [];
+        for (var c = 0; c < vol.length; c++) {
+          chapters.push({
+            index: chapters.length,
+            chapterId: vol[c].chapterId,
+            title: vol[c].chapterName,
+            bookId: bookId
+          });
+        }
+      }
+
+      // 2. 获取书籍信息（通过代理抓取书籍页）
+      var title = '未知', author = '未知', cover = '', desc = '', category = '';
+      try {
+        var bookHtml = await fetchWithProxy('https://book.zongheng.com/book/' + bookId + '.html', false);
+        var m;
+        m = bookHtml.match(/property="og:title"\s+content="([^"]*)"/); if (m) title = m[1];
+        m = bookHtml.match(/property="og:novel:author"\s+content="([^"]*)"/); if (m) author = m[1];
+        m = bookHtml.match(/property="og:image"\s+content="([^"]*)"/); if (m) cover = m[1];
+        m = bookHtml.match(/property="og:description"\s+content="([^"]*)"/); if (m) desc = m[1];
+        m = bookHtml.match(/property="og:novel:category"\s+content="([^"]*)"/); if (m) category = m[1];
+        // 备用提取
+        if (title === '未知') { m = bookHtml.match(/class="book-name"[^>]*>([\s\S]*?)</); if (m) title = m[1].trim(); }
+        if (author === '未知') { m = bookHtml.match(/class="au-name"[^>]*>([\s\S]*?)</); if (m) author = m[1].trim(); }
+        if (!cover) { m = bookHtml.match(/class="book-img"[^>]*>[\s\S]*?src="([^"]*)"/); if (m) cover = m[1]; }
+        if (!desc) { m = bookHtml.match(/class="book-dec"[^>]*>([\s\S]*?)<\/div>/); if (m) desc = m[1].replace(/<[^>]+>/g, '').trim(); }
+      } catch(e) {
+        console.warn('获取书籍信息失败，使用默认值');
+      }
+
       return {
-        title: item.title,
-        author: item.author,
+        title: title,
+        author: author,
         cover: cover,
-        category: item.category || '',
-        desc: item.introduction || '',
-        lastChapter: item.chapter && item.chapter[0] || '',
+        category: category,
+        desc: desc,
+        lastChapter: chapters.length > 0 ? chapters[chapters.length - 1].title : '',
         totalChapters: chapters.length,
-        update: item.update || '',
-        nIndex: parseInt(nIndex),
-        webId: data.web_ID || '1',
+        update: '',
+        bookId: bookId,
         chapters: chapters,
         searchKey: searchKey
       };
@@ -1123,8 +1164,8 @@
       var chaptersHtml = '';
       for (var i = 0; i < currentChapters.length; i++) {
         var ch = currentChapters[i];
-        var cached = getCachedChapter(novel.searchKey, ch.index);
-        var readClass = history && history.chapterIndex >= ch.index ? ' read' : '';
+        var cached = getCachedChapter(novel.searchKey, ch.chapterId || ch.index);
+        var readClass = history && history.chapterIndex >= i ? ' read' : '';
         var cachedClass = cached ? ' cached' : '';
         chaptersHtml += '<div class="novel-chapter-item' + readClass + cachedClass + '" data-action="read-chapter" data-index="' + i + '" title="' + escapeHtml(ch.title) + '">' + escapeHtml(ch.title) + '</div>';
       }
@@ -1171,8 +1212,8 @@
       progressBar.style.display = 'block';
       document.body.style.paddingTop = '3px';
 
-      var cached = getCachedChapter(currentNovel.searchKey, ch.index);
-      var chapterTitle = ch.title;
+      var cached = getCachedChapter(currentNovel.searchKey, ch.chapterId);
+      var chapterTitle = ch.title || '';
       var chapterContent = '';
 
       if (cached) {
@@ -1181,32 +1222,39 @@
         } else {
           showLoading();
           try {
-            var url = NOVEL_API + '?qskey=' + encodeURIComponent(API_KEY)
-              + '&ar=' + encodeURIComponent(currentNovel.searchKey.split('_')[0])
-              + '&n=' + currentNovel.nIndex
-              + '&z=' + ch.index;
-            var data = await fetchWithProxy(url);
-            if (data.code === 200 && data.data && data.data[0]) {
-              chapterContent = data.data[0].article_body || '';
-              chapterContent = chapterContent.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
-              // 检测API是否返回重复内容（当前API的z参数有bug，所有章节返回同样内容）
-              var prevContent = currentChapterIndex > 0 ? getCachedChapter(currentNovel.searchKey, currentChapters[currentChapterIndex-1].index) : null;
-              if (prevContent && prevContent.content === chapterContent) {
-                chapterContent = chapterContent + '\n\n[提示：当前小说数据源暂不支持分章获取，所有章节显示相同内容。请尝试搜索其他小说或稍后再试。]';
-              }
-              cacheChapter(currentNovel.searchKey, ch.index, chapterTitle, chapterContent);
-              renderReader(chapterTitle, chapterContent, chapterIndex);
-            } else {
-              showEmpty('章节加载失败');
+            var ch = currentChapters[chapterIndex];
+            var chapterUrl = ZH_READ_URL + ch.bookId + '/' + ch.chapterId + '.html';
+            var html = await fetchWithProxy(chapterUrl, false);
+            // 解析章节正文
+            var contentMatch = html.match(/<div[^>]*class="content"[^>]*>([\s\S]*?)<\/div>/);
+            if (!contentMatch) contentMatch = html.match(/<div[^>]*id="chapterContent"[^>]*>([\s\S]*?)<\/div>/);
+            if (contentMatch) {
+              chapterContent = contentMatch[1]
+                .replace(/<p[^>]*>/g, '')
+                .replace(/<\/p>/g, '\n')
+                .replace(/<br\s*\/?>/g, '\n')
+                .replace(/<[^>]+>/g, '')
+                .replace(/&nbsp;/g, ' ')
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&amp;/g, '&')
+                .replace(/&quot;/g, '"')
+                .replace(/&#39;/g, "'")
+                .trim();
             }
+            if (!chapterContent) {
+              chapterContent = '本章内容获取失败，可能为VIP章节或网络问题。';
+            }
+            cacheChapter(currentNovel.searchKey, ch.chapterId, chapterTitle, chapterContent);
+            renderReader(chapterTitle, chapterContent, chapterIndex);
           } catch(e) {
             console.error('加载章节失败:', e);
-            showEmpty('加载失败，请检查网络');
+            showEmpty('加载失败：' + (e.message || '请检查网络'));
           }
         }
 
-      recordHistory(currentNovel.searchKey, currentNovel.title, ch.index, chapterTitle);
-      updateFollowProgress(currentNovel.searchKey, ch.index, chapterTitle);
+      recordHistory(currentNovel.searchKey, currentNovel.title, chapterIndex, chapterTitle);
+      updateFollowProgress(currentNovel.searchKey, chapterIndex, chapterTitle);
     }
 
     function renderReader(title, bodyText, chapterIdx) {
