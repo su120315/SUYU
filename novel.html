@@ -1041,7 +1041,7 @@
       var url = NOVEL_API + '?qskey=' + encodeURIComponent(API_KEY) + '&ar=' + encodeURIComponent(keyword) + '&n=' + nIndex;
       var data = await fetchWithProxy(url);
       if (data.code !== 200 || !data.data) return null;
-      var item = data.data;
+      var item = Array.isArray(data.data) ? data.data[0] : data.data;
       var chapters = [];
       if (item.numberchapters && item.numberchapters.length) {
         for (var j = 0; j < item.numberchapters.length; j++) {
