@@ -719,14 +719,15 @@
       }
     }
 
-    const NOVEL_API = 'https://api.qster.top/API/v2/NovelSearch';
+    const NOVEL_API = 'https://api.qster.top/API/v2/NovelSearch/';
     const API_KEY = 'qstertop';
     const CORS_PROXIES = [
-      function(url) { return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url); },
       function(url) { return 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(url); },
+      function(url) { return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url); },
       function(url) { return 'https://api.allorigins.win/get?url=' + encodeURIComponent(url); },
       function(url) { return 'https://api.whateverorigin.org/get?url=' + encodeURIComponent(url); },
-      function(url) { return 'https://cors-anywhere.herokuapp.com/' + url; },
+      function(url) { return 'https://api.henryxiv.cn/cors/?url=' + encodeURIComponent(url); },
+      function(url) { return 'https://api.alexzh.com/cors/?url=' + encodeURIComponent(url); },
       function(url) { return 'https://cors.bridged.cc/' + url; },
       function(url) { return 'https://corsproxy.io/?url=' + encodeURIComponent(url); }
     ];
@@ -919,7 +920,7 @@
         renderSearchResults(results, keyword);
       } catch(e) {
         console.error('搜索失败:', e);
-        showEmpty('搜索失败，请稍后重试');
+        showEmpty('搜索失败：' + (e.message || '网络错误') + '<br><span style="font-size:0.8rem;color:var(--text-muted);">请检查网络连接，或稍后重试</span>');
       }
     }
 
@@ -943,16 +944,38 @@
     }
 
     async function fetchWithProxy(url) {
-      var controllers = [];
       var headers = {
         'Referer': 'https://www.99xs.vip/',
         'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15'
       };
+
+      // 策略1：先尝试直连（部分网络环境可能可以直接访问）
+      try {
+        var directResp = await fetch(url, { 
+          mode: 'cors', 
+          credentials: 'omit', 
+          cache: 'no-cache',
+          headers: headers,
+          signal: (function() { var c = new AbortController(); setTimeout(function(){c.abort();}, 10000); return c.signal; })()
+        });
+        if (directResp.ok) {
+          var directText = await directResp.text();
+          try {
+            var data = JSON.parse(directText);
+            if (data && data.code !== undefined) return data;
+          } catch(e) {}
+        }
+      } catch(e) {
+        console.warn('直连失败（可能CORS限制），尝试代理:', e.message);
+      }
+
+      // 策略2：使用代理（竞速模式）
+      var controllers = [];
       var promises = CORS_PROXIES.map(function(proxyFn, proxyIdx) {
         var controller = new AbortController();
         controllers.push(controller);
-        var timeoutId = setTimeout(function() { controller.abort(); }, 12000);
-        return fetch(proxyFn(url), { signal: controller.signal, headers: headers })
+        var timeoutId = setTimeout(function() { controller.abort(); }, 15000);
+        return fetch(proxyFn(url), { signal: controller.signal })
           .then(function(resp) {
             if (!resp.ok) throw new Error('HTTP ' + resp.status);
             return resp.text();
@@ -982,24 +1005,7 @@
         }
         return result.data;
       } catch(e) {
-        console.warn('代理全部失败，尝试直连:', e.message);
-        try {
-          var resp = await fetch(url, { 
-            mode: 'cors', 
-            credentials: 'omit', 
-            cache: 'no-cache',
-            headers: headers
-          });
-          if (!resp.ok) throw new Error('HTTP ' + resp.status);
-          var text = await resp.text();
-          try {
-            var data = JSON.parse(text);
-            if (data && data.code !== undefined) return data;
-          } catch(e2) {}
-          throw new Error('直连也失败，内容无效');
-        } catch(e2) {
-          throw new Error('所有方式均失败，请检查网络或稍后重试');
-        }
+        throw new Error('所有方式均失败，请检查网络或稍后重试');
       }
     }
 
