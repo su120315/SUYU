@@ -2184,6 +2184,20 @@ section {
   justify-content: center;
 }
 
+.footer-disclaimer {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+  max-width: 700px;
+  margin: 8px auto;
+  opacity: 0.85;
+}
+
+.footer-disclaimer a {
+  color: var(--accent-primary);
+  text-decoration: underline;
+}
+
 .footer-meta .dot {
   opacity: 0.5;
 }
