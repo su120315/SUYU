@@ -460,6 +460,51 @@ img {
   height: 20px;
 }
 
+/* ==================== Corner Links ==================== */
+.corner-links {
+  position: fixed;
+  left: 16px;
+  bottom: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 998;
+}
+
+.corner-links a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+  border: 1px solid var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.corner-links a:hover {
+  background: var(--gradient);
+  border-color: transparent;
+  color: #fff;
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+}
+
+@media (max-width: 640px) {
+  .corner-links {
+    left: 12px;
+    bottom: calc(20px + env(safe-area-inset-bottom));
+  }
+}
+
 /* ==================== Progress Bar ==================== */
 .progress-bar {
   position: fixed;

@@ -3,8 +3,6 @@ const CACHE_NAME = 'suyu-comic-v8';
 const CORE_ASSETS = [
   './',
   './index.html',
-  './comic.html',
-  './novel.html',
   './tools.html',
   './style.css',
   './script.js',
@@ -97,9 +95,9 @@ self.addEventListener('fetch', function(event) {
         }
         return resp;
       }).catch(function() {
-        // 网络失败，如果是导航请求返回 comic.html
+        // 网络失败，如果是导航请求返回首页
         if (request.mode === 'navigate') {
-          return caches.match('./comic.html');
+          return caches.match('./index.html');
         }
       });
     })
