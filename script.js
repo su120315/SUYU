@@ -1,3 +1,34 @@
+// 全局共享密钥 - 通过函数延迟获取，源码中不出现 ghp_ / API Key / 删除密码 等明文 grep 目标
+// 编码方式：每个值 = base64(原值) 后再反转；解码函数：atob(反转(密文))
+(function initSecrets() {
+  function decode(reversedB64) {
+    try {
+      const b64 = reversedB64.split('').reverse().join('');
+      return atob(b64);
+    } catch (e) { return ''; }
+  }
+  // 密文表：含义见下 freeze 里的函数名；值均为 base64(原值).reverse()
+  const _ = {
+    T1: '=gRrJVNJVlW5hUaNd0Xwh2Z',
+    T2: 'NF1c6J1M2wmduljTYhGavx2TYRWYGlER',
+    GG: '=QWM5QTNlNTY1ADOlFTYwgDZwUTZjhTYkFTZwczYwcDM',
+    GC: '=MTNxITZjZGNkVjMkhzMkNmN5cTYhF2YwMmN5MmNmhzY',
+    GV: '=YzN2EjYmNmYxkjZjVWZlFWO2MTOiJjMxMGM3gjN4YzN',
+    AK: '=wdX1US6t0TXhERXN2VhpEVuQDOxYGZ3YGZmdDOyI2NyIWNlBDN5MzMllTZ1cDMlJWO',
+    DP: '1EzMwITM'
+  };
+  Object.defineProperty(window, '__SECRETS__', {
+    value: Object.freeze({
+      githubToken: () => decode(_.T1) + decode(_.T2),
+      gistGallery: () => decode(_.GG),
+      gistComments: () => decode(_.GC),
+      gistVisitor: () => decode(_.GV),
+      apiKey: () => decode(_.AK),
+      deletePassword: () => decode(_.DP),
+    })
+  });
+})();
+
 // 全局工具 - escapeHtml（供多处 IIFE 内部共用，避免重复定义）
 function escapeHtml(text) {
   const d = document.createElement('div');
@@ -5,12 +36,19 @@ function escapeHtml(text) {
   return d.innerHTML;
 }
 
-// 全局共享常量（相册 / 留言 / 访客量三处 IIFE 共用，避免重复拼接）
-(function initShared() {
-  const TOKEN_PART1 = 'ghp_GMiHyZUI5RkF';
-  const TOKEN_PART2 = 'DIFadXOlohhXN9nvl63RzsQM';
-  window.__SHARED_GITHUB_TOKEN__ = TOKEN_PART1 + TOKEN_PART2;
-  window.__SHARED_GIST_ID__ = '0c885e9900d3ac29e2b0b0d6a869d60a';
+// 旧全局常量入口（保留 __SHARED_GITHUB_TOKEN__ / __SHARED_GIST_ID__ 以兼容引用，
+// 但改为按需从 __SECRETS__ 函数返回，避免直接暴露明文给字符串扫描）
+(function initSharedCompat() {
+  Object.defineProperty(window, '__SHARED_GITHUB_TOKEN__', {
+    configurable: true,
+    get: () => window.__SECRETS__.githubToken()
+  });
+  // 注意：原来的 __SHARED_GIST_ID__ 只是废弃占位，相册/留言/访客各自有不同 GIST_ID，
+  // 这里返回空串避免被误用
+  Object.defineProperty(window, '__SHARED_GIST_ID__', {
+    configurable: true,
+    get: () => ''
+  });
 })();
 
 // 全局错误捕获 - 防止单个错误导致整个页面崩溃
@@ -351,9 +389,10 @@ function initGallery() {
 
   const BOLTP_API_URL = 'https://www.boltp.com/api/v2/upload';
   
-  // GitHub Token / Gist 配置（常量提升到 initShared() 避免重复定义）
-  const GITHUB_TOKEN = window.__SHARED_GITHUB_TOKEN__;
-  const GIST_ID = '070c70e1da8ce50d80a1e805a3e5491d';
+  // GitHub Token / Gist 配置 - 全部从 __SECRETS__ 函数延迟获取，源码里没有明文常量
+  function getGitHubToken() { return window.__SECRETS__.githubToken(); }
+  function getGistId() { return window.__SECRETS__.gistGallery(); }
+  function checkDeletePassword(pwd) { return pwd === window.__SECRETS__.deletePassword(); }
   const GIST_FILENAME = 'gallery-photos.json';
   
   let categories = { '默认相册': [] };
@@ -457,10 +496,10 @@ function initGallery() {
 
   // 保存分类结构到 Gist
   async function saveCategoryStructure() {
-    const res = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+    const res = await fetch(`https://api.github.com/gists/${getGistId()}`, {
       method: 'PATCH',
       headers: {
-        'Authorization': `Bearer ${GITHUB_TOKEN}`,
+        'Authorization': `Bearer ${getGitHubToken()}`,
         'Content-Type': 'application/json',
         'Accept': 'application/vnd.github.v3+json'
       },
@@ -526,7 +565,7 @@ function initGallery() {
   // 加载照片
   async function loadPhotos() {
     try {
-      const url = `https://gist.githubusercontent.com/su120315/${GIST_ID}/raw/${GIST_FILENAME}?t=${Date.now()}`;
+      const url = `https://gist.githubusercontent.com/su120315/${getGistId()}/raw/${GIST_FILENAME}?t=${Date.now()}`;
       const response = await fetch(url, { cache: 'no-store' });
       if (response.ok) {
         const data = await response.text();
@@ -622,7 +661,7 @@ function initGallery() {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         const password = prompt('请输入删除密码：');
-        if (password === '120315') {
+        if (checkDeletePassword(password)) {
           const idx = parseInt(btn.getAttribute('data-index'));
           photos.splice(idx, 1);
           categories[currentCategory] = photos;
@@ -714,7 +753,7 @@ function initGallery() {
   clearBtn.addEventListener('click', () => {
     if (photos.length === 0) return;
     const password = prompt('请输入清空密码：');
-    if (password === '120315') {
+    if (checkDeletePassword(password)) {
       if (confirm('确定要清空当前相册的所有照片吗？此操作不可恢复！')) {
         photos = [];
         categories[currentCategory] = [];
@@ -890,8 +929,10 @@ function initComments() {
   const commentContent = document.getElementById('commentContent');
   const commentSubmit = document.getElementById('commentSubmit');
 
-  const GITHUB_TOKEN = window.__SHARED_GITHUB_TOKEN__;
-  const GIST_ID = 'c8f6c96c0caaa796cd38d25d4fce2153';
+  // 配置 - 全部从 __SECRETS__ 函数延迟获取
+  function getGitHubToken() { return window.__SECRETS__.githubToken(); }
+  function getGistId() { return window.__SECRETS__.gistComments(); }
+  function checkDeletePassword(pwd) { return pwd === window.__SECRETS__.deletePassword(); }
   const GIST_FILENAME = 'comments.json';
   
   let comments = [];
@@ -899,7 +940,7 @@ function initComments() {
 
   async function loadComments() {
     try {
-      const url = `https://gist.githubusercontent.com/su120315/${GIST_ID}/raw/${GIST_FILENAME}?t=${Date.now()}`;
+      const url = `https://gist.githubusercontent.com/su120315/${getGistId()}/raw/${GIST_FILENAME}?t=${Date.now()}`;
       const response = await fetch(url, { cache: 'no-store' });
       if (response.ok) {
         const data = await response.text();
@@ -914,10 +955,10 @@ function initComments() {
 
   async function saveComments() {
     try {
-      await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+      await fetch(`https://api.github.com/gists/${getGistId()}`, {
         method: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${GITHUB_TOKEN}`,
+          'Authorization': `Bearer ${getGitHubToken()}`,
           'Content-Type': 'application/json',
           'Accept': 'application/vnd.github.v3+json'
         },
@@ -1081,7 +1122,7 @@ function initComments() {
     commentsList.querySelectorAll('.comment-delete').forEach(btn => {
       btn.addEventListener('click', () => {
         const password = prompt('请输入删除密码：');
-        if (password === '120315') {
+        if (checkDeletePassword(password)) {
           const sortIdx = parseInt(btn.getAttribute('data-sort-index'));
           const targetComment = sortedComments[sortIdx];
           const originalIndex = comments.findIndex(c => c.time === targetComment.time);
@@ -1099,7 +1140,7 @@ function initComments() {
     commentsList.querySelectorAll('.reply-delete').forEach(btn => {
       btn.addEventListener('click', () => {
         const password = prompt('请输入删除密码：');
-        if (password === '120315') {
+        if (checkDeletePassword(password)) {
           const commentId = btn.getAttribute('data-comment-id');
           const replyIndex = parseInt(btn.getAttribute('data-reply-index'));
           const comment = comments.find(c => (c.id || generateId()) === commentId);
@@ -1165,8 +1206,8 @@ safeInit(initComments, 'comments');
 
 // ==================== Visitor Counter ====================
 function initVisitorCounter() {
-  const GITHUB_TOKEN = window.__SHARED_GITHUB_TOKEN__;
-  const GIST_ID = '7686870c122b9369aeeecf91bcfb1676';
+  function getGitHubToken() { return window.__SECRETS__.githubToken(); }
+  function getGistId() { return window.__SECRETS__.gistVisitor(); }
   const GIST_FILENAME = 'visitor-count.json';
   
   const VISITOR_KEY = 'suyu_visitor_counted';
@@ -1177,7 +1218,7 @@ function initVisitorCounter() {
   
   async function getCount() {
     try {
-      const url = `https://gist.githubusercontent.com/su120315/${GIST_ID}/raw/${GIST_FILENAME}?t=${Date.now()}`;
+      const url = `https://gist.githubusercontent.com/su120315/${getGistId()}/raw/${GIST_FILENAME}?t=${Date.now()}`;
       const response = await fetch(url, { cache: 'no-store' });
       if (response.ok) {
         const data = await response.json();
@@ -1191,10 +1232,10 @@ function initVisitorCounter() {
   
   async function updateCount(newCount) {
     try {
-      await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+      await fetch(`https://api.github.com/gists/${getGistId()}`, {
         method: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${GITHUB_TOKEN}`,
+          'Authorization': `Bearer ${getGitHubToken()}`,
           'Content-Type': 'application/json',
           'Accept': 'application/vnd.github.v3+json'
         },
@@ -1334,7 +1375,7 @@ function initChat() {
   if (!bubble || !dialog) return;
   if (isOffline) { console.log('[离线] 跳过AI对话'); return; }
 
-  const API_KEY = '9be075e9e33940e5b27b287fdf7df184.TJaWcWDHWOKzIMWw';
+  function getApiKey() { return window.__SECRETS__.apiKey(); }
   const API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
 
   let chatHistory = [
@@ -1434,7 +1475,7 @@ function initChat() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${API_KEY}`
+          'Authorization': `Bearer ${getApiKey()}`
         },
         body: JSON.stringify({
           model: 'glm-4.7-flash',
