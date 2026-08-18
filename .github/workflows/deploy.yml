@@ -28,6 +28,14 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
+      - name: Clean non-site artifacts before upload
+        run: |
+          # 这些文件/目录不能上传到 GitHub Pages 产物
+          rm -rf .git .trae .trae-html-share-packages
+          find . -type f \( -name '*.zip' \) -delete
+          # 删除空目录 SUYU2/3/4
+          rmdir SUYU2 SUYU3 SUYU4 2>/dev/null || true
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
