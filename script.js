@@ -61,6 +61,39 @@ window.addEventListener('unhandledrejection', function(e) {
   return true;
 });
 
+// ==================== 注册 Service Worker + 预优化 ====================
+(function performanceBootstrap() {
+  // 1) 注册 sw.js（离线缓存）- 仅在 http(s) 协议 + 非 file:// 时启用
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    window.addEventListener('load', function registerSW() {
+      navigator.serviceWorker.register('./sw.js').then(function(reg) {
+        console.log('[SW] 已注册 scope=' + reg.scope);
+      }).catch(function(err) {
+        console.warn('[SW] 注册失败:', err);
+      });
+    }, { once: true });
+  }
+
+  // 2) 全站图片 lazy loading / async decoding（兜底，HTML 里没写 loading=lazy 的也生效）
+  if ('IntersectionObserver' in window && 'loading' in HTMLImageElement.prototype) {
+    document.querySelectorAll('img:not([loading])').forEach(function(img) {
+      img.loading = 'lazy';
+      if (!img.decoding) img.decoding = 'async';
+    });
+  }
+
+  // 3) 给用户偏好"减少动画"的环境统一降级动效
+  var mq = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
+  if (mq && mq.matches) {
+    document.documentElement.classList.add('reduce-motion');
+  }
+  if (mq && mq.addEventListener) {
+    mq.addEventListener('change', function(e) {
+      document.documentElement.classList.toggle('reduce-motion', e.matches);
+    });
+  }
+})();
+
 // ==================== 离线检测 ====================
 var isOffline = !navigator.onLine;
 
@@ -143,7 +176,7 @@ function updateProgressBar() {
 }
 
 if (progressFill) {
-  window.addEventListener('scroll', () => requestTick(updateProgressBar), { passive: true });
+  // 已合并到全局 unifiedScrollHandler 中
 }
 
 // ==================== Navbar Scroll Effect ====================
@@ -159,7 +192,7 @@ function updateNavbar() {
 }
 
 if (navbar) {
-  window.addEventListener('scroll', () => requestTick(updateNavbar), { passive: true });
+  // 已合并到全局 unifiedScrollHandler 中
 }
 
 // ==================== Typewriter Effect ====================
@@ -256,19 +289,17 @@ try {
 }
 
 // ==================== Parallax Effect for Orbs (仅桌面端启用) ====================
+var updateParallaxOrbs = null;
 try {
   const orbs = document.querySelectorAll('.orb');
-
-  if (!isMobile && window.matchMedia('(prefers-reduced-motion: no-preference)').matches) {
-    window.addEventListener('scroll', () => {
-      requestTick(() => {
-        const scrollY = window.scrollY;
-        orbs.forEach((orb, index) => {
-          const speed = (index + 1) * 0.05;
-          orb.style.transform = `translateY(${scrollY * speed}px)`;
-        });
+  if (!isMobile && window.matchMedia('(prefers-reduced-motion: no-preference)').matches && orbs.length) {
+    updateParallaxOrbs = function() {
+      const scrollY = window.scrollY;
+      orbs.forEach((orb, index) => {
+        const speed = (index + 1) * 0.05;
+        orb.style.transform = `translateY(${scrollY * speed}px)`;
       });
-    }, { passive: true });
+    };
   }
 } catch(e) {
   console.warn('Parallax effect error:', e);
@@ -366,6 +397,52 @@ try {
       closeNav();
     }
   });
+})();
+
+// ==================== 统一滚动处理：合并 4 个 scroll 监听器，减少 rAF 触发 ====================
+(function unifiedScrollHandler() {
+  var running = false;
+  function tick() {
+    // 先批量读，后批量写，避免 layout thrashing
+    var y = window.scrollY;
+    if (progressFill) {
+      var docH = (document.documentElement.scrollHeight || document.body.scrollHeight) - window.innerHeight;
+      var p = docH > 0 ? (y / docH) * 100 : 0;
+      progressFill.style.width = p + '%';
+    }
+    if (navbar) {
+      navbar.classList.toggle('scrolled', y > 50);
+    }
+    if (window.__toggleBackToTop) window.__toggleBackToTop();
+    if (typeof updateParallaxOrbs === 'function') updateParallaxOrbs();
+    running = false;
+  }
+  window.addEventListener('scroll', function onScroll() {
+    if (!running) {
+      running = true;
+      requestAnimationFrame(tick);
+    }
+  }, { passive: true });
+  // 首帧
+  requestAnimationFrame(tick);
+})();
+
+// ==================== 通用进场动画（IntersectionObserver）统一处理 .reveal ====================
+(function initRevealObserver() {
+  if (!('IntersectionObserver' in window)) {
+    // 降级：直接全部显示
+    document.querySelectorAll('.reveal').forEach(function(el) { el.classList.add('visible'); });
+    return;
+  }
+  var io = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        io.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+  document.querySelectorAll('.reveal:not(.visible)').forEach(function(el) { io.observe(el); });
 })();
 
 // ==================== Initialize on Load ====================
@@ -1545,6 +1622,8 @@ function copyQQ() {
       backToTopBtn.classList.remove('visible');
     }
   }
+  // 暴露给 unifiedScrollHandler 调用，避免多个 scroll 监听器
+  window.__toggleBackToTop = toggleBackToTop;
 
   backToTopBtn.addEventListener('click', () => {
     window.scrollTo({
@@ -1553,7 +1632,7 @@ function copyQQ() {
     });
   });
 
-  window.addEventListener('scroll', toggleBackToTop, { passive: true });
+  // 首次状态
   toggleBackToTop();
 })();
 

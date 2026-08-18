@@ -65,3 +65,12 @@ htmlcov/
 # ===== Internal =====
 /.work/
 SUYU5/
+
+# ===== Trae 本地产物（不进 Git / 不上传 Pages）=====
+.trae/
+.trae-html-share-packages/
+# 中文文件名的 zip（删除所有数据.zip 等）
+*所有数据*.zip
+SUYU2/
+SUYU3/
+SUYU4/

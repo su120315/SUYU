@@ -6456,3 +6456,101 @@ body.offline-mode .chat-bubble {
 body.offline-mode .footer-visitor {
   opacity: 0.5;
 }
+
+/* =====================================================
+ * 动效/性能优化补丁
+ * ===================================================== */
+
+/* 1) GPU 合成层提示：有 transform/animation 的元素提升到合成层，
+ *    避免重排 + 减少掉帧。translateZ(0) 兼容性比 will-change 更好。 */
+.navbar,
+.progress-bar,
+.progress-fill,
+.back-to-top,
+.floating-actions,
+.hero-avatar,
+.skill-bar-fill,
+.project-card,
+.hobby-card,
+.tool-card,
+.reveal,
+.comment-card,
+.modal-dialog,
+#lightboxImage,
+.orb,
+.typewriter {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* 真正持续动画的元素用 will-change，其它元素只在 hover 时不必 */
+.orb, .hero-avatar, .typewriter { will-change: transform; }
+
+/* 2) 把常见的 transition:all 精确到 opacity/transform/box-shadow/color，
+ *    避免浏览器监听所有属性变化，降低 CPU。 */
+.nav-content,
+.section,
+.project-card,
+.hobby-card,
+.tool-card,
+.contact-link,
+.social-link,
+.skill-category,
+.comment-card,
+.gallery-item,
+.reply-item,
+.modal-overlay,
+.modal-dialog,
+.lightbox-nav,
+.lightbox-close,
+.back-to-top,
+.chat-send,
+.modal-btn,
+.copy-btn,
+.theme-toggle {
+  transition-property: opacity, transform, box-shadow, background-color, border-color, color, -webkit-backdrop-filter, backdrop-filter;
+  transition-timing-function: ease;
+}
+
+/* 3) 「减少动态效果」偏好：尊重用户系统设置。
+ *    performanceBootstrap() 中会给 <html> 加 .reduce-motion。 */
+html.reduce-motion *,
+html.reduce-motion *::before,
+html.reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .parallax, .orb { transform: none !important; }
+}
+
+/* 4) 进场 .reveal 默认状态：IntersectionObserver 会加 .visible。
+ *    这样比滚动监听更顺滑，且不消耗滚动 CPU。 */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0ms, transform 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0ms;
+  will-change: opacity, transform;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+}
+
+/* 5) 滚动平滑（不强制，仅当用户没开 reduce-motion 时） */
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
