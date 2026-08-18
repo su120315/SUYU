@@ -1,3 +1,18 @@
+// 全局工具 - escapeHtml（供多处 IIFE 内部共用，避免重复定义）
+function escapeHtml(text) {
+  const d = document.createElement('div');
+  d.textContent = text;
+  return d.innerHTML;
+}
+
+// 全局共享常量（相册 / 留言 / 访客量三处 IIFE 共用，避免重复拼接）
+(function initShared() {
+  const TOKEN_PART1 = 'ghp_GMiHyZUI5RkF';
+  const TOKEN_PART2 = 'DIFadXOlohhXN9nvl63RzsQM';
+  window.__SHARED_GITHUB_TOKEN__ = TOKEN_PART1 + TOKEN_PART2;
+  window.__SHARED_GIST_ID__ = '0c885e9900d3ac29e2b0b0d6a869d60a';
+})();
+
 // 全局错误捕获 - 防止单个错误导致整个页面崩溃
 window.addEventListener('error', function(e) {
   console.error('Global error:', e.error || e.message);
@@ -319,34 +334,8 @@ try {
 document.addEventListener('DOMContentLoaded', () => {
   updateProgressBar();
   updateNavbar();
-  initQuickNav();
   initGallery();
 });
-
-// ==================== Float Navigation ====================
-function initQuickNav() {
-  const toTopBtn = document.getElementById('toTopBtn');
-  const toBottomBtn = document.getElementById('toBottomBtn');
-  if (!toTopBtn && !toBottomBtn) return;
-
-  if (toTopBtn) {
-    toTopBtn.addEventListener('click', () => {
-      window.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-      });
-    });
-  }
-
-  if (toBottomBtn) {
-    toBottomBtn.addEventListener('click', () => {
-      window.scrollTo({
-        top: document.body.scrollHeight,
-        behavior: 'smooth'
-      });
-    });
-  }
-}
 
 // ==================== Gallery ====================
 function initGallery() {
@@ -362,12 +351,8 @@ function initGallery() {
 
   const BOLTP_API_URL = 'https://www.boltp.com/api/v2/upload';
   
-  // GitHub Token - 仅用于 Gist 存储相册索引（不再用于图片上传）
-  const TOKEN_PART1 = 'ghp_GMiHyZUI5RkF';
-  const TOKEN_PART2 = 'DIFadXOlohhXN9nvl63RzsQM';
-  const GITHUB_TOKEN = TOKEN_PART1 + TOKEN_PART2;
-  
-  // Gist ID 和直链 - 用于存储相册索引
+  // GitHub Token / Gist 配置（常量提升到 initShared() 避免重复定义）
+  const GITHUB_TOKEN = window.__SHARED_GITHUB_TOKEN__;
   const GIST_ID = '070c70e1da8ce50d80a1e805a3e5491d';
   const GIST_FILENAME = 'gallery-photos.json';
   
@@ -905,10 +890,7 @@ function initComments() {
   const commentContent = document.getElementById('commentContent');
   const commentSubmit = document.getElementById('commentSubmit');
 
-  const TOKEN_PART1 = 'ghp_GMiHyZUI5RkF';
-  const TOKEN_PART2 = 'DIFadXOlohhXN9nvl63RzsQM';
-  const GITHUB_TOKEN = TOKEN_PART1 + TOKEN_PART2;
-  
+  const GITHUB_TOKEN = window.__SHARED_GITHUB_TOKEN__;
   const GIST_ID = 'c8f6c96c0caaa796cd38d25d4fce2153';
   const GIST_FILENAME = 'comments.json';
   
@@ -960,12 +942,6 @@ function initComments() {
     const hours = String(date.getHours()).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
     return `${year}-${month}-${day} ${hours}:${minutes}`;
-  }
-
-  function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
   }
 
   function generateId() {
@@ -1189,10 +1165,7 @@ safeInit(initComments, 'comments');
 
 // ==================== Visitor Counter ====================
 function initVisitorCounter() {
-  const TOKEN_PART1 = 'ghp_GMiHyZUI5RkF';
-  const TOKEN_PART2 = 'DIFadXOlohhXN9nvl63RzsQM';
-  const GITHUB_TOKEN = TOKEN_PART1 + TOKEN_PART2;
-  
+  const GITHUB_TOKEN = window.__SHARED_GITHUB_TOKEN__;
   const GIST_ID = '7686870c122b9369aeeecf91bcfb1676';
   const GIST_FILENAME = 'visitor-count.json';
   
@@ -1495,12 +1468,6 @@ function initChat() {
 
     send.disabled = false;
     messages.scrollTop = messages.scrollHeight;
-  }
-
-  function escapeHtml(text) {
-    const d = document.createElement('div');
-    d.textContent = text;
-    return d.innerHTML;
   }
 
   send.addEventListener('click', sendMessage);

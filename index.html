@@ -475,7 +475,7 @@
           欢迎来和我一起学习一起玩～
         </p>
         <div class="contact-links">
-          <a href="mailto:jx120315@qq.com" class="contact-email" onclick="this.href='mailto:' + ['jx', '120315', '@qq.com'].join('')">
+          <a href="#" class="contact-email" data-email-parts="jx,120315,@qq.com" onclick="this.href='mailto:'+this.dataset.emailParts.split(',').join(''); return true;">
             <i data-lucide="mail"></i>
             <span>点击查看邮箱</span>
           </a>

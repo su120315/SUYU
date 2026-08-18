@@ -1,3 +1,25 @@
+async function safeCopyText(text) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch (e) { /* fallthrough */ }
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  } catch (e) {
+    return false;
+  }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   if (typeof lucide !== 'undefined') {
     lucide.createIcons();
@@ -478,11 +500,10 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
 
-    container.querySelector('#b64Copy').addEventListener('click', function() {
+    container.querySelector('#b64Copy').addEventListener('click', async function() {
       if (!output.value) return;
-      output.select();
-      document.execCommand('copy');
-      showStatus('已复制到剪贴板 📋', 'success');
+      const ok = await safeCopyText(output.value);
+      showStatus(ok ? '已复制到剪贴板 📋' : '复制失败 ❌', ok ? 'success' : 'error');
     });
   }
 
@@ -531,11 +552,10 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
 
-    container.querySelector('#jsonCopy').addEventListener('click', function() {
+    container.querySelector('#jsonCopy').addEventListener('click', async function() {
       if (!output.value) return;
-      output.select();
-      document.execCommand('copy');
-      showStatus('已复制到剪贴板 📋', 'success');
+      const ok = await safeCopyText(output.value);
+      showStatus(ok ? '已复制到剪贴板 📋' : '复制失败 ❌', ok ? 'success' : 'error');
     });
 
     container.querySelector('#jsonClear').addEventListener('click', function() {
@@ -742,11 +762,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     container.querySelector('#pwGen').addEventListener('click', generate);
-    container.querySelector('#pwCopy').addEventListener('click', function() {
+    container.querySelector('#pwCopy').addEventListener('click', async function() {
       if (!output.value) return;
-      output.select();
-      document.execCommand('copy');
-      this.textContent = '已复制';
+      const ok = await safeCopyText(output.value);
+      this.textContent = ok ? '已复制' : '复制失败';
       setTimeout(() => this.textContent = '复制', 1500);
     });
 
@@ -1081,11 +1100,12 @@ document.addEventListener('DOMContentLoaded', function() {
     function getCode(code, mode) {
       if (code.length === 8) {
         let result = null;
-        while (true) {
+        let tries = 0;
+        while (tries++ < 100) {
           result = v2(code, mode);
-          if (result != null && result != code) break;
+          if (result != null && result !== code) break;
         }
-        return result;
+        return result || code;
       } else {
         return v1(code, mode);
       }
