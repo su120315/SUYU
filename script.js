@@ -3,7 +3,9 @@
 (function initSecrets() {
   function decode(reversedB64) {
     try {
-      const b64 = reversedB64.split('').reverse().join('');
+      let b64 = reversedB64.split('').reverse().join('');
+      // 密文可能漏了 base64 的尾部填充，这里补齐；否则 atob 会抛错，值会退化成空
+      while (b64.length % 4) b64 += '=';
       return atob(b64);
     } catch (e) { return ''; }
   }
