@@ -112,6 +112,16 @@ applyAnimLevel(currentAnimLevel);
     renderIcons(0);
   }
 
+  // 只在每台设备「首次打开」时展示门页；之后直接进入主页并立刻加载主程序
+  var seen = false;
+  try { seen = localStorage.getItem('suyu_intro_seen') === '1'; } catch (e) {}
+  if (seen) {
+    if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+    loadApp();
+    return;
+  }
+  try { localStorage.setItem('suyu_intro_seen', '1'); } catch (e) {}
+
   document.body.classList.add('intro-lock');
 
   overlay.querySelectorAll('[data-intro-go]').forEach(function (el) {
