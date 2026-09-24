@@ -47,12 +47,39 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- 开场动画 + 三入口（每次会话首次访问出现一次） -->
+  <!-- 主题：在首屏渲染前应用，避免开场动画与主站主题不一致 -->
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem('theme');
+        var dark = saved ? saved === 'dark' : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (dark) document.body.classList.add('dark-mode');
+      } catch (e) {}
+    })();
+  </script>
+
+  <!-- 开场动画 + 三入口（打开首页即播放） -->
   <div class="intro-overlay" id="introOverlay">
     <div class="intro-stage" id="introStage">
-      <video class="intro-video" id="introVideo" muted playsinline preload="auto" aria-hidden="true">
-        <source src="opening.mp4" type="video/mp4">
-      </video>
+      <svg class="intro-fish" viewBox="0 0 200 120" aria-hidden="true">
+        <defs>
+          <linearGradient id="introFishGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#22d3ee"/>
+            <stop offset="50%" stop-color="#6366f1"/>
+            <stop offset="100%" stop-color="#f472b6"/>
+          </linearGradient>
+        </defs>
+        <g fill="none" stroke="url(#introFishGrad)" stroke-width="3"
+           stroke-linecap="round" stroke-linejoin="round">
+          <path class="intro-fish-body" d="M150 60C138 34 112 22 86 22C60 22 40 40 34 60C40 80 60 98 86 98C112 98 138 86 150 60Z"/>
+          <path class="intro-fish-tail" d="M150 60L182 38L176 60L182 82Z"/>
+          <path class="intro-fish-fin" d="M96 84C104 93 116 95 126 90"/>
+          <circle class="intro-fish-eye" cx="53" cy="55" r="3.5"/>
+        </g>
+      </svg>
+      <p class="intro-brand"><span class="gradient-text" data-text="蘇魚">蘇魚</span></p>
+      <p class="intro-sub">汇文中学 · 初二 · 热爱生活</p>
+      <div class="intro-progress"><span></span></div>
     </div>
 
     <div class="intro-entry" id="introEntry">
@@ -84,8 +111,6 @@
         </div>
       </div>
     </div>
-
-    <button class="intro-skip" id="introSkip" type="button">跳过 ›</button>
   </div>
 
   <!-- 离线模式提示条 -->
@@ -775,7 +800,7 @@
         </p>
         <div class="footer-anim-level">
           <span>动效</span>
-          <div class="anim-level anim-level--page" data-anim-level-group>
+          <div class="anim-level" data-anim-level-group>
             <button type="button" class="anim-level-btn" data-anim-level="full">全部</button>
             <button type="button" class="anim-level-btn" data-anim-level="lite">部分</button>
             <button type="button" class="anim-level-btn" data-anim-level="off">不加载</button>

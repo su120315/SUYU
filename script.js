@@ -1695,12 +1695,33 @@ function copyQQ() {
 
 // ==================== 动效档位控件 ====================
 (function initAnimLevelControls() {
+  var LEVEL_TEXT = {
+    full: '动效已切换：全部动画',
+    lite: '动效已切换：只保留必要过渡',
+    off: '动效已切换：已关闭全部动画'
+  };
+
   function syncUI(level) {
     document.querySelectorAll('[data-anim-level-group]').forEach(function (group) {
       group.querySelectorAll('[data-anim-level]').forEach(function (btn) {
         btn.classList.toggle('is-active', btn.getAttribute('data-anim-level') === level);
       });
     });
+  }
+
+  // 切换后给个提示，让「选了有反应」看得见
+  function toast(text) {
+    var el = document.getElementById('animLevelToast');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'animLevelToast';
+      el.className = 'anim-toast';
+      document.body.appendChild(el);
+    }
+    el.textContent = text;
+    el.classList.add('show');
+    clearTimeout(el._timer);
+    el._timer = setTimeout(function () { el.classList.remove('show'); }, 1800);
   }
 
   syncUI(currentAnimLevel);
@@ -1713,6 +1734,7 @@ function copyQQ() {
         currentAnimLevel = picked;
         applyAnimLevel(picked);
         syncUI(picked);
+        toast(LEVEL_TEXT[picked] || '动效已切换');
       });
     });
   });
@@ -1723,38 +1745,28 @@ function copyQQ() {
   const overlay = document.getElementById('introOverlay');
   if (!overlay) return;
 
-  const video = document.getElementById('introVideo');
-  const skipBtn = document.getElementById('introSkip');
   let finished = false;
 
   function dismiss(fade) {
     if (finished) return;
     finished = true;
-
-    try { sessionStorage.setItem('suyu_intro_played', '1'); } catch (e) {}
-    if (video) { try { video.pause(); } catch (e) {} }
     document.body.classList.remove('intro-lock');
 
     if (fade) {
       overlay.classList.add('is-hidden');
-      setTimeout(() => { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }, 900);
+      setTimeout(() => { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }, 700);
     } else if (overlay.parentNode) {
       overlay.parentNode.removeChild(overlay);
     }
   }
 
-  // 视频一边上移一边缩小，同时三个入口卡片入场
+  // 图形一边上移一边缩小，同时三个入口卡片入场
   function showEntry() {
     overlay.classList.add('is-entry');
     if (typeof lucide !== 'undefined') {
       try { lucide.createIcons(); } catch (e) {}
     }
   }
-
-  // 本会话已经出现过 → 直接收起
-  let played = false;
-  try { played = sessionStorage.getItem('suyu_intro_played') === '1'; } catch (e) {}
-  if (played) { dismiss(false); return; }
 
   document.body.classList.add('intro-lock');
 
@@ -1764,32 +1776,28 @@ function copyQQ() {
       if (el.getAttribute('data-intro-go') === 'home') {
         e.preventDefault();
         dismiss(true);
-      } else {
-        try { sessionStorage.setItem('suyu_intro_played', '1'); } catch (e2) {}
       }
     });
   });
 
-  // 跳过视频，直接看入口卡片
-  if (skipBtn) skipBtn.addEventListener('click', showEntry);
-
-  // 「部分 / 不加载动画」档位：不播视频（整段视频最重），直接进入入口
-  if (currentAnimLevel !== 'full' || !video) {
-    if (video && video.parentNode) video.parentNode.removeChild(video);
+  // 「不加载动画」：不做开场动画，直接显示入口
+  if (currentAnimLevel === 'off') {
     showEntry();
     return;
   }
 
-  video.addEventListener('ended', showEntry);
-  video.addEventListener('error', showEntry);
-
-  const playing = video.play();
-  if (playing && typeof playing.catch === 'function') {
-    playing.catch(showEntry);   // 自动播放被浏览器拦截时直接进入入口
+  // 开场动画跑完（进度条走完）→ 进入入口
+  let advanced = false;
+  function advance() {
+    if (advanced) return;
+    advanced = true;
+    showEntry();
   }
 
-  // 兜底：最多 8 秒一定进入入口，避免异常时卡住页面
-  setTimeout(showEntry, 8000);
+  const bar = overlay.querySelector('.intro-progress > span');
+  if (bar) bar.addEventListener('animationend', advance, { once: true });
+  // 兜底：动画被禁用或没触发时也能进入入口
+  setTimeout(advance, currentAnimLevel === 'lite' ? 1200 : 2800);
 })();
 
 

@@ -6556,6 +6556,7 @@ html.reduce-motion *::after {
 }
 
 /* ==================== 开场动画 + 三入口 (Opening Intro / Entry) ==================== */
+/* 全部使用站点主题变量，深浅色模式都与主站一致 */
 .intro-overlay {
   position: fixed;
   inset: 0;
@@ -6564,10 +6565,11 @@ html.reduce-motion *::after {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: #07070d;
+  background: var(--bg-primary);
   overflow: hidden;
   opacity: 1;
-  transition: opacity 0.7s ease;
+  transition: opacity 0.6s ease;
+  --intro-dur: 1.8s;   /* 开场动画时长，档位可覆盖 */
 }
 .intro-overlay.is-hidden {
   opacity: 0;
@@ -6575,23 +6577,84 @@ html.reduce-motion *::after {
   pointer-events: none;
 }
 
-/* 视频舞台：满屏 → 一边上移一边缩小 */
+/* 开场图形：满屏居中 → 一边上移一边缩小 */
 .intro-stage {
   position: absolute;
   inset: 0;
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
   transform-origin: center center;
-  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1), border-radius 0.9s ease;
-}
-.intro-video {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .intro-overlay.is-entry .intro-stage {
-  transform: translateY(-38vh) scale(0.34);
-  border-radius: 18px;
+  transform: translateY(-36vh) scale(0.34);
+}
+
+/* 霓虹小鱼：描边逐段画出 */
+.intro-fish {
+  width: 210px;
+  height: 126px;
+  overflow: visible;
+  filter: drop-shadow(0 0 12px rgba(99, 102, 241, 0.45));
+}
+.intro-fish path,
+.intro-fish circle {
+  stroke-dasharray: 520;
+  stroke-dashoffset: 520;
+  animation: introDraw var(--intro-dur) cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+.intro-fish-tail { animation-delay: calc(var(--intro-dur) * 0.45); }
+.intro-fish-fin  { animation-delay: calc(var(--intro-dur) * 0.58); }
+.intro-fish-eye  { animation-delay: calc(var(--intro-dur) * 0.72); }
+
+.intro-brand {
+  font-family: var(--font-heading);
+  font-size: 2.1rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  margin: 0;
+  opacity: 0;
+  animation: introRise 0.6s ease forwards;
+  animation-delay: calc(var(--intro-dur) * 0.3);
+}
+.intro-sub {
+  margin: 0;
+  font-size: 0.85rem;
+  letter-spacing: 0.16em;
+  color: var(--text-muted);
+  opacity: 0;
+  animation: introRise 0.6s ease forwards;
+  animation-delay: calc(var(--intro-dur) * 0.45);
+}
+.intro-progress {
+  width: 132px;
+  height: 3px;
+  margin-top: 6px;
+  border-radius: 3px;
+  background: var(--bg-tertiary);
+  overflow: hidden;
+}
+.intro-progress > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--gradient);
+  animation: introProgress var(--intro-dur) ease-out forwards;
+}
+
+@keyframes introDraw {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes introRise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes introProgress {
+  to { width: 100%; }
 }
 
 /* 三个入口卡片 */
@@ -6603,7 +6666,7 @@ html.reduce-motion *::after {
   opacity: 0;
   transform: translateY(22px);
   pointer-events: none;
-  transition: opacity 0.6s ease 0.35s, transform 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.35s;
+  transition: opacity 0.55s ease 0.3s, transform 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.3s;
 }
 .intro-overlay.is-entry .intro-entry {
   opacity: 1;
@@ -6611,8 +6674,8 @@ html.reduce-motion *::after {
   pointer-events: auto;
 }
 .intro-entry-title {
-  margin-bottom: 20px;
-  color: rgba(255, 255, 255, 0.6);
+  margin: 0 0 20px;
+  color: var(--text-muted);
   font-size: 0.95rem;
   letter-spacing: 0.1em;
 }
@@ -6628,53 +6691,24 @@ html.reduce-motion *::after {
   gap: 7px;
   padding: 22px 14px;
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.04);
-  color: #e8e8f0;
+  border: 1px solid var(--bg-tertiary);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
   text-decoration: none;
-  transition: transform 0.25s, border-color 0.25s, background 0.25s, box-shadow 0.25s;
+  transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
 }
 .intro-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(99, 102, 241, 0.6);
-  background: rgba(99, 102, 241, 0.14);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+  border-color: var(--accent-primary);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.14);
 }
-.intro-card i { width: 26px; height: 26px; color: #6366f1; }
-.intro-card:nth-child(2) i { color: #22d3ee; }
-.intro-card:nth-child(3) i { color: #f472b6; }
+.intro-card i { width: 26px; height: 26px; color: var(--accent-primary); }
+.intro-card:nth-child(2) i { color: var(--accent-secondary); }
+.intro-card:nth-child(3) i { color: var(--accent-tertiary); }
 .intro-card-name { font-size: 1rem; font-weight: 600; }
-.intro-card-desc { font-size: 0.74rem; color: rgba(255, 255, 255, 0.48); }
+.intro-card-desc { font-size: 0.74rem; color: var(--text-muted); }
 
-/* 跳过按钮 */
-.intro-skip {
-  position: absolute;
-  right: 22px;
-  bottom: 22px;
-  z-index: 3;
-  padding: 8px 18px;
-  border-radius: 100px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.7);
-  font-family: inherit;
-  font-size: 0.8rem;
-  letter-spacing: 0.06em;
-  cursor: pointer;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  transition: color 0.25s, border-color 0.25s, background 0.25s, opacity 0.3s;
-}
-.intro-skip:hover {
-  color: #fff;
-  border-color: rgba(99, 102, 241, 0.65);
-  background: rgba(99, 102, 241, 0.18);
-}
-.intro-overlay.is-entry .intro-skip {
-  opacity: 0;
-  pointer-events: none;
-}
-/* 播放期间锁定滚动，避免背景页面跟着滚动 */
+/* 播放开场期间锁定滚动，避免背景页面跟着滚动 */
 body.intro-lock {
   overflow: hidden;
 }
@@ -6685,30 +6719,22 @@ body.intro-lock {
   gap: 2px;
   padding: 3px;
   border-radius: 100px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--bg-tertiary);
+  background: var(--bg-secondary);
 }
 .anim-level-btn {
   padding: 6px 14px;
   border: none;
   border-radius: 100px;
   background: transparent;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   font-family: inherit;
   font-size: 0.78rem;
   cursor: pointer;
   transition: color 0.2s, background 0.2s;
 }
-.anim-level-btn:hover { color: #fff; }
-.anim-level-btn.is-active { background: rgba(99, 102, 241, 0.85); color: #fff; }
-/* 页脚里的档位控件跟随站点主题 */
-.anim-level--page {
-  border-color: var(--bg-tertiary);
-  background: var(--bg-secondary);
-}
-.anim-level--page .anim-level-btn { color: var(--text-secondary); }
-.anim-level--page .anim-level-btn:hover { color: var(--accent-primary); }
-.anim-level--page .anim-level-btn.is-active { background: var(--accent-primary); color: #fff; }
+.anim-level-btn:hover { color: var(--accent-primary); }
+.anim-level-btn.is-active { background: var(--accent-primary); color: #fff; }
 
 .intro-level {
   display: flex;
@@ -6720,7 +6746,7 @@ body.intro-lock {
 .intro-level > span {
   font-size: 0.76rem;
   letter-spacing: 0.08em;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--text-muted);
 }
 .footer-anim-level {
   display: flex;
@@ -6735,12 +6761,36 @@ body.intro-lock {
   color: var(--text-muted);
 }
 
+/* 切换档位后的提示，让「选了有反应」看得见 */
+.anim-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 32px;
+  z-index: 10060;
+  padding: 10px 20px;
+  border-radius: 100px;
+  border: 1px solid var(--bg-tertiary);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
+  opacity: 0;
+  transform: translate(-50%, 14px);
+  pointer-events: none;
+  transition: opacity 0.3s, transform 0.3s;
+}
+.anim-toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
 /* lite：只保留必要过渡；循环装饰动画只跑一遍就停 */
 html.anim-lite *,
 html.anim-lite *::before,
 html.anim-lite *::after {
   animation-iteration-count: 1 !important;
 }
+html.anim-lite .intro-overlay { --intro-dur: 0.6s; }
 html.anim-lite .cursor-glow,
 html.anim-lite .confetti {
   display: none !important;
@@ -6765,15 +6815,11 @@ html.anim-off .confetti {
   .intro-overlay, .intro-stage, .intro-entry { transition: none; }
 }
 @media (max-width: 600px) {
-  .intro-skip {
-    right: 14px;
-    bottom: 14px;
-    padding: 7px 15px;
-    font-size: 0.74rem;
-  }
   .intro-overlay.is-entry .intro-stage {
     transform: translateY(-40vh) scale(0.3);
   }
+  .intro-fish { width: 168px; height: 101px; }
+  .intro-brand { font-size: 1.7rem; }
   .intro-entry-title {
     margin-bottom: 14px;
     font-size: 0.88rem;
