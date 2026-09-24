@@ -97,24 +97,13 @@ window.addEventListener('unhandledrejection', function(e) {
 // ==================== 离线检测 ====================
 var isOffline = !navigator.onLine;
 
-// ==================== 动效档位（页面不知道设备性能，交给用户选） ====================
-// full = 全部动画 / lite = 只保留必要过渡 / off = 全部关闭
-function getAnimLevel() {
-  try {
-    var saved = localStorage.getItem('suyu_anim_level');
-    if (saved === 'full' || saved === 'lite' || saved === 'off') return saved;
-  } catch (e) {}
-  return (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) ? 'off' : 'full';
+// 动效档位（currentAnimLevel / getAnimLevel / applyAnimLevel）由 intro.js 定义，
+// script.js 在用户选择入口后才被注入，这里直接复用这些全局值。
+if (typeof currentAnimLevel === 'undefined') {
+  window.currentAnimLevel = 'full';
+  window.getAnimLevel = function () { return 'full'; };
+  window.applyAnimLevel = function () {};
 }
-
-function applyAnimLevel(level) {
-  var root = document.documentElement;
-  root.classList.remove('anim-lite', 'anim-off');
-  if (level === 'lite' || level === 'off') root.classList.add('anim-' + level);
-}
-
-var currentAnimLevel = getAnimLevel();
-applyAnimLevel(currentAnimLevel);
 
 function updateOfflineStatus() {
   isOffline = !navigator.onLine;
@@ -469,11 +458,12 @@ try {
 })();
 
 // ==================== Initialize on Load ====================
-document.addEventListener('DOMContentLoaded', () => {
+// 本文件是用户选择入口后才注入的，DOMContentLoaded 可能早已触发，需要立即初始化
+(function runInitializers() {
   updateProgressBar();
   updateNavbar();
   initGallery();
-});
+})();
 
 // ==================== Gallery ====================
 function initGallery() {
@@ -1691,113 +1681,6 @@ function copyQQ() {
       img.removeAttribute('data-src');
     });
   }
-})();
-
-// ==================== 动效档位控件 ====================
-(function initAnimLevelControls() {
-  var LEVEL_TEXT = {
-    full: '动效已切换：全部动画',
-    lite: '动效已切换：只保留必要过渡',
-    off: '动效已切换：已关闭全部动画'
-  };
-
-  function syncUI(level) {
-    document.querySelectorAll('[data-anim-level-group]').forEach(function (group) {
-      group.querySelectorAll('[data-anim-level]').forEach(function (btn) {
-        btn.classList.toggle('is-active', btn.getAttribute('data-anim-level') === level);
-      });
-    });
-  }
-
-  // 切换后给个提示，让「选了有反应」看得见
-  function toast(text) {
-    var el = document.getElementById('animLevelToast');
-    if (!el) {
-      el = document.createElement('div');
-      el.id = 'animLevelToast';
-      el.className = 'anim-toast';
-      document.body.appendChild(el);
-    }
-    el.textContent = text;
-    el.classList.add('show');
-    clearTimeout(el._timer);
-    el._timer = setTimeout(function () { el.classList.remove('show'); }, 1800);
-  }
-
-  syncUI(currentAnimLevel);
-
-  document.querySelectorAll('[data-anim-level-group]').forEach(function (group) {
-    group.querySelectorAll('[data-anim-level]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var picked = btn.getAttribute('data-anim-level');
-        try { localStorage.setItem('suyu_anim_level', picked); } catch (e) {}
-        currentAnimLevel = picked;
-        applyAnimLevel(picked);
-        syncUI(picked);
-        toast(LEVEL_TEXT[picked] || '动效已切换');
-      });
-    });
-  });
-})();
-
-// ==================== 开场动画 + 三入口 ====================
-(function initOpeningIntro() {
-  const overlay = document.getElementById('introOverlay');
-  if (!overlay) return;
-
-  let finished = false;
-
-  function dismiss(fade) {
-    if (finished) return;
-    finished = true;
-    document.body.classList.remove('intro-lock');
-
-    if (fade) {
-      overlay.classList.add('is-hidden');
-      setTimeout(() => { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }, 700);
-    } else if (overlay.parentNode) {
-      overlay.parentNode.removeChild(overlay);
-    }
-  }
-
-  // 图形一边上移一边缩小，同时三个入口卡片入场
-  function showEntry() {
-    overlay.classList.add('is-entry');
-    if (typeof lucide !== 'undefined') {
-      try { lucide.createIcons(); } catch (e) {}
-    }
-  }
-
-  document.body.classList.add('intro-lock');
-
-  // 入口卡片：主页直接揭示背后已加载的首页，其余正常跳转
-  overlay.querySelectorAll('[data-intro-go]').forEach(el => {
-    el.addEventListener('click', (e) => {
-      if (el.getAttribute('data-intro-go') === 'home') {
-        e.preventDefault();
-        dismiss(true);
-      }
-    });
-  });
-
-  // 「不加载动画」：不做开场动画，直接显示入口
-  if (currentAnimLevel === 'off') {
-    showEntry();
-    return;
-  }
-
-  // 开场动画跑完（进度条走完）→ 进入入口
-  let advanced = false;
-  function advance() {
-    if (advanced) return;
-    advanced = true;
-    showEntry();
-  }
-
-  const bar = overlay.querySelector('.intro-progress > span');
-  if (bar) bar.addEventListener('animationend', advance, { once: true });
-  // 兜底：动画被禁用或没触发时也能进入入口
-  setTimeout(advance, currentAnimLevel === 'lite' ? 1200 : 2800);
 })();
 
 

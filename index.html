@@ -71,17 +71,14 @@
         <a class="intro-card" href="index.html" data-intro-go="home">
           <i data-lucide="home"></i>
           <span class="intro-card-name">进入主页</span>
-          <span class="intro-card-desc">介绍 · 相册 · 留言</span>
         </a>
         <a class="intro-card" href="https://su120315.github.io/SUYU3/" data-intro-go="code">
           <i data-lucide="code"></i>
           <span class="intro-card-name">编程区</span>
-          <span class="intro-card-desc">代码与小项目</span>
         </a>
         <a class="intro-card" href="tools.html" data-intro-go="tools">
           <i data-lucide="wrench"></i>
           <span class="intro-card-name">工具区</span>
-          <span class="intro-card-desc">计算器 / 二维码</span>
         </a>
       </div>
 
@@ -828,6 +825,7 @@
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <!-- 首屏只加载门页脚本；主程序 script.js 在用户选择入口后再注入 -->
+  <script src="intro.js"></script>
 </body>
 </html>

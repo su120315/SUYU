@@ -6568,13 +6568,14 @@ html.reduce-motion *::after {
   background: var(--bg-primary);
   overflow: hidden;
   opacity: 1;
-  transition: opacity 0.6s ease;
+  transition: opacity 0.6s ease, transform 0.6s ease;
   --intro-dur: 1.8s;   /* 开场动画时长，档位可覆盖 */
 }
 .intro-overlay.is-hidden {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
+  transform: scale(1.04);
 }
 
 /* 开场文字：满屏居中 → 一边上移一边缩小 */
@@ -6590,13 +6591,13 @@ html.reduce-motion *::after {
   transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .intro-overlay.is-entry .intro-stage {
-  transform: translateY(-36vh) scale(0.34);
+  transform: translateY(-33vh) scale(0.62);
 }
 
 .intro-title {
   margin: 0;
   font-family: var(--font-heading);
-  font-size: clamp(1.5rem, 4.2vw, 2.2rem);
+  font-size: clamp(1.8rem, 5vw, 2.6rem);
   font-weight: 700;
   letter-spacing: 0.04em;
   color: var(--text-primary);
@@ -6677,7 +6678,12 @@ html.reduce-motion *::after {
 .intro-card:nth-child(2) i { color: var(--accent-secondary); }
 .intro-card:nth-child(3) i { color: var(--accent-tertiary); }
 .intro-card-name { font-size: 1rem; font-weight: 600; }
-.intro-card-desc { font-size: 0.74rem; color: var(--text-muted); }
+/* 点选卡片时的反馈 */
+.intro-card.is-chosen {
+  transform: scale(0.96);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
+}
 
 /* 播放开场期间锁定滚动，避免背景页面跟着滚动 */
 body.intro-lock {
@@ -6686,15 +6692,31 @@ body.intro-lock {
 
 /* ==================== 动效档位 (Animation Level) ==================== */
 .anim-level {
-  display: inline-flex;
-  gap: 2px;
+  position: relative;
+  display: inline-grid;
+  grid-template-columns: repeat(3, 1fr);
   padding: 3px;
   border-radius: 100px;
   border: 1px solid var(--bg-tertiary);
   background: var(--bg-secondary);
 }
+/* 选中滑块：切换档位时有滑动动画 */
+.anim-level::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc((100% - 6px) / 3);
+  border-radius: 100px;
+  background: var(--accent-primary);
+  transform: translateX(calc(var(--i, 0) * 100%));
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
 .anim-level-btn {
-  padding: 6px 14px;
+  position: relative;
+  z-index: 1;
+  padding: 6px 16px;
   border: none;
   border-radius: 100px;
   background: transparent;
@@ -6702,10 +6724,10 @@ body.intro-lock {
   font-family: inherit;
   font-size: 0.78rem;
   cursor: pointer;
-  transition: color 0.2s, background 0.2s;
+  transition: color 0.28s ease;
 }
 .anim-level-btn:hover { color: var(--accent-primary); }
-.anim-level-btn.is-active { background: var(--accent-primary); color: #fff; }
+.anim-level-btn.is-active { color: #fff; }
 
 .intro-level {
   display: flex;
@@ -6787,10 +6809,10 @@ html.anim-off .confetti {
 }
 @media (max-width: 600px) {
   .intro-overlay.is-entry .intro-stage {
-    transform: translateY(-40vh) scale(0.3);
+    transform: translateY(-36vh) scale(0.5);
   }
   .intro-title {
-    font-size: 1.35rem;
+    font-size: 1.5rem;
     padding: 0 20px;
     text-align: center;
   }
@@ -6804,11 +6826,9 @@ html.anim-off .confetti {
   }
   .intro-card {
     flex-direction: row;
-    justify-content: flex-start;
+    justify-content: center;
     gap: 12px;
-    padding: 14px 16px;
-    text-align: left;
+    padding: 16px;
   }
-  .intro-card-desc { margin-left: auto; }
   .intro-level { margin-top: 18px; }
 }
