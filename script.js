@@ -1666,4 +1666,54 @@ function copyQQ() {
   }
 })();
 
+// ==================== 开场动画 (Opening Intro) ====================
+(function initOpeningIntro() {
+  const overlay = document.getElementById('introOverlay');
+  if (!overlay) return;
+
+  const video = document.getElementById('introVideo');
+  const skipBtn = document.getElementById('introSkip');
+  let finished = false;
+
+  function dismiss(fade) {
+    if (finished) return;
+    finished = true;
+
+    try { sessionStorage.setItem('suyu_intro_played', '1'); } catch (e) {}
+    if (video) { try { video.pause(); } catch (e) {} }
+    document.body.classList.remove('intro-lock');
+
+    if (fade) {
+      overlay.classList.add('is-hidden');
+      setTimeout(() => { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }, 900);
+    } else if (overlay.parentNode) {
+      overlay.parentNode.removeChild(overlay);
+    }
+  }
+
+  // 直接跳过的情况：用户偏好减少动画 / 本会话已播放过 / 离线
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let played = false;
+  try { played = sessionStorage.getItem('suyu_intro_played') === '1'; } catch (e) {}
+
+  if (reduceMotion || played || isOffline) { dismiss(false); return; }
+
+  document.body.classList.add('intro-lock');
+  if (skipBtn) skipBtn.addEventListener('click', () => dismiss(true));
+  overlay.addEventListener('click', () => dismiss(true));
+
+  if (!video) { dismiss(true); return; }
+
+  video.addEventListener('ended', () => dismiss(true));
+  video.addEventListener('error', () => dismiss(true));
+
+  const playing = video.play();
+  if (playing && typeof playing.catch === 'function') {
+    playing.catch(() => dismiss(true));   // 自动播放被浏览器拦截时直接收起
+  }
+
+  // 兜底：最多 9 秒一定收起，避免异常时卡住页面
+  setTimeout(() => dismiss(true), 9000);
+})();
+
 

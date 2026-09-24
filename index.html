@@ -34,6 +34,14 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- 开场动画（每次会话首次访问播放一次，点击可跳过） -->
+  <div class="intro-overlay" id="introOverlay">
+    <video class="intro-video" id="introVideo" muted playsinline preload="auto" aria-hidden="true">
+      <source src="opening.mp4" type="video/mp4">
+    </video>
+    <button class="intro-skip" id="introSkip" type="button">跳过 ›</button>
+  </div>
+
   <!-- 离线模式提示条 -->
   <div class="offline-banner" style="display:none;">⚠️ 当前处于离线模式，部分功能不可用</div>
 
