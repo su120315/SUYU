@@ -14,6 +14,19 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="referrer" content="no-referrer">
 
+  <!-- 动效档位：首屏渲染前应用，避免闪烁（full / lite / off） -->
+  <script>
+    (function () {
+      try {
+        var lvl = localStorage.getItem('suyu_anim_level');
+        if (lvl !== 'full' && lvl !== 'lite' && lvl !== 'off') {
+          lvl = (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) ? 'off' : 'full';
+        }
+        if (lvl !== 'full') document.documentElement.classList.add('anim-' + lvl);
+      } catch (e) {}
+    })();
+  </script>
+
   <!-- Open Graph / 分享标签 -->
   <meta property="og:type" content="website">
   <meta property="og:title" content="蘇魚 | 个人主页">
@@ -34,11 +47,44 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- 开场动画（每次会话首次访问播放一次，点击可跳过） -->
+  <!-- 开场动画 + 三入口（每次会话首次访问出现一次） -->
   <div class="intro-overlay" id="introOverlay">
-    <video class="intro-video" id="introVideo" muted playsinline preload="auto" aria-hidden="true">
-      <source src="opening.mp4" type="video/mp4">
-    </video>
+    <div class="intro-stage" id="introStage">
+      <video class="intro-video" id="introVideo" muted playsinline preload="auto" aria-hidden="true">
+        <source src="opening.mp4" type="video/mp4">
+      </video>
+    </div>
+
+    <div class="intro-entry" id="introEntry">
+      <p class="intro-entry-title">去哪儿看看？</p>
+      <div class="intro-cards">
+        <a class="intro-card" href="index.html" data-intro-go="home">
+          <i data-lucide="home"></i>
+          <span class="intro-card-name">进入主页</span>
+          <span class="intro-card-desc">介绍 · 相册 · 留言</span>
+        </a>
+        <a class="intro-card" href="https://su120315.github.io/SUYU3/" data-intro-go="code">
+          <i data-lucide="code"></i>
+          <span class="intro-card-name">编程区</span>
+          <span class="intro-card-desc">代码与小项目</span>
+        </a>
+        <a class="intro-card" href="tools.html" data-intro-go="tools">
+          <i data-lucide="wrench"></i>
+          <span class="intro-card-name">工具区</span>
+          <span class="intro-card-desc">计算器 / 二维码</span>
+        </a>
+      </div>
+
+      <div class="intro-level">
+        <span>动效</span>
+        <div class="anim-level" data-anim-level-group>
+          <button type="button" class="anim-level-btn" data-anim-level="full">全部</button>
+          <button type="button" class="anim-level-btn" data-anim-level="lite">部分</button>
+          <button type="button" class="anim-level-btn" data-anim-level="off">不加载</button>
+        </div>
+      </div>
+    </div>
+
     <button class="intro-skip" id="introSkip" type="button">跳过 ›</button>
   </div>
 
@@ -727,6 +773,14 @@
           <i data-lucide="eye"></i>
           <span>您是第 <strong id="visitorCount">--</strong> 位访客</span>
         </p>
+        <div class="footer-anim-level">
+          <span>动效</span>
+          <div class="anim-level anim-level--page" data-anim-level-group>
+            <button type="button" class="anim-level-btn" data-anim-level="full">全部</button>
+            <button type="button" class="anim-level-btn" data-anim-level="lite">部分</button>
+            <button type="button" class="anim-level-btn" data-anim-level="off">不加载</button>
+          </div>
+        </div>
         <p class="footer-links">
           <a href="https://github.com/" target="_blank" rel="noopener">
             <i data-lucide="git-branch"></i>

@@ -12,6 +12,18 @@
   <meta name="format-detection" content="telephone=no">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="referrer" content="no-referrer">
+  <!-- 动效档位：首屏渲染前应用，避免闪烁（full / lite / off） -->
+  <script>
+    (function () {
+      try {
+        var lvl = localStorage.getItem('suyu_anim_level');
+        if (lvl !== 'full' && lvl !== 'lite' && lvl !== 'off') {
+          lvl = (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) ? 'off' : 'full';
+        }
+        if (lvl !== 'full') document.documentElement.classList.add('anim-' + lvl);
+      } catch (e) {}
+    })();
+  </script>
   <title>工具箱 | 蘇魚</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">

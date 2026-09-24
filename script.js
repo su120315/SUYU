@@ -97,6 +97,25 @@ window.addEventListener('unhandledrejection', function(e) {
 // ==================== 离线检测 ====================
 var isOffline = !navigator.onLine;
 
+// ==================== 动效档位（页面不知道设备性能，交给用户选） ====================
+// full = 全部动画 / lite = 只保留必要过渡 / off = 全部关闭
+function getAnimLevel() {
+  try {
+    var saved = localStorage.getItem('suyu_anim_level');
+    if (saved === 'full' || saved === 'lite' || saved === 'off') return saved;
+  } catch (e) {}
+  return (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) ? 'off' : 'full';
+}
+
+function applyAnimLevel(level) {
+  var root = document.documentElement;
+  root.classList.remove('anim-lite', 'anim-off');
+  if (level === 'lite' || level === 'off') root.classList.add('anim-' + level);
+}
+
+var currentAnimLevel = getAnimLevel();
+applyAnimLevel(currentAnimLevel);
+
 function updateOfflineStatus() {
   isOffline = !navigator.onLine;
   if (isOffline) {
@@ -214,7 +233,11 @@ function typeWriter() {
 }
 
 if (typewriterElement && fullText) {
-  setTimeout(typeWriter, isMobile ? 300 : 500);
+  if (currentAnimLevel === 'off') {
+    typewriterElement.textContent = fullText;   // 不加载动画：直接显示全文
+  } else {
+    setTimeout(typeWriter, isMobile ? 300 : 500);
+  }
 }
 
 // ==================== Intersection Observer for Animations ====================
@@ -288,11 +311,11 @@ try {
   console.warn('Smooth scroll error:', e);
 }
 
-// ==================== Parallax Effect for Orbs (仅桌面端启用) ====================
+// ==================== Parallax Effect for Orbs (仅桌面端 + 全部动画) ====================
 var updateParallaxOrbs = null;
 try {
   const orbs = document.querySelectorAll('.orb');
-  if (!isMobile && window.matchMedia('(prefers-reduced-motion: no-preference)').matches && orbs.length) {
+  if (!isMobile && currentAnimLevel === 'full' && window.matchMedia('(prefers-reduced-motion: no-preference)').matches && orbs.length) {
     updateParallaxOrbs = function() {
       const scrollY = window.scrollY;
       orbs.forEach((orb, index) => {
@@ -874,13 +897,15 @@ function createRipple(event) {
   }, 600);
 }
 
-// 为所有按钮添加涟漪效果
-document.querySelectorAll('button, .btn-primary, .tool-card, .project-link, .social-link').forEach(el => {
-  el.addEventListener('click', createRipple);
-});
+// 为所有按钮添加涟漪效果（仅「全部动画」档位）
+if (currentAnimLevel === 'full') {
+  document.querySelectorAll('button, .btn-primary, .tool-card, .project-link, .social-link').forEach(el => {
+    el.addEventListener('click', createRipple);
+  });
+}
 
-// ==================== 鼠标跟随光效 (仅桌面端) ====================
-if (!isMobile) {
+// ==================== 鼠标跟随光效 (仅桌面端 + 全部动画) ====================
+if (!isMobile && currentAnimLevel === 'full') {
   const cursorGlow = document.createElement('div');
   cursorGlow.className = 'cursor-glow';
   document.body.appendChild(cursorGlow);
@@ -903,6 +928,8 @@ if (!isMobile) {
 
 // ==================== Confetti Effect (彩带效果) ====================
 function showConfetti() {
+  if (currentAnimLevel !== 'full') return;   // 仅「全部动画」档位才撒彩带
+
   const colors = ['#6366f1', '#22d3ee', '#f472b6', '#10b981', '#f59e0b'];
   const confettiCount = 30;
   
@@ -925,8 +952,8 @@ function showConfetti() {
   }
 }
 
-// ==================== 卡片 3D 倾斜效果 (仅桌面端) ====================
-if (!isMobile) {
+// ==================== 卡片 3D 倾斜效果 (仅桌面端 + 全部动画) ====================
+if (!isMobile && currentAnimLevel === 'full') {
   const cards3D = document.querySelectorAll('.skill-card, .project-card, .hobby-card, .site-card');
   
   cards3D.forEach(card => {
@@ -1666,7 +1693,32 @@ function copyQQ() {
   }
 })();
 
-// ==================== 开场动画 (Opening Intro) ====================
+// ==================== 动效档位控件 ====================
+(function initAnimLevelControls() {
+  function syncUI(level) {
+    document.querySelectorAll('[data-anim-level-group]').forEach(function (group) {
+      group.querySelectorAll('[data-anim-level]').forEach(function (btn) {
+        btn.classList.toggle('is-active', btn.getAttribute('data-anim-level') === level);
+      });
+    });
+  }
+
+  syncUI(currentAnimLevel);
+
+  document.querySelectorAll('[data-anim-level-group]').forEach(function (group) {
+    group.querySelectorAll('[data-anim-level]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var picked = btn.getAttribute('data-anim-level');
+        try { localStorage.setItem('suyu_anim_level', picked); } catch (e) {}
+        currentAnimLevel = picked;
+        applyAnimLevel(picked);
+        syncUI(picked);
+      });
+    });
+  });
+})();
+
+// ==================== 开场动画 + 三入口 ====================
 (function initOpeningIntro() {
   const overlay = document.getElementById('introOverlay');
   if (!overlay) return;
@@ -1691,29 +1743,53 @@ function copyQQ() {
     }
   }
 
-  // 直接跳过的情况：用户偏好减少动画 / 本会话已播放过 / 离线
-  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // 视频一边上移一边缩小，同时三个入口卡片入场
+  function showEntry() {
+    overlay.classList.add('is-entry');
+    if (typeof lucide !== 'undefined') {
+      try { lucide.createIcons(); } catch (e) {}
+    }
+  }
+
+  // 本会话已经出现过 → 直接收起
   let played = false;
   try { played = sessionStorage.getItem('suyu_intro_played') === '1'; } catch (e) {}
-
-  if (reduceMotion || played || isOffline) { dismiss(false); return; }
+  if (played) { dismiss(false); return; }
 
   document.body.classList.add('intro-lock');
-  if (skipBtn) skipBtn.addEventListener('click', () => dismiss(true));
-  overlay.addEventListener('click', () => dismiss(true));
 
-  if (!video) { dismiss(true); return; }
+  // 入口卡片：主页直接揭示背后已加载的首页，其余正常跳转
+  overlay.querySelectorAll('[data-intro-go]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      if (el.getAttribute('data-intro-go') === 'home') {
+        e.preventDefault();
+        dismiss(true);
+      } else {
+        try { sessionStorage.setItem('suyu_intro_played', '1'); } catch (e2) {}
+      }
+    });
+  });
 
-  video.addEventListener('ended', () => dismiss(true));
-  video.addEventListener('error', () => dismiss(true));
+  // 跳过视频，直接看入口卡片
+  if (skipBtn) skipBtn.addEventListener('click', showEntry);
+
+  // 「部分 / 不加载动画」档位：不播视频（整段视频最重），直接进入入口
+  if (currentAnimLevel !== 'full' || !video) {
+    if (video && video.parentNode) video.parentNode.removeChild(video);
+    showEntry();
+    return;
+  }
+
+  video.addEventListener('ended', showEntry);
+  video.addEventListener('error', showEntry);
 
   const playing = video.play();
   if (playing && typeof playing.catch === 'function') {
-    playing.catch(() => dismiss(true));   // 自动播放被浏览器拦截时直接收起
+    playing.catch(showEntry);   // 自动播放被浏览器拦截时直接进入入口
   }
 
-  // 兜底：最多 9 秒一定收起，避免异常时卡住页面
-  setTimeout(() => dismiss(true), 9000);
+  // 兜底：最多 8 秒一定进入入口，避免异常时卡住页面
+  setTimeout(showEntry, 8000);
 })();
 
 
