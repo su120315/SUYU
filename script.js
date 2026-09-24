@@ -479,8 +479,6 @@ function initGallery() {
   const galleryLoading = document.getElementById('galleryLoading');
   const catContainer = document.getElementById('galleryCategories');
 
-  const BOLTP_API_URL = 'https://www.boltp.com/api/v2/upload';
-  
   // GitHub Token / Gist 配置 - 全部从 __SECRETS__ 函数延迟获取，源码里没有明文常量
   function getGitHubToken() { return window.__SECRETS__.githubToken(); }
   function getGistId() { return window.__SECRETS__.gistGallery(); }
@@ -766,33 +764,14 @@ function initGallery() {
     });
   }
 
-  async function uploadToBoltp(file) {
-    const formData = new FormData();
-    formData.append('image', file);
-    
-    const response = await fetch(BOLTP_API_URL, {
-      method: 'POST',
-      body: formData,
-      credentials: 'include'
+  // 读取本地图片为 base64（图片直接存进 Gist，不再依赖第三方图床）
+  function fileToDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('读取图片失败'));
+      reader.readAsDataURL(file);
     });
-    
-    if (!response.ok) {
-      throw new Error(`上传失败: ${response.status}`);
-    }
-    
-    const text = await response.text();
-    try {
-      const data = JSON.parse(text);
-      if (data.status === 'success' && data.data && data.data.url) {
-        return data.data.url;
-      }
-      throw new Error(data.message || '上传返回无效数据');
-    } catch (e) {
-      if (text.includes('html')) {
-        throw new Error('服务器返回异常，请检查网络');
-      }
-      throw e;
-    }
   }
 
   photoInput.addEventListener('change', async (e) => {
@@ -820,11 +799,18 @@ function initGallery() {
         galleryEmpty.style.display = 'none';
         galleryGrid.appendChild(loadingItem);
 
-        const imageUrl = await uploadToBoltp(file);
-        
-        photos.push(imageUrl);
+        const original = await fileToDataUrl(file);
+        const compressed = await compressImage(original, 1200, 1200, 0.8);
+
+        photos.push(compressed);
         categories[currentCategory] = photos;
-        await saveCategoryStructure();
+        try {
+          await saveCategoryStructure();
+        } catch (err) {
+          photos.pop();                    // 保存失败就回滚，避免界面与 Gist 不一致
+          categories[currentCategory] = photos;
+          throw err;
+        }
         
         loadingItem.remove();
         renderPhotos();
@@ -832,7 +818,7 @@ function initGallery() {
         
       } catch (error) {
         console.error('上传失败:', error);
-        alert('上传失败，请稍后重试');
+        alert('上传失败，请检查网络后重试');
         galleryGrid.querySelector('.gallery-item.loading')?.remove();
       }
       
