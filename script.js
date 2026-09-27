@@ -489,7 +489,9 @@ function initGallery() {
   let currentCategory = '默认相册';
   let photos = [];
   let isUploading = false;
-  let isExpanded = false;
+  const INITIAL_PHOTO_COUNT = 3;            // 首屏渲染的照片数
+  const PHOTO_PAGE_SIZE = 9;                // 每次「查看更多」追加的照片数
+  let visibleCount = INITIAL_PHOTO_COUNT;   // 当前已渲染的照片数
 
   async function compressImage(base64Str, maxWidth = 1200, maxHeight = 1200, quality = 0.85) {
     return new Promise((resolve) => {
@@ -647,7 +649,7 @@ function initGallery() {
   function switchCategory(name) {
     currentCategory = name;
     photos = categories[currentCategory] || [];
-    isExpanded = false;
+    visibleCount = INITIAL_PHOTO_COUNT;
     renderCategoryTabs();
     renderPhotos();
   }
@@ -684,84 +686,94 @@ function initGallery() {
     renderPhotos();
   }
 
+  // 创建单张照片卡片（含删除按钮与点击预览）
+  function createPhotoItem(photoData, index) {
+    const item = document.createElement('div');
+    item.className = 'gallery-item';
+    item.style.animationDelay = `${Math.min(index, 12) * 0.05}s`;
+    item.innerHTML = `
+      <img src="${photoData}" alt="照片 ${index + 1}" loading="lazy" decoding="async"
+           onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect fill=%22%23ddd%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2255%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2240%22>🖼️</text></svg>'">
+      <button class="gallery-delete" data-index="${index}" title="删除">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+      </button>
+    `;
+    item.querySelector('img').addEventListener('click', () => openLightbox(index));
+    item.querySelector('.gallery-delete').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const password = prompt('请输入删除密码：');
+      if (checkDeletePassword(password)) {
+        const idx = parseInt(e.currentTarget.getAttribute('data-index'));
+        photos.splice(idx, 1);
+        categories[currentCategory] = photos;
+        saveCategoryStructure().catch(err => console.error('保存失败:', err));
+        renderPhotos();
+      } else if (password !== null) {
+        alert('密码错误！');
+      }
+    });
+    return item;
+  }
+
+  // 只追加 [from, to) 区间的照片：已渲染的不会重建，避免重复发起图片请求
+  function appendPhotoItems(from, to) {
+    const frag = document.createDocumentFragment();
+    for (let i = from; i < to; i++) {
+      frag.appendChild(createPhotoItem(photos[i], i));
+    }
+    galleryGrid.appendChild(frag);
+  }
+
+  // 渲染「查看更多 / 收起」卡片
+  function renderMoreCard() {
+    const remaining = photos.length - visibleCount;
+    const card = document.createElement('div');
+    card.className = 'gallery-more';
+    card.style.animationDelay = `${Math.min(visibleCount, 12) * 0.05}s`;
+
+    if (remaining > 0) {
+      card.innerHTML = `
+        <span class="gallery-more-count">+${remaining}</span>
+        <span class="gallery-more-text">查看更多</span>
+      `;
+      card.addEventListener('click', () => {
+        const from = visibleCount;
+        visibleCount = Math.min(visibleCount + PHOTO_PAGE_SIZE, photos.length);
+        appendPhotoItems(from, visibleCount);   // 只加载新增的这一批
+        card.remove();
+        renderMoreCard();
+      });
+      galleryGrid.appendChild(card);
+      return;
+    }
+
+    if (photos.length > INITIAL_PHOTO_COUNT) {
+      card.innerHTML = `
+        <span class="gallery-more-count">↑</span>
+        <span class="gallery-more-text">收起</span>
+      `;
+      card.addEventListener('click', () => {
+        visibleCount = INITIAL_PHOTO_COUNT;
+        renderPhotos();
+        document.getElementById('gallery').scrollIntoView({ behavior: 'smooth' });
+      });
+      galleryGrid.appendChild(card);
+    }
+  }
+
   function renderPhotos() {
+    galleryGrid.querySelectorAll('.gallery-item, .gallery-more').forEach(el => el.remove());
+
     if (photos.length === 0) {
       galleryEmpty.style.display = 'block';
-      galleryGrid.querySelectorAll('.gallery-item, .gallery-more').forEach(el => el.remove());
       return;
     }
 
     galleryEmpty.style.display = 'none';
-    galleryGrid.querySelectorAll('.gallery-item, .gallery-more').forEach(el => el.remove());
-
-    const displayPhotos = isExpanded ? photos : photos.slice(0, 3);
-
-    displayPhotos.forEach((photoData, index) => {
-      const item = document.createElement('div');
-      item.className = 'gallery-item';
-      item.style.animationDelay = `${index * 0.05}s`;
-      item.innerHTML = `
-        <img src="${photoData}" alt="照片 ${index + 1}" loading="lazy" 
-             onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect fill=%22%23ddd%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2255%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2240%22>🖼️</text></svg>'">
-        <button class="gallery-delete" data-index="${index}" title="删除">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-        </button>
-      `;
-      item.querySelector('img').addEventListener('click', () => {
-        openLightbox(index);
-      });
-      galleryGrid.appendChild(item);
-    });
-
-    // 如果照片超过3张且没展开，显示"更多"卡片
-    if (photos.length > 3 && !isExpanded) {
-      const moreCount = photos.length - 3;
-      const moreCard = document.createElement('div');
-      moreCard.className = 'gallery-more';
-      moreCard.style.animationDelay = `${3 * 0.05}s`;
-      moreCard.innerHTML = `
-        <span class="gallery-more-count">+${moreCount}</span>
-        <span class="gallery-more-text">查看更多</span>
-      `;
-      moreCard.addEventListener('click', () => {
-        isExpanded = true;
-        renderPhotos();
-      });
-      galleryGrid.appendChild(moreCard);
-    }
-
-    // 如果展开了，显示"收起"按钮
-    if (isExpanded && photos.length > 3) {
-      const collapseCard = document.createElement('div');
-      collapseCard.className = 'gallery-more';
-      collapseCard.style.animationDelay = `${photos.length * 0.05}s`;
-      collapseCard.innerHTML = `
-        <span class="gallery-more-count">↑</span>
-        <span class="gallery-more-text">收起</span>
-      `;
-      collapseCard.addEventListener('click', () => {
-        isExpanded = false;
-        renderPhotos();
-        document.getElementById('gallery').scrollIntoView({ behavior: 'smooth' });
-      });
-      galleryGrid.appendChild(collapseCard);
-    }
-
-    galleryGrid.querySelectorAll('.gallery-delete').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const password = prompt('请输入删除密码：');
-        if (checkDeletePassword(password)) {
-          const idx = parseInt(btn.getAttribute('data-index'));
-          photos.splice(idx, 1);
-          categories[currentCategory] = photos;
-          saveCategoryStructure().catch(e => console.error('保存失败:', e));
-          renderPhotos();
-        } else if (password !== null) {
-          alert('密码错误！');
-        }
-      });
-    });
+    // 一次只渲染一小批，其余交给「查看更多」逐批加载
+    visibleCount = Math.min(Math.max(visibleCount, INITIAL_PHOTO_COUNT), photos.length);
+    appendPhotoItems(0, visibleCount);
+    renderMoreCard();
   }
 
   // 读取本地图片为 base64（图片直接存进 Gist，不再依赖第三方图床）
