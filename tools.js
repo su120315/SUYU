@@ -34,6 +34,11 @@ document.addEventListener('DOMContentLoaded', function() {
   const toolCards = document.querySelectorAll('.tool-card');
   toolCards.forEach(card => {
     card.addEventListener('click', function() {
+      const href = this.dataset.href;
+      if (href) {
+        window.location.href = href;
+        return;
+      }
       const tool = this.dataset.tool;
       openTool(tool);
     });
