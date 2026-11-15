@@ -459,6 +459,10 @@ try {
   document.querySelectorAll('.reveal:not(.visible)').forEach(function(el) { io.observe(el); });
 })();
 
+// 相册重载句柄（online 事件复用 initGallery 时只重新拉数据）
+// 必须在下方 runInitializers 之前声明，否则首次 initGallery 会因 let 暂时性死区报错
+let galleryReload = null;
+
 // ==================== Initialize on Load ====================
 // 本文件是用户选择入口后才注入的，DOMContentLoaded 可能早已触发，需要立即初始化
 (function runInitializers() {
@@ -469,8 +473,6 @@ try {
 
 // ==================== Gallery ====================
 // 重入保护：online 事件会再次调用 initGallery，之后只重新拉取数据，不重复绑定事件
-let galleryReload = null;
-
 function initGallery() {
   const galleryGrid = document.getElementById('galleryGrid');
   if (!galleryGrid) return;
