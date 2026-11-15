@@ -1,5 +1,5 @@
 // SUYU 漫画 Service Worker - 离线缓存
-const CACHE_NAME = 'suyu-comic-v15';
+const CACHE_NAME = 'suyu-comic-v16';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -49,7 +49,7 @@ self.addEventListener('activate', function(event) {
   );
 });
 
-// 请求拦截：缓存优先，网络兜底
+// 请求拦截：同源资源网络优先（修复/更新能及时生效），离线回退缓存；跨域资源缓存优先
 self.addEventListener('fetch', function(event) {
   var request = event.request;
 
@@ -71,32 +71,38 @@ self.addEventListener('fetch', function(event) {
     return;
   }
 
+  function cachePut(resp) {
+    if (resp && resp.ok && (url.origin === self.location.origin || resp.headers.get('access-control-allow-origin'))) {
+      var respClone = resp.clone();
+      caches.open(CACHE_NAME).then(function(cache) {
+        cache.put(request, respClone);
+      });
+    }
+    return resp;
+  }
+
+  // 同源（HTML/JS/CSS 等）：网络优先，离线回退缓存，避免旧缓存挡住新版本
+  if (url.origin === self.location.origin) {
+    event.respondWith(
+      fetch(request).then(cachePut).catch(function() {
+        return caches.match(request).then(function(cached) {
+          if (cached) return cached;
+          if (request.mode === 'navigate') return caches.match('./index.html');
+          return Response.error();
+        });
+      })
+    );
+    return;
+  }
+
+  // 跨域：缓存优先，后台更新
   event.respondWith(
     caches.match(request).then(function(cached) {
       if (cached) {
-        // 有缓存就用缓存，同时后台更新
-        fetch(request).then(function(resp) {
-          if (resp && resp.ok) {
-            caches.open(CACHE_NAME).then(function(cache) {
-              cache.put(request, resp.clone());
-            });
-          }
-        }).catch(function() {});
+        fetch(request).then(cachePut).catch(function() {});
         return cached;
       }
-
-      // 没缓存，尝试网络
-      return fetch(request).then(function(resp) {
-        // 成功则缓存同源资源
-        if (resp && resp.ok && (url.origin === self.location.origin || resp.headers.get('access-control-allow-origin'))) {
-          var respClone = resp.clone();
-          caches.open(CACHE_NAME).then(function(cache) {
-            cache.put(request, respClone);
-          });
-        }
-        return resp;
-      }).catch(function() {
-        // 网络失败，如果是导航请求返回首页
+      return fetch(request).then(cachePut).catch(function() {
         if (request.mode === 'navigate') {
           return caches.match('./index.html');
         }
