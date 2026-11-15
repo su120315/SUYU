@@ -1,12 +1,12 @@
 // SUYU 漫画 Service Worker - 离线缓存
-const CACHE_NAME = 'suyu-comic-v16';
+const CACHE_NAME = 'suyu-comic-v17';
 const CORE_ASSETS = [
   './',
   './index.html',
   './tools.html',
-  './style.css',
-  './intro.js',
-  './script.js',
+  './style.css?v=17',
+  './intro.js?v=17',
+  './script.js?v=17',
   './tools.js',
   './qrcode.min.js',
   './sw.js',

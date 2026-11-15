@@ -84,7 +84,7 @@ applyAnimLevel(currentAnimLevel);
     appLoaded = true;
     var s = document.createElement('script');
     s.id = 'suyuAppScript';
-    s.src = 'script.js';
+    s.src = 'script.js?v=17';
     document.body.appendChild(s);
   }
 
