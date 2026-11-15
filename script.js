@@ -679,15 +679,35 @@ function initGallery() {
     renderPhotos();
   }
 
+  // 多线路读取：gist raw 在国内常被墙，直连与中转桥同时发，谁先成功用谁。
+  // 只改读取通道，数据格式与写入逻辑不变；上传/删除仍走官方 API（带 token 不过公共桥）
+  async function fetchGalleryData() {
+    const rawUrl = `https://gist.githubusercontent.com/su120315/${getGistId()}/raw/${GIST_FILENAME}?t=${Date.now()}`;
+    const sources = [
+      rawUrl,                                                    // 直连（能科学上网时最快）
+      'https://api.cors.lol/?url=' + encodeURIComponent(rawUrl), // 中转桥 1
+      'https://gh-proxy.com/' + rawUrl                           // 中转桥 2
+    ];
+    const attempts = sources.map(url => new Promise((resolve, reject) => {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => { ctrl.abort(); }, 12000);
+      fetch(url, { cache: 'no-store', signal: ctrl.signal })
+        .then(res => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.text();
+        })
+        .then(text => resolve(JSON.parse(text)))  // 桥返回错误页时解析失败，自动换下一路
+        .catch(reject)
+        .finally(() => clearTimeout(timer));
+    }));
+    return Promise.any(attempts);
+  }
+
   // 加载照片
   async function loadPhotos() {
     loadError = false;
     try {
-      const url = `https://gist.githubusercontent.com/su120315/${getGistId()}/raw/${GIST_FILENAME}?t=${Date.now()}`;
-      const response = await fetch(url, { cache: 'no-store' });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = await response.text();
-      const parsed = JSON.parse(data);
+      const parsed = await fetchGalleryData();
       if (parsed && parsed.categories) {
         categories = parsed.categories;
         currentCategory = parsed.currentCategory || '默认相册';
