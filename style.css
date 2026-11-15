@@ -1277,6 +1277,17 @@ section {
   opacity: 0.5;
 }
 
+.gallery-error {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-secondary);
+}
+
+.gallery-error p {
+  margin-bottom: 16px;
+}
+
 .gallery-item {
   position: relative;
   aspect-ratio: 1;
@@ -1361,11 +1372,23 @@ section {
   align-items: center;
   justify-content: center;
   opacity: 0;
+  /* 透明时不响应点击，避免误触看不见的按钮 */
+  pointer-events: none;
   transition: all 0.3s ease;
 }
 
-.gallery-item:hover .gallery-delete {
+.gallery-item:hover .gallery-delete,
+.gallery-item:focus-within .gallery-delete {
   opacity: 1;
+  pointer-events: auto;
+}
+
+/* 触屏设备没有 hover，删除按钮常显，保证能点得到 */
+@media (hover: none), (pointer: coarse) {
+  .gallery-delete {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
 .gallery-delete:hover {

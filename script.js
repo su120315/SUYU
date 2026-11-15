@@ -468,15 +468,21 @@ try {
 })();
 
 // ==================== Gallery ====================
+// 重入保护：online 事件会再次调用 initGallery，之后只重新拉取数据，不重复绑定事件
+let galleryReload = null;
+
 function initGallery() {
   const galleryGrid = document.getElementById('galleryGrid');
   if (!galleryGrid) return;
   if (isOffline) { console.log('[离线] 跳过相册加载'); return; }
+  if (galleryReload) { galleryReload(); return; }
 
   const photoInput = document.getElementById('photoInput');
   const clearBtn = document.getElementById('clearBtn');
   const galleryEmpty = document.getElementById('galleryEmpty');
   const galleryLoading = document.getElementById('galleryLoading');
+  const galleryError = document.getElementById('galleryError');
+  const galleryRetry = document.getElementById('galleryRetry');
   const catContainer = document.getElementById('galleryCategories');
 
   // GitHub Token / Gist 配置 - 全部从 __SECRETS__ 函数延迟获取，源码里没有明文常量
@@ -492,6 +498,7 @@ function initGallery() {
   const INITIAL_PHOTO_COUNT = 3;            // 首屏渲染的照片数
   const PHOTO_PAGE_SIZE = 9;                // 每次「查看更多」追加的照片数
   let visibleCount = INITIAL_PHOTO_COUNT;   // 当前已渲染的照片数
+  let loadError = false;                    // 加载失败标记：与「空相册」区分开
 
   async function compressImage(base64Str, maxWidth = 1200, maxHeight = 1200, quality = 0.85) {
     return new Promise((resolve) => {
@@ -535,11 +542,15 @@ function initGallery() {
   const lightboxDownload = document.getElementById('lightboxDownload');
   const lightboxOverlay = document.getElementById('lightboxOverlay');
 
+  let lastFocusedElement = null;
+
   function openLightbox(index) {
     currentLightboxIndex = index;
     lightboxImage.src = photos[index];
+    lastFocusedElement = document.activeElement;
     lightbox.classList.add('active');
     document.body.style.overflow = 'hidden';
+    lightboxClose.focus();
     if (typeof lucide !== 'undefined') {
       try { lucide.createIcons(); } catch(e) { console.warn('Lucide error:', e); }
     }
@@ -548,20 +559,22 @@ function initGallery() {
   function closeLightbox() {
     lightbox.classList.remove('active');
     document.body.style.overflow = '';
+    if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
+      lastFocusedElement.focus();
+    }
   }
 
+  // 首尾循环切换，避免到头后按钮「失灵」
   function showPrev() {
-    if (currentLightboxIndex > 0) {
-      currentLightboxIndex--;
-      lightboxImage.src = photos[currentLightboxIndex];
-    }
+    if (photos.length === 0) return;
+    currentLightboxIndex = (currentLightboxIndex - 1 + photos.length) % photos.length;
+    lightboxImage.src = photos[currentLightboxIndex];
   }
 
   function showNext() {
-    if (currentLightboxIndex < photos.length - 1) {
-      currentLightboxIndex++;
-      lightboxImage.src = photos[currentLightboxIndex];
-    }
+    if (photos.length === 0) return;
+    currentLightboxIndex = (currentLightboxIndex + 1) % photos.length;
+    lightboxImage.src = photos[currentLightboxIndex];
   }
 
   function downloadPhoto() {
@@ -584,6 +597,18 @@ function initGallery() {
     if (e.key === 'Escape') closeLightbox();
     if (e.key === 'ArrowLeft') showPrev();
     if (e.key === 'ArrowRight') showNext();
+    // 让 Tab 焦点留在灯箱按钮内，不跑到背后的页面
+    if (e.key === 'Tab') {
+      const first = lightboxClose;
+      const last = lightboxDownload;
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
   });
 
   // 保存分类结构到 Gist
@@ -656,29 +681,29 @@ function initGallery() {
 
   // 加载照片
   async function loadPhotos() {
+    loadError = false;
     try {
       const url = `https://gist.githubusercontent.com/su120315/${getGistId()}/raw/${GIST_FILENAME}?t=${Date.now()}`;
       const response = await fetch(url, { cache: 'no-store' });
-      if (response.ok) {
-        const data = await response.text();
-        const parsed = JSON.parse(data);
-        if (parsed && parsed.categories) {
-          categories = parsed.categories;
-          currentCategory = parsed.currentCategory || '默认相册';
-        } else if (Array.isArray(parsed)) {
-          categories = { '默认相册': parsed };
-          currentCategory = '默认相册';
-        } else {
-          categories = { '默认相册': [] };
-          currentCategory = '默认相册';
-        }
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.text();
+      const parsed = JSON.parse(data);
+      if (parsed && parsed.categories) {
+        categories = parsed.categories;
+        currentCategory = parsed.currentCategory || '默认相册';
+      } else if (Array.isArray(parsed)) {
+        categories = { '默认相册': parsed };
+        currentCategory = '默认相册';
+      } else {
+        categories = { '默认相册': [] };
+        currentCategory = '默认相册';
       }
+      photos = categories[currentCategory] || [];
     } catch (e) {
+      // 加载失败保留原有数据、只显示错误态，避免被误认为「照片全没了」
       console.log('加载照片失败:', e);
-      categories = { '默认相册': [] };
-      currentCategory = '默认相册';
+      loadError = true;
     }
-    photos = categories[currentCategory] || [];
     if (galleryLoading) {
       galleryLoading.style.display = 'none';
     }
@@ -686,24 +711,34 @@ function initGallery() {
     renderPhotos();
   }
 
+  // 图片加载失败时的占位图
+  const PHOTO_FALLBACK = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect fill=%22%23ddd%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2255%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2240%22>🖼️</text></svg>';
+
   // 创建单张照片卡片（含删除按钮与点击预览）
+  // 用 DOM API 构建，照片数据不经过 innerHTML 拼接，避免属性注入
   function createPhotoItem(photoData, index) {
     const item = document.createElement('div');
     item.className = 'gallery-item';
     item.style.animationDelay = `${Math.min(index, 12) * 0.05}s`;
-    item.innerHTML = `
-      <img src="${photoData}" alt="照片 ${index + 1}" loading="lazy" decoding="async"
-           onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect fill=%22%23ddd%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2255%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2240%22>🖼️</text></svg>'">
-      <button class="gallery-delete" data-index="${index}" title="删除">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-      </button>
-    `;
-    item.querySelector('img').addEventListener('click', () => openLightbox(index));
-    item.querySelector('.gallery-delete').addEventListener('click', (e) => {
+
+    const img = document.createElement('img');
+    img.src = photoData;
+    img.alt = `照片 ${index + 1}`;
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    img.addEventListener('error', () => { img.src = PHOTO_FALLBACK; }, { once: true });
+    img.addEventListener('click', () => openLightbox(index));
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'gallery-delete';
+    deleteBtn.dataset.index = index;
+    deleteBtn.title = '删除';
+    deleteBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>';
+    deleteBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       const password = prompt('请输入删除密码：');
       if (checkDeletePassword(password)) {
-        const idx = parseInt(e.currentTarget.getAttribute('data-index'));
+        const idx = parseInt(deleteBtn.dataset.index, 10);
         photos.splice(idx, 1);
         categories[currentCategory] = photos;
         saveCategoryStructure().catch(err => console.error('保存失败:', err));
@@ -712,6 +747,9 @@ function initGallery() {
         alert('密码错误！');
       }
     });
+
+    item.appendChild(img);
+    item.appendChild(deleteBtn);
     return item;
   }
 
@@ -763,6 +801,12 @@ function initGallery() {
 
   function renderPhotos() {
     galleryGrid.querySelectorAll('.gallery-item, .gallery-more').forEach(el => el.remove());
+    if (galleryError) galleryError.style.display = loadError ? 'block' : 'none';
+
+    if (loadError) {
+      galleryEmpty.style.display = 'none';
+      return;
+    }
 
     if (photos.length === 0) {
       galleryEmpty.style.display = 'block';
@@ -787,7 +831,12 @@ function initGallery() {
   }
 
   photoInput.addEventListener('change', async (e) => {
-    if (isUploading) return;
+    if (isUploading) {
+      // 上传途中的选择会被丢弃，给出提示并重置选择框，避免用户以为没反应
+      photoInput.value = '';
+      alert('有照片正在上传，请等待完成后再试');
+      return;
+    }
     
     const files = Array.from(e.target.files);
     
@@ -825,6 +874,7 @@ function initGallery() {
         }
         
         loadingItem.remove();
+        visibleCount = photos.length;   // 新照片追加在末尾，确保上传后立即可见
         renderPhotos();
         showConfetti();
         
@@ -855,6 +905,15 @@ function initGallery() {
     }
   });
 
+  if (galleryRetry) {
+    galleryRetry.addEventListener('click', () => {
+      if (galleryError) galleryError.style.display = 'none';
+      if (galleryLoading) galleryLoading.style.display = '';
+      loadPhotos();
+    });
+  }
+
+  galleryReload = loadPhotos;
   loadPhotos();
 }
 

@@ -459,7 +459,7 @@
         <span class="section-label">06</span>
         <h2 class="section-title">我的相册</h2>
       </div>
-      <p class="gallery-desc">记录生活中的美好瞬间 📸 照片来自仓库的 gallery 文件夹</p>
+      <p class="gallery-desc">记录生活中的美好瞬间 📸</p>
       <div class="gallery-actions">
         <label class="upload-btn">
           <i data-lucide="upload"></i>
@@ -497,6 +497,13 @@
         <div class="gallery-empty" id="galleryEmpty" style="display:none;">
           <i data-lucide="image"></i>
           <p>还没有照片呢，快上传几张吧～</p>
+        </div>
+        <div class="gallery-error" id="galleryError" style="display:none;">
+          <p>照片加载失败，可能是网络波动，照片并没有丢失</p>
+          <button class="clear-btn" id="galleryRetry" type="button">
+            <i data-lucide="rotate-cw"></i>
+            <span>重新加载</span>
+          </button>
         </div>
       </div>
 
